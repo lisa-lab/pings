@@ -1,0 +1,9 @@
+*~
+*.pyc
+*.pyo
+build/
+dist/
+MANIFEST
+
+# Ignore directories created by storage_server.
+20??-??-??/

@@ -1,0 +1,22 @@
+Essential
+=========
+
+* Replace the test code that returns a list of addresses to be pinged by
+  code that does real work instead of returning a couple addresses in 
+  the 10/8 network.
+
+* Guard against very long replies from clients. (In practice: max
+  reply length.)
+
+
+Important
+=========
+
+* Consider whether we should be creating a new file more often than every
+  hour for the storage_server. Maybe every 10 or 5 minutes would be better?
+
+* Add some tests to check that we don't break any of the parts when making
+  changes.
+
+* Store configuration for memcache, zeromq in the .ini files. Don't forget
+  to also move the security token expiration time to said config files.

@@ -35,6 +35,7 @@ class OnDemandFile:
         dt = datetime.datetime.utcnow()
         date = dt.date()
         time_period = int((dt.hour * 60 + dt.minute) / self.time_period)
+        force_new_file = False
 
         if date != self.current_date:
             try:
@@ -47,8 +48,9 @@ class OnDemandFile:
                 else:
                     raise
             self.current_date = date
+            force_new_file = True
 
-        if time_period != self.current_time_period:
+        if force_new_file or time_period != self.current_time_period:
             filename = '%dh-%02d-UTC.data' % (dt.hour, int(dt.minute / 10) * 10)
 
             if self.f is not None:

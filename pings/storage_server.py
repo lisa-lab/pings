@@ -14,7 +14,7 @@ daylight saving time.
 To use more than one storage server on a single computer, pass them
 different root directories."""
 
-import sys, os, datetime, errno, json, zmq
+import sys, os, datetime, errno, json, zmq, ConfigParser
 
 class OnDemandFile:
     """Creates a new file on-demand every hour. Files are stored in
@@ -59,19 +59,37 @@ class OnDemandFile:
         f.write(msg)
         f.write('\n')
 
-
 def main():
-    if len(sys.argv) > 2:
-        print sys.stderr, "Usage: storage_server [directory]"
+    # Parse command line.
+    if not (2 <= len(sys.argv) <= 3):
+        print >>sys.stderr, "Usage: storage_server config.ini [output_directory]"
         sys.exit(1)
+    elif len(sys.argv) == 3:
+        root_dir = sys.argv[2]
+    else:
+        root_dir = '.'
 
-    root_dir = sys.argv[1] if len(sys.argv) == 2 else '.'
+    config_filename = sys.argv[1]
+
+    # Load config file.
+    config_parser = ConfigParser.SafeConfigParser()
+    config_parser.read(config_filename)
+    config_section = 'storage_server'
+
+    port = config_parser.getint(config_section, 'port')
+    localhost_only = config_parser.getboolean(config_section, 'localhost_only')
+
+    # Create input and output objects.
     f = OnDemandFile(root_dir)
     
     zmq_context = zmq.Context()
     zmq_socket = zmq_context.socket(zmq.PULL)
-    zmq_socket.bind('tcp://127.0.0.1:5000')
-    
+    if localhost_only:
+        zmq_socket.bind('tcp://127.0.0.1:%d' % port)
+    else:
+        zmq_socket.bind('tcp://*:%d' % port)
+
+    # Do the work
     while True:
         msg = zmq_socket.recv_json()
         f.write_msg(json.dumps(msg))

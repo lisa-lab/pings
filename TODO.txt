@@ -17,6 +17,3 @@ Important
 
 * Add some tests to check that we don't break any of the parts when making
   changes.
-
-* Store configuration for memcache, zeromq in the .ini files. Don't forget
-  to also move the security token expiration time to said config files.

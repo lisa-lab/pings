@@ -3,35 +3,41 @@ from gevent_zeromq import zmq
 
 logger = logging.getLogger(__name__)
 
-# Memcache instance for the security tokens.
-token_mc = None
-
 # Warning: the use of a module-level variable for the zeromq sockets will
 # NOT work if running this server with multiple threads. (You can't share
 # zeromq sockets between threads.) This is not a problem because we are
 # using gevent, which uses greenlets, not threads. But if ever changing to
 # a WSGI server that uses threads, you will need to ensure that the zeromq
 # socket is not accessed from threads other than the one which created it.
-zmq_context = None
-zmq_send_results_socket = None
-
-# TODO Configure via ini file.
-token_exptime = 15*60
 
 #
 # Initialization
 #
 
-def init_token_memcache():
-    global token_mc
-    token_mc = memcache.Client(['127.0.0.1:11211'])
+# Memcache instance for the security tokens.
+token_mc = None
+# Expiration time for the tokens in said memcache. If a client takes
+# longer than this number of seconds to ping the list of addresses it was
+# assigned and send back its reply, said reply will be refused when
+# received.
+token_exptime = None
 
-def init_zmq():
+def init_token_memcache(memcache_addresses, exptime):
+    global token_mc, token_exptime
+    token_mc = memcache.Client(memcache_addresses)
+    token_exptime = exptime
+
+# Zeromq for the connection to the storage_server.
+zmq_context = None
+zmq_send_results_socket = None
+
+def init_storage_zmq(zmq_urls):
     global zmq_context, zmq_send_results_socket
     zmq_context = zmq.Context()
-    
     zmq_send_results_socket = zmq_context.socket(zmq.PUSH)
-    zmq_send_results_socket.connect("tcp://localhost:5000")
+
+    for url in zmq_urls:
+        zmq_send_results_socket.connect(url)
 
 #
 # Pyramid ressource class.

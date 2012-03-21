@@ -1,4 +1,4 @@
-import os, logging, memcache
+import os, logging, memcache, ipaddr, random
 from gevent_zeromq import zmq
 
 logger = logging.getLogger(__name__)
@@ -65,11 +65,21 @@ def check_token(token):
         return False
     return token_mc.get(token) is not None
 
-
 def get_pings():
-    """Returns a list of IP addresses to be pinged.
-    @todo Do real work instead of returning a fixed list of 10/8 addresses."""
-    return ['10.0.0.1', '10.0.10.1']
+    """Returns a list of IP addresses to be pinged. Currently we return up
+    to 15 random IPv4 addresses."""
+    addresses = []
+    num_tries = 0
+
+    while len(addresses) < 15 and num_tries < 100:
+        num_tries += 1
+        ip = ipaddr.IPv4Address(random.randint(1, 2**32-2))
+
+        if not (ip.is_link_local or ip.is_loopback or ip.is_multicast or
+                ip.is_private or ip.is_reserved or ip.is_unspecified):
+            addresses.append(str(ip))
+
+    return addresses
 
 def store_results(results):
     """Stores ping results. The results are sent via Zeromq to a

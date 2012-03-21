@@ -13,8 +13,8 @@ distribute==0.6.24
 gevent==0.13.6
 gevent-zeromq==0.2.2
 greenlet==0.3.4
+ipaddr==2.1.10
 pastegevent==0.1
-pings==0.0
 pyramid==1.2
 pyramid-debugtoolbar==0.9.9.1
 python-memcached==1.48
@@ -23,7 +23,6 @@ repoze.lru==0.4
 requests==0.10.6
 translationstring==1.1
 venusian==1.0a3
-wsgiref==0.1.2
 zope.component==3.12.0
 zope.deprecation==3.5.0
 zope.event==3.5.1

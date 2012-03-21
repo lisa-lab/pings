@@ -57,7 +57,7 @@ class OnDemandFile:
                 f.close()
             self.f = open(os.path.join(self.root_dir,
                                        self.current_date.isoformat(),
-                                       filename), 'wt')
+                                       filename), 'at')
             self.current_time_period = time_period
 
         return self.f

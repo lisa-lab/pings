@@ -12,8 +12,5 @@ Essential
 Important
 =========
 
-* Consider whether we should be creating a new file more often than every
-  hour for the storage_server. Maybe every 10 or 5 minutes would be better?
-
 * Add some tests to check that we don't break any of the parts when making
   changes.

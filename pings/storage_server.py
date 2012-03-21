@@ -1,15 +1,15 @@
 """Very simple storage server. Gets JSON messages via Zeromq and appends
-them to a file. A new file is used every hour.
+them to a file. A new file is used every 10 minutes.
 
 We don't call sync after every message to get the best bandwidth from the
-disk. Given that a new file is used every hour, if there is a problem, we
-lose only that hour of data. This is reliable enough for our purposes. The
-files are also created on-demand, so if there is no activity for a while,
-we don't get a ton of empty files.
+disk. Given that a new file is used every 10 minutes, if there is a
+problem, we lose only that 10 minutes of data. This is reliable enough for
+our purposes. The files are also created on-demand, so if there is no
+activity for a while, we don't get a ton of empty files.
 
-The files are stored in a different directory for each day. The date and
-hours are in the UTC timezone, to avoid problems when changing to or from
-daylight saving time.
+The files are stored in a different directory for each day. The date and 10
+minutes are in the UTC timezone, to avoid problems when changing to or
+from daylight saving time.
 
 To use more than one storage server on a single computer, pass them
 different root directories."""
@@ -17,19 +17,25 @@ different root directories."""
 import sys, os, datetime, errno, json, zmq, ConfigParser
 
 class OnDemandFile:
-    """Creates a new file on-demand every hour. Files are stored in
+    """Creates a new file on-demand every 10 minutes. Files are stored in
     directories named for the UTC date."""
+
+    # Time period for which the same file is used, in minutes.
+    time_period = 10
+
     def __init__(self, root_dir='.'):
         self.root_dir = root_dir
         self.f = None
         self.current_date = None
-        self.current_hour = None
+        self.current_time_period = None
 
     def _get_file(self):
+        # When the date doesn't equal self.current_date, or the time_period
+        # doesn't equal self.current_time_period, we create a new file.
         dt = datetime.datetime.utcnow()
         date = dt.date()
-        hour = dt.hour
-        
+        time_period = int((dt.hour * 60 + dt.minute) / self.time_period)
+
         if date != self.current_date:
             try:
                 os.mkdir(date.isoformat())
@@ -41,14 +47,16 @@ class OnDemandFile:
                 else:
                     raise
             self.current_date = date
-            
-        if hour != self.current_hour:
+
+        if time_period != self.current_time_period:
+            filename = '%dh-%02d-UTC.data' % (dt.hour, int(dt.minute / 10) * 10)
+
             if self.f is not None:
                 f.close()
             self.f = open(os.path.join(self.root_dir,
                                        self.current_date.isoformat(),
-                                       '%d.data' % hour), 'wt')
-            self.current_hour = hour
+                                       filename), 'wt')
+            self.current_time_period = time_period
 
         return self.f
         

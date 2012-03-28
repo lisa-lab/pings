@@ -54,7 +54,7 @@ class OnDemandFile:
             filename = '%dh-%02d-UTC.data' % (dt.hour, int(dt.minute / 10) * 10)
 
             if self.f is not None:
-                f.close()
+                self.f.close()
             self.f = open(os.path.join(self.root_dir,
                                        self.current_date.isoformat(),
                                        filename), 'at')

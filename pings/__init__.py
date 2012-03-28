@@ -1,7 +1,7 @@
 import ConfigParser
 import gevent.monkey
 from pyramid.config import Configurator
-from pings.resources import Root, init_storage_zmq, init_token_memcache
+from pings.resources import Root, init_storage_zmq, init_token_memcache, init_geoip
 
 def _get_config_list(config_parser, section, item_prefix):
     """Supports storing a list of items in a .ini file. Expects a
@@ -34,6 +34,7 @@ def main(global_config, **settings):
     # Load Pings-specific config.
     config_parser = ConfigParser.SafeConfigParser()
     config_parser.read(global_config['__file__'])
+    init_geoip()
     init_token_memcache(_get_config_list(config_parser, 'token_memcache', 'server_address'),
                         config_parser.getint('token_memcache', 'token_expiration_sec'))
     init_storage_zmq(_get_config_list(config_parser, 'storage_client', 'server_url'))

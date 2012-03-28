@@ -13,3 +13,6 @@ This code was tested under Python 2.7. We use Pyramid together with Gevent
 for the web server, memcache for the security tokens and Zeromq to send the
 results to a separate storage server, which takes care of writing them out
 to disk.
+
+You need to run the ``download_geoip_db`` script to download the free
+city-level GeoIP database from MaxMind before starting the server.

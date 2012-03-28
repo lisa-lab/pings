@@ -14,8 +14,10 @@ def get_pings(request):
     logger.debug('get_pings request: %s', request.POST)
     logger.debug('get_pings request client address: %s', request.client_addr)
 
+    ip_addresses = resources.get_pings()
     return {'token': resources.get_token(),
-            'pings': resources.get_pings()}
+            'pings': ip_addresses,
+            'geoip': resources.get_geoip_data(ip_addresses)}
 
 @view_config(route_name='submit_ping_results',
              renderer='json', request_method='POST')

@@ -15,12 +15,14 @@ gevent-zeromq==0.2.2
 greenlet==0.3.4
 ipaddr==2.1.10
 pastegevent==0.1
+pygeoip==0.2.2
 pyramid==1.2
 pyramid-debugtoolbar==0.9.9.1
 python-memcached==1.48
 pyzmq==2.1.11
 repoze.lru==0.4
 requests==0.10.6
+six==1.1.0
 translationstring==1.1
 venusian==1.0a3
 zope.component==3.12.0

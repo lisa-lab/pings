@@ -9,7 +9,7 @@ import java.net.*;
 
    FIXME: add hooks for certain information (roaming and internal IP addr)
 
-   @author   Steven Pigeon <pigeon@iro.umonteal.ca>
+   @author   Steven Pigeon <pigeon@iro.umontreal.ca>
    @version  0.5
    @since    2012-03   
 */

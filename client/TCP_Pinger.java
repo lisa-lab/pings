@@ -6,7 +6,7 @@ import java.text.*;
    specific port
 
 
-   @author   Steven Pigeon <pigeon@iro.umonteal.ca>
+   @author   Steven Pigeon <pigeon@iro.umontreal.ca>
    @version  0.5
    @since    2012-03
 */

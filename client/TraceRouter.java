@@ -5,7 +5,7 @@ import java.net.*;
 /**
    This class does the traceroute to a remote destination
 
-   @author   Steven Pigeon <pigeon@iro.umonteal.ca>
+   @author   Steven Pigeon <pigeon@iro.umontreal.ca>
    @version  0.5
    @since    2012-03
 */

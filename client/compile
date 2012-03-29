@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+javac external_command.java \
+      Client_Info.java \
+      Launcher.java \
+      ICMP_Pinger.java \
+      TCP_Pinger.java \
+      TraceRouter.java

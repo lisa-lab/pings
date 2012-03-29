@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+mkdir -p doc
+
+javadoc \
+    -private \
+    -d doc \
+    external_command.java \
+    Client_Info.java \
+    Launcher.java \
+    ICMP_Pinger.java \
+    TCP_Pinger.java \
+    TraceRouter.java

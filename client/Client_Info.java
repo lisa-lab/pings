@@ -1,12 +1,14 @@
 import java.util.*;
 import java.net.*;
+import java.util.prefs.Preferences;
 
 /**
    This class holds the configuration of the client, some elements of which
    are detected at launch, and where some others may be set through the
-   interface and stored in local storage (i.e., in a cookie).
+   interface and stored in local storage (in a context- and
+   implementation-specific fashion; possibly in a cookie).
 
-
+   <p>
    FIXME: add hooks for certain information (roaming and internal IP addr)
 
    @author   Steven Pigeon <pigeon@iro.umontreal.ca>
@@ -16,10 +18,20 @@ import java.net.*;
 public class Client_Info
  {
   /** 
+      Stores the preferences in a possibly persistent fashion
+  */
+  private Preferences prefs;
+
+  /** 
       Stores the detected OS
       @see Client_Info.OS_Type
   */
   private OS_Type this_os_type;
+
+  /**
+     Stores the user's nickname
+  */
+  private String nickname;
 
   /**
      Stores the address of the first network adapter
@@ -90,14 +102,18 @@ public class Client_Info
    };
 
   /** 
-      Enumerates the network adapters and picks the first one
-      as the (most probable) IP address/Adapter.
+      Finds the interface attached to a given (local) IP address.
+      
+      <p>It will need to be fixed later on. We guess that the first up and
+      non-loopback interface is the one used to access outside. While it
+      may be a cromulent first guess, it should be validated when actually
+      connecting to the server.
 
-      FIXME: deal with all kinds of weird variants such as machines that do
-      not enumerate adapters in a sane order, or try to find eth* or wlan*
-      or ... as good candidates.
+      @param filter finds the adapter that has this address. If null, it
+      will proceed to a complete detection of the (most probable) outbound
+      IP address
    */
-  public void detectInterface()
+  public void detectInterface(InetAddress filter)
    {
     // Mostly inspired from Oracle's example
     Enumeration<NetworkInterface> interfaces=null;
@@ -105,17 +121,52 @@ public class Client_Info
     catch (Exception e) { }
 
     if (interfaces!=null)
-     for (NetworkInterface interf : Collections.list(interfaces))
-      {
-       for (InetAddress addr : Collections.list(interf.getInetAddresses()))
-        if (addr instanceof Inet4Address)
+     {
+      if (filter==null)
+       {
+        // OK, we have no idea what address
+        // a connection may have, so let us
+        // guess the first up and non-loopback addr
+        //
+        for (NetworkInterface interf : Collections.list(interfaces))
          {
-          my_local_addr=addr;
+          boolean good=false;
+          try { good = interf.isUp() && !interf.isLoopback(); }
+          catch (Exception e) { }
+
+          if (good)
+           {
+            // find a v4 address
+            for (InetAddress addr : Collections.list(interf.getInetAddresses()))
+             if (addr instanceof Inet4Address)
+              {
+               my_local_addr=addr;
+               break;
+              }
+            my_adapter=interf.getDisplayName();
+            break;
+           }
+         }
+       }
+      else
+       {
+        // we have an address to match
+        // so, let's find which interface
+        // has it
+        for (NetworkInterface interf : Collections.list(interfaces))
+         {
+          for (InetAddress addr : Collections.list(interf.getInetAddresses()))
+           if ((addr instanceof Inet4Address) && 
+               addr.equals(filter))
+            {
+             my_local_addr=addr;
+             break;
+            }
+          my_adapter=interf.getDisplayName();
           break;
          }
-       my_adapter=interf.getDisplayName();
-       break;
-      }
+       }
+     }
     else
      {
       // FIXME: what now?
@@ -171,7 +222,7 @@ public class Client_Info
    else
     {
      // detect my IP v4 addr (the first one?)
-     detectInterface();
+     detectInterface(null);
      return my_local_addr;
     }
   }
@@ -197,6 +248,8 @@ public class Client_Info
      (it is detected while contacting the server
      so it is not known until the client tries to
      get its list of addresses to ping
+
+     @param addr an InetAddress
   */
   public void setExternalAddress(InetAddress addr)
    {
@@ -214,10 +267,21 @@ public class Client_Info
     return my_adapter;
    else
     {
-     detectInterface();
+     detectInterface(null);
      return my_adapter;
     }
   }
+
+  /**
+     @return the user's nickname or null if not set
+  */
+  public String getNickname() { return nickname; }
+
+  /**
+     Sets the user's nickname
+     @param new_nickname the new nickname
+  */
+  public void setNickname(String new_nickname) { nickname=new_nickname; } 
 
   /**
      @return the number of pings to perform
@@ -237,17 +301,49 @@ public class Client_Info
   */
   public int getTCPTimeOut() { return tcp_timeout; }
 
+
   /**
-     Default constructor
+     Loads preferences/sets defaults
   */
-  Client_Info()
+  public void loadPreferences()
   {
    this_os_type=OS_Type.NotDetected;
    my_local_addr=null;
    my_global_addr=null;
    my_adapter=null;
+   nickname=null;
    number_of_pings=10;
    number_of_traces=3;
    tcp_timeout = 1000; // in milliseconds
+   
+   this_os_type=getOS(); // detect and set
+   detectInterface(null); // detects and sets my_local_addr and my_adapter
+
+   
+   nickname=prefs.get("nickname",null);
+   System.out.println("nick is "+nickname);
+  }
+
+  /**
+     Saves preferences
+  */
+  public void savePreferences()
+  {
+   if (nickname!=null)
+    prefs.put("nickname",nickname);
+
+   // it is magically persistant on
+   // object destruction or something.
+   try { prefs.flush(); }
+   catch (Exception e) { e.printStackTrace(); }
+  }
+
+  /**
+     Default constructor
+  */
+  Client_Info()
+  {
+   prefs=Preferences.userRoot().node("pinger");//this.getClass().getName());
+   loadPreferences();
   }
  }

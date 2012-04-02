@@ -12,6 +12,9 @@ public class external_command
  {
   Client_Info this_client=new Client_Info();
 
+  if (this_client.getNickname()==null)
+   this_client.setNickname("DrMax");
+
   InetAddress my_local_addr=this_client.getAddress();
   InetAddress my_global_addr=null;
 
@@ -58,5 +61,8 @@ public class external_command
                         this_tcp_pinger.getLastPings());
 
    }
+
+  this_client.savePreferences();
  }
+
 }

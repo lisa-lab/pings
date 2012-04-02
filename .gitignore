@@ -1,9 +1,18 @@
+# Backup files
 *~
+
+# Python files
 *.pyc
 *.pyo
 build/
 dist/
 MANIFEST
 
+# Java files
+*.class
+
 # Ignore directories created by storage_server.
-20??-??-??/
+server/20??-??-??/
+
+# Don't add GeoIP data
+server/Geo*.dat

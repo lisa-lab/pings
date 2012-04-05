@@ -77,7 +77,7 @@ def init_geoip():
     to be located in the directory containing the 'pings' Python package."""
     global geoip
     geoip = pygeoip.GeoIP(os.path.join(os.path.dirname(__file__),
-                                       '..', 'GeoLiteCity.dat'),
+                                       '..', '..', 'GeoLiteCity.dat'),
                           pygeoip.MEMORY_CACHE)
 
 

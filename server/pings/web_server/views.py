@@ -3,7 +3,7 @@ import logging
 from pyramid.view import view_config
 from pyramid.httpexceptions import HTTPForbidden, HTTPBadRequest
 
-from pings import resources
+from pings.web_server import resources
 
 logger = logging.getLogger(__name__)
 

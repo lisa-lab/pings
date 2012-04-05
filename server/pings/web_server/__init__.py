@@ -1,8 +1,8 @@
 import ConfigParser
 import gevent.monkey
 from pyramid.config import Configurator
-from pings.resources import (Root, init_storage_zmq, init_token_memcache,
-                             init_geoip, init_rankings_zmq)
+from pings.web_server.resources import (Root, init_storage_zmq, init_token_memcache,
+                                        init_geoip, init_rankings_zmq)
 
 def _get_config_list(config_parser, section, item_prefix):
     """Supports storing a list of items in a .ini file. Expects a

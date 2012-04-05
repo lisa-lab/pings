@@ -11,6 +11,9 @@ MANIFEST
 # Java files
 *.class
 
+# Ignore Javadoc output directory for client.
+client/doc/
+
 # Ignore directories created by storage_server.
 server/20??-??-??/
 

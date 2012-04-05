@@ -19,7 +19,8 @@ def main():
     get_pings_url = server_url + 'get_pings'
     submit_ping_results_url = server_url + 'submit_ping_results'
 
-    r = requests.post(get_pings_url, data={'myip': '10.0.10.10'})
+    r = requests.post(get_pings_url,
+                      data=json.dumps({'myip': '10.0.10.10'}))
     json_results = json.loads(r.text)
     pprint(json_results)
     token = json_results['token']
@@ -32,7 +33,8 @@ def main():
                     'results': random.sample(pings,
                                              random.randrange(1, len(pings)))}
 
-    r = requests.post(submit_ping_results_url, data=ping_results)
+    r = requests.post(submit_ping_results_url,
+                      data=json.dumps(ping_results))
     print r.text[:300]
 
 if __name__ == '__main__':

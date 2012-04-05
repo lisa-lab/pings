@@ -1,2 +1,0 @@
-pyramid
-pyramid_debugtoolbar

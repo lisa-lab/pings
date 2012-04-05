@@ -7,6 +7,8 @@
 build/
 dist/
 MANIFEST
+*.egg-info/
+__pycache__/
 
 # Java files
 *.class

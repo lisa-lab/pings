@@ -6,6 +6,7 @@ PasteDeploy==1.5.0
 PasteScript==1.7.5
 Pygments==1.4
 WebOb==1.2b3
+WebTest==1.3.3
 bitarray==0.7.0
 certifi==0.0.8
 chardet==1.0.1
@@ -15,11 +16,14 @@ gevent-zeromq==0.2.2
 greenlet==0.3.4
 ipaddr==2.1.10
 pastegevent==0.1
+py==1.4.7
 pygeoip==0.2.2
 pyramid==1.2
 pyramid-debugtoolbar==0.9.9.1
+pytest==2.2.3
 python-memcached==1.48
 pyzmq==2.1.11
+redis==2.4.11
 repoze.lru==0.4
 requests==0.10.6
 six==1.1.0

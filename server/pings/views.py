@@ -24,14 +24,21 @@ def get_pings(request):
 def submit_ping_results(request):
     """Called by the client to submit the results of the addresses pinged."""
     logger.debug('submit_ping_results request: %s', request.POST)
-    
+
+    # Check that token is valid.
     token = request.POST.get('token')
     if not resources.check_token(token):
         raise HTTPForbidden('Invalid or absent token value.')
 
+    # Store results.
     results = request.POST.get('results')
     if results is None:
         raise HTTPBadRequest('No "results" field.')
     resources.store_results(results)
+        
+    # Update leaderboards if userid was passed.
+    userid = request.POST.get('userid')
+    if userid is not None:
+        resources.update_leaderboards(userid, results)
         
     return {'success': True}

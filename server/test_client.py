@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 
-import time, requests, json, optparse
+import time, requests, json, optparse, random
+from pprint import pprint
+
+possible_userids = ['foo'] * 3 + ['bar'] * 2 + ['baz']
+def choose_userid():
+    return random.choice(possible_userids)
+
 
 def main():
     option_parser = optparse.OptionParser()
@@ -15,13 +21,18 @@ def main():
 
     r = requests.post(get_pings_url, data={'myip': '10.0.10.10'})
     json_results = json.loads(r.text)
-    print json_results
+    pprint(json_results)
     token = json_results['token']
+    pings = json_results['pings']
 
     time.sleep(options.delay)
 
-    r = requests.post(submit_ping_results_url, data={'token': token,
-                                                     'results': 'xxx'})
+    ping_results = {'token': token,
+                    'userid': choose_userid(),
+                    'results': random.sample(pings,
+                                             random.randrange(1, len(pings)))}
+
+    r = requests.post(submit_ping_results_url, data=ping_results)
     print r.text[:300]
 
 if __name__ == '__main__':

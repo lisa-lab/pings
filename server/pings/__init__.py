@@ -1,7 +1,8 @@
 import ConfigParser
 import gevent.monkey
 from pyramid.config import Configurator
-from pings.resources import Root, init_storage_zmq, init_token_memcache, init_geoip
+from pings.resources import (Root, init_storage_zmq, init_token_memcache,
+                             init_geoip, init_rankings_zmq)
 
 def _get_config_list(config_parser, section, item_prefix):
     """Supports storing a list of items in a .ini file. Expects a
@@ -38,6 +39,9 @@ def main(global_config, **settings):
     init_token_memcache(_get_config_list(config_parser, 'token_memcache', 'server_address'),
                         config_parser.getint('token_memcache', 'token_expiration_sec'))
     init_storage_zmq(_get_config_list(config_parser, 'storage_client', 'server_url'))
+    init_rankings_zmq(config_parser.get('leaderboards_client', 'incr_scores_url'),
+                      config_parser.get('leaderboards_client', 'publish_leaderboards_url'))
+
     
     # Configure Pyramid app.
     config = Configurator(root_factory=Root, settings=settings)

@@ -27,18 +27,48 @@ def init_token_memcache(memcache_addresses, exptime):
     token_mc = memcache.Client(memcache_addresses)
     token_exptime = exptime
 
-# Zeromq for the connection to the storage_server.
-zmq_context = None
+#
+# Zeromq resources
+#
+    
+_zmq_context = None
+def get_zmq_context():
+    """Use this to retrieve the Zeromq context. It is created on demand if
+    needed."""
+    global _zmq_context
+    if _zmq_context is None:
+        _zmq_context = zmq.Context()
+    return _zmq_context
+
+
+# connection to the storage_server.
 zmq_send_results_socket = None
 
 def init_storage_zmq(zmq_urls):
-    global zmq_context, zmq_send_results_socket
-    zmq_context = zmq.Context()
-    zmq_send_results_socket = zmq_context.socket(zmq.PUSH)
+    global zmq_send_results_socket
+    zmq_send_results_socket = get_zmq_context().socket(zmq.PUSH)
 
     for url in zmq_urls:
         zmq_send_results_socket.connect(url)
 
+
+# Zeromq sockets for leaderboards server
+zmq_incr_score_socket = None
+zmq_publish_leaderboards_socket = None
+
+def init_rankings_zmq(incr_scores_url, publish_leaderboards_url):
+    global zmq_incr_score_socket, zmq_publish_leaderboards_socket
+
+    zmq_incr_score_socket = get_zmq_context().socket(zmq.PUSH)
+    zmq_incr_score_socket.connect(incr_scores_url)
+
+    zmq_publish_leaderboards_socket = get_zmq_context().socket(zmq.SUB)
+    zmq_publish_leaderboards_socket.connect(publish_leaderboards_url)
+
+#
+# GeoIP database
+#
+    
 # GeoIP object
 geoip = None
 
@@ -49,6 +79,7 @@ def init_geoip():
     geoip = pygeoip.GeoIP(os.path.join(os.path.dirname(__file__),
                                        '..', 'GeoLiteCity.dat'),
                           pygeoip.MEMORY_CACHE)
+
 
 #
 # Pyramid ressource class.
@@ -69,6 +100,7 @@ def get_token():
     token_mc.set(token, True, token_exptime)
     return token
 
+
 def check_token(token):
     """Checks that a given security token is still valid."""
     return True
@@ -76,14 +108,16 @@ def check_token(token):
         return False
     return token_mc.get(token) is not None
 
-def get_pings():
-    """Returns a list of IP addresses to be pinged. Currently we return up
-    to 15 random IPv4 addresses."""
+
+def get_pings(num_addresses=15):
+    """Returns a list (of length 'num_addresses') of IP addresses to be
+    pinged."""
     ip_addresses = []
     num_tries = 0
 
-    while len(ip_addresses) < 15 and num_tries < 100:
+    while len(ip_addresses) < num_addresses and num_tries < 100:
         num_tries += 1
+        # Create a random IPv4 address. Exclude 0.0.0.0 and 255.255.255.255.
         ip = ipaddr.IPv4Address(random.randint(1, 2**32-2))
 
         if not (ip.is_link_local or ip.is_loopback or ip.is_multicast or
@@ -91,6 +125,7 @@ def get_pings():
             ip_addresses.append(str(ip))
 
     return ip_addresses
+
 
 def get_geoip_data(ip_addresses):
     """When passed a list of IP addresses (as strings), returns a list of
@@ -123,6 +158,17 @@ def get_geoip_data(ip_addresses):
 
     logger.debug('GeoIP results: %s', results)
     return results
+
+
+def update_leaderboards(userid, results):
+    # Compute how many points the given results are worth.
+    # Placeholder code for now. We will do something a bit fancier.
+    points = len(results) * 100
+
+    # Send them to server.
+    zmq_incr_score_socket.send_json({'userid': userid,
+                                     'score_increment': points})
+
 
 def store_results(results):
     """Stores ping results. The results are sent via Zeromq to a

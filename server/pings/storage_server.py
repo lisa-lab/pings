@@ -14,7 +14,11 @@ from daylight saving time.
 To use more than one storage server on a single computer, pass them
 different root directories."""
 
-import sys, os, datetime, errno, json, zmq, ConfigParser
+import sys, os, datetime, errno, json, zmq, ConfigParser, logging
+from logging.config import fileConfig
+
+logger = logging.getLogger(__name__)
+
 
 class OnDemandFile:
     """Creates a new file on-demand every 10 minutes. Files are stored in
@@ -69,6 +73,7 @@ class OnDemandFile:
         f.write(msg)
         f.write('\n')
 
+
 def main():
     # Parse command line.
     if not (2 <= len(sys.argv) <= 3):
@@ -80,6 +85,9 @@ def main():
         root_dir = '.'
 
     config_filename = sys.argv[1]
+
+    # First configure logging
+    fileConfig(config_filename)
 
     # Load config file.
     config_parser = ConfigParser.SafeConfigParser()
@@ -103,3 +111,4 @@ def main():
     while True:
         msg = zmq_socket.recv_json()
         f.write_msg(json.dumps(msg))
+        logger.debug('Stored message: %s', msg)

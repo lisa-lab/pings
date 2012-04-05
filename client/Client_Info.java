@@ -22,16 +22,20 @@ public class Client_Info
   */
   private Preferences prefs;
 
+  /**
+     Stores this client's UUID
+  */
+  String my_uuid;
   /** 
       Stores the detected OS
       @see Client_Info.OS_Type
   */
-  private OS_Type this_os_type;
+  private OS_Type my_os_type;
 
   /**
      Stores the user's nickname
   */
-  private String nickname;
+  private String my_nickname;
 
   /**
      Stores the address of the first network adapter
@@ -182,8 +186,8 @@ public class Client_Info
    {
     // Does the detection once,
     // and caches the result.
-    if (this_os_type!=OS_Type.NotDetected)
-     return this_os_type;
+    if (my_os_type!=OS_Type.NotDetected)
+     return my_os_type;
     else
      {
       // let's detect the os.
@@ -193,18 +197,18 @@ public class Client_Info
       // FIXME: find the finer-grained
       // OS names.
       if ( os_name.compareTo("windows xp") ==0 )
-       this_os_type=OS_Type.WinXP;
+       my_os_type=OS_Type.WinXP;
       else if (os_name.compareTo("windows 7") ==0 ) // FIXME: cross-check
-       this_os_type=OS_Type.Win7;
+       my_os_type=OS_Type.Win7;
       else if (os_name.indexOf("win") >=0 )
-       this_os_type=OS_Type.WinOther; // nt 4? 2000? Vista? 8?
+       my_os_type=OS_Type.WinOther; // nt 4? 2000? Vista? 8?
       else if (os_name.compareTo("linux") == 0)
-       this_os_type=OS_Type.Linux; // Ubuntu? Recent? ???
+       my_os_type=OS_Type.Linux; // Ubuntu? Recent? ???
       else if (os_name.indexOf("bsd") >=0 )
-       this_os_type=OS_Type.BSD;
+       my_os_type=OS_Type.BSD;
       // add other OSes ... Solaris? OSX? ...DOS? :p
 
-      return this_os_type;
+      return my_os_type;
      }
    }
   
@@ -273,15 +277,23 @@ public class Client_Info
   }
 
   /**
+     The UUID is generated at first launch or read from the configuration
+     file if it already exists.
+     
+     @return the client's UUID
+  */
+  public String getUUID() { return my_uuid; }
+
+  /**
      @return the user's nickname or null if not set
   */
-  public String getNickname() { return nickname; }
+  public String getNickname() { return my_nickname; }
 
   /**
      Sets the user's nickname
      @param new_nickname the new nickname
   */
-  public void setNickname(String new_nickname) { nickname=new_nickname; } 
+  public void setNickname(String new_nickname) { my_nickname=new_nickname; } 
 
   /**
      @return the number of pings to perform
@@ -307,21 +319,25 @@ public class Client_Info
   */
   public void loadPreferences()
   {
-   this_os_type=OS_Type.NotDetected;
+   my_os_type=OS_Type.NotDetected;
    my_local_addr=null;
    my_global_addr=null;
    my_adapter=null;
-   nickname=null;
+   my_nickname=null;
+   my_uuid=null;
    number_of_pings=10;
    number_of_traces=3;
    tcp_timeout = 1000; // in milliseconds
    
-   this_os_type=getOS(); // detect and set
+   my_os_type=getOS(); // detect and set
    detectInterface(null); // detects and sets my_local_addr and my_adapter
 
    
-   nickname=prefs.get("nickname",null);
-   System.out.println("nick is "+nickname);
+   my_nickname=prefs.get("nickname",null);
+   System.out.println("nick is "+my_nickname);
+
+   my_uuid=prefs.get("uuid",UUID.randomUUID().toString());
+   System.out.println("uuid is "+my_uuid);
   }
 
   /**
@@ -329,8 +345,9 @@ public class Client_Info
   */
   public void savePreferences()
   {
-   if (nickname!=null)
-    prefs.put("nickname",nickname);
+   if (my_nickname!=null) 
+    prefs.put("nickname",my_nickname);
+   prefs.put("uuid",my_uuid);
 
    // it is magically persistant on
    // object destruction or something.

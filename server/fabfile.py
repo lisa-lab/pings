@@ -3,18 +3,22 @@ Web Services. Tested with Fabric 1.4.1."""
 
 import os.path
 from fabric.api import *
+from fabric.contrib.files import exists
 
+# Loads env.key_filename and env.roledefs settings.
 from fabconfig import *
+
 from setup import version as pings_version
 here = os.path.dirname(__file__)
 
-def pack():
+
+@task
+def prepare_source():
+    """Runs tests and packages the source."""
+    local('py.test')
     local('python setup.py sdist')
 
-def prepare_source():
-    local('py.test')
-    pack()
-
+@task
 def upload_source():
     """Uploads and unpacks the Pings server source code. Returns the remote
     path where the source was unpacked."""
@@ -33,6 +37,7 @@ def install_system_packages(package_list):
     update_system_packages_repos()
     sudo('apt-get install --assume-yes ' + ' '.join(package_list))
 
+@task
 def install_system_base_packages():
     """Installs system packages (i.e. .debs) used by all roles."""
     system_packages = ['libevent-dev', 'libzmq-dev',
@@ -40,6 +45,7 @@ def install_system_base_packages():
                        'python-dev', 'python-distribute', 'cython']
     install_system_packages(system_packages)
 
+@task
 def bootstrap_python_install():
     """Install system-wide Python packages that will allow the rest of the
     required Python packages to be installed via pip in a virtualenv."""
@@ -49,27 +55,37 @@ def bootstrap_python_install():
         sudo('python setup.py install')
     sudo('pip install virtualenv')
 
+@task
 def prepare_memcache_role():
+    """Setup a computer for the memcache server role."""
     install_system_packages(['memcached'])
 
+@task
 def prepare_leaderboard_role():
+    """Setup a computer for the leaderboard server role."""
     install_system_packages(['redis-server'])
 
+@task
 def prepare_host():
     """Install all system base packages, basic Python environment, etc."""
-    # TODO Remove ability to sudo without a password!
+    # TODO Remove ability to sudo without a password on remote host!
     install_system_base_packages()
     bootstrap_python_install()
 
+@task
 @roles('test')
 def prepare_test_host():
+    """Installs all required packages for all roles, to prepare a host for
+    being used as a test host."""
     prepare_host()
     prepare_memcache_role()
     prepare_leaderboard_role()
 
+@task
 @roles('test')
 def deploy_test():
-    """Installs everything on a single test server."""
+    """Installs everything on a single test server, able to run the development.ini file configuration.
+    Not to be used for deployment!"""
     prepare_source()
     pings_src_dir = upload_source()
 
@@ -77,8 +93,12 @@ def deploy_test():
     sudo('virtualenv --distribute /srv/pings_test')
     with cd('/srv/pings_test'):
         put('development.ini', '.', use_sudo=True)
-        # TODO Remove hardcoded python version in path. Don't upload file
-        # if it's already there.
-        put('GeoLiteCity.dat', '/srv/pings_test/local/lib/python2.7/site-packages', use_sudo=True)
+
+        # TODO Remove hardcoded python version in path.
+        with cd('/srv/pings_test/local/lib/python2.7/site-packages'):
+            geoip_filename = 'GeoLiteCity.dat'
+            if not exists(geoip_filename):
+                put(geoip_filename, '.', use_sudo=True)
+
         sudo('bin/pip install -r %s' % os.path.join(pings_src_dir, 'requirements.pip'))
         sudo('bin/pip install %s' % pings_src_dir)

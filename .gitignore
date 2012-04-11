@@ -21,3 +21,5 @@ server/20??-??-??/
 
 # Don't add GeoIP data
 server/Geo*.dat
+# Don't commit fabric local configuration
+server/fabconfig.py

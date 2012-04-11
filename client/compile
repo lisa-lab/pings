@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
-javac external_command.java \
+javac -classpath external_libs/json-simple-1.1.1.jar \
+      external_command.java \
       Client_Info.java \
+      ServerProxy.java \
       Launcher.java \
       ICMP_Pinger.java \
       TCP_Pinger.java \

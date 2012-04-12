@@ -100,5 +100,12 @@ def deploy_test():
             if not exists(geoip_filename):
                 put(geoip_filename, '.', use_sudo=True)
 
+        # Install all requirements.
         sudo('bin/pip install -r %s' % os.path.join(pings_src_dir, 'requirements.pip'))
-        sudo('bin/pip install %s' % pings_src_dir)
+
+        # Ignore dependencies. They are all in the requirements.pip file
+        # anyways, and we don't want the --force-reinstall option to
+        # reinstall all dependencies. Said --force-reinstall option is
+        # there so the version we have now is installed even if the version
+        # number wasn't bumped up (kinda handy during development).
+        sudo('bin/pip install --no-deps --force-reinstall %s' % pings_src_dir)

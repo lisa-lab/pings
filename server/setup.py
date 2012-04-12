@@ -30,6 +30,7 @@ if __name__ == '__main__':
           install_requires=requires,
           tests_require=requires,
           test_suite="pings",
+          scripts = ['leaderboards_server', 'storage_server'],
           entry_points = """\
           [paste.app_factory]
           main = pings.web_server:main

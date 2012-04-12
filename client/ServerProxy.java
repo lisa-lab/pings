@@ -4,6 +4,8 @@ import java.net.InetAddress;
 import java.io.*;
 
 import org.json.simple.JSONValue;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
 
 /** Interface to the Pings server.
  *  @todo Add methods to get addresses to ping, and to submit ping results.
@@ -13,12 +15,78 @@ import org.json.simple.JSONValue;
  */
 public class ServerProxy {
 
-    public ServerProxy(String server_hostname) {
-        m_server_hostname = server_hostname;
+    public static class Pings {
+        public InetAddress[] addresses;
+        public JSONObject[] geoip_info;
+        public String[] results;
+        public String token;
     }
 
-    /// The hostname for the Pings server.
+    public ServerProxy(String server_hostname) {
+        m_server_hostname = server_hostname;
+        m_server_port = 80;
+    }
+
+    public ServerProxy(String server_hostname, int server_port) {
+        m_server_hostname = server_hostname;
+        m_server_port = server_port;
+    }
+
+    /** Retrieves a list of addresses to ping. */
+    public Pings getPings(Client_Info client_info) throws IOException {
+        // Send request to server. Returns a dict with the following keys
+        // and values: "token" (a string), "pings" (a list of IP addresses),
+        // "geoip" (a list of dicts, one per IP address).
+        JSONObject json_result = (JSONObject)doJsonRequest("/get_pings", null);
+
+        // Parse out json_result.
+        Pings pings = new Pings();
+        pings.token = (String)json_result.get("token");
+
+        JSONArray addresses = (JSONArray)json_result.get("pings");
+        int num_addresses = addresses.size();
+        pings.addresses = new InetAddress[num_addresses];
+        for (int i = 0; i < num_addresses; i++) {
+            pings.addresses[i] = InetAddress.getByName((String)addresses.get(i));
+        }
+
+        JSONArray all_geoip_data = (JSONArray)json_result.get("geoip");
+        pings.geoip_info = new JSONObject[num_addresses];
+        if (all_geoip_data != null) {
+            for (int i = 0; i < num_addresses; i++) {
+                Object o = all_geoip_data.get(i);
+                if (o != null) {
+                    pings.geoip_info[i] = (JSONObject)o;
+                }
+                else
+                    pings.geoip_info[i] = null;
+            }
+        }
+
+        return pings;
+    }
+
+    /** Submits the ping results back to the server. */
+    public void submitResults(Client_Info client_info, Pings pings) throws IOException {
+        // Build JSON request, a dict with the following keys and values:
+        // "token" (a string... the same as return by getPings), "results"
+        // (a list of arbitrary JSON objects, one per ping), and optionally
+        // "userid" (a string).
+        JSONObject json_request = new JSONObject();
+        json_request.put("token", pings.token);
+        json_request.put("results", pings.results);
+        String nick = client_info.getNickname();
+        if (nick != null && nick.length() != 0)
+            json_request.put("userid", nick);
+
+        // Send request to server. Returns a constant (at least for now).
+        Object json_result = doJsonRequest("/submit_ping_results", json_request);
+    }
+
+    /// The hostname of the Pings server.
     private String m_server_hostname;
+    /// The port of the Pings server.
+    private int m_server_port;
     private static final String CHARSET = "UTF-8";
 
     /** Sends a JSON object via POST to the given request URL path. Returns the
@@ -28,9 +96,11 @@ public class ServerProxy {
         String json_request = JSONValue.toJSONString(content);
 
         // Open connection to URL.
-        URL server_url = new URL("http", m_server_hostname, request_path);
+        URL server_url = new URL("http", m_server_hostname, m_server_port,
+                                 request_path);
 
         HttpURLConnection connection = (HttpURLConnection)server_url.openConnection();
+        connection.setDoOutput(true);
         connection.setRequestMethod("POST");
         connection.setRequestProperty("Accept-Charset", CHARSET);
         connection.setRequestProperty("Content-Type", "application/json;charset=" + CHARSET);

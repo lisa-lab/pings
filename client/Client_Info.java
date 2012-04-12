@@ -358,7 +358,7 @@ public class Client_Info
   /**
      Default constructor
   */
-  Client_Info()
+  public Client_Info()
   {
    prefs=Preferences.userRoot().node("pinger");//this.getClass().getName());
    loadPreferences();

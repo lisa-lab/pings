@@ -12,355 +12,332 @@ import java.util.prefs.Preferences;
    FIXME: add hooks for certain information (roaming and internal IP addr)
 
    @author   Steven Pigeon <pigeon@iro.umontreal.ca>
-   @version  0.5
-   @since    2012-03   
 */
-public class ClientInfo
- {
-  /** 
-      Stores the preferences in a possibly persistent fashion
-  */
-  private Preferences prefs;
+public class ClientInfo {
+    /** 
+        Stores the preferences in a possibly persistent fashion
+    */
+    private Preferences m_prefs;
 
-  /**
-     Stores this client's UUID
-  */
-  String my_uuid;
-  /** 
-      Stores the detected OS
-      @see ClientInfo.OS_Type
-  */
-  private OS_Type my_os_type;
+    /**
+       Stores this client's UUID
+    */
+    String m_uuid;
+    /** 
+        Stores the detected OS
+        @see ClientInfo.OSType
+    */
+    private OSType m_os_type;
 
-  /**
-     Stores the user's nickname
-  */
-  private String my_nickname;
+    /**
+       Stores the user's nickname
+    */
+    private String m_nickname;
 
-  /**
-     Stores the address of the first network adapter
-     FIXME: make sure it is indeed the adapter used
-  */
-  private InetAddress my_local_addr;
+    /**
+       Stores the address of the first network adapter
+       FIXME: make sure it is indeed the adapter used
+    */
+    private InetAddress m_local_addr;
 
-  /**
-     Stores the global address of the client, as
-     seen from "outside" its local network
+    /**
+       Stores the global address of the client, as
+       seen from "outside" its local network
 
-     FIXME: needs an accessor to set it after getting it from server
-  */
-  private InetAddress my_global_addr;
+       FIXME: needs an accessor to set it after getting it from server
+    */
+    private InetAddress m_global_addr;
 
-  /**
-     Stores the name of the first adapter
-     FIXME: make sure it is indeed the adapter used
-  */
-  private String my_adapter;
+    /**
+       Stores the name of the first adapter
+       FIXME: make sure it is indeed the adapter used
+    */
+    private String m_adapter;
 
-  /**
-     Holds the number of pings to perform
-  */
-  private int number_of_pings;
+    /**
+       Holds the number of pings to perform
+    */
+    private int m_number_of_pings;
 
-  /**
-     Holds the number of pings per hop in traceroute. Because of the
-     limitations of lovely Windows (XP), this should be 3, always.
-  */
-  private int number_of_traces;
+    /**
+       Holds the number of pings per hop in traceroute. Because of the
+       limitations of lovely Windows (XP), this should be 3, always.
+    */
+    private int m_number_of_traces;
 
-  /**
-     Time Out, in milliseconds, for TCP Ping. If a connection does not
-     answer within tcp_timeout milliseconds, it times out and is reported
-     as such.
-  */
-  private int tcp_timeout;
+    /**
+       Time Out, in milliseconds, for TCP Ping. If a connection does not
+       answer within m_tcp_timeout milliseconds, it times out and is reported
+       as such.
+    */
+    private int m_tcp_timeout;
 
-  /**
-     List the supported OSes.
-  */
-  public enum OS_Type
-   {
-    /** not detected yet */
-    NotDetected,
-    
-    /** A Linux distribution */
-    Linux,
+    /**
+       List the supported OSes.
+    */
+    public enum OSType {
+        /** not detected yet */
+        NotDetected,
+            
+        /** A Linux distribution */
+        Linux,
 
-    /** A variant of BSD */
-    BSD,
-
-    /** Apple's OS X */
-    OSX,
-
-    /** Windows XP */
-    WinXP,
-
-    /** Windows 7 */
-    Win7,
-
-    /** Windows 2000, Windows NT, Win6, Win8 */
-    WinOther,
-
-    /** Some other OS we haven't planned for yet */
-    Unsupported
-   };
-
-  /** 
-      Finds the interface attached to a given (local) IP address.
+        /** A variant of BSD */
+        BSD,
       
-      <p>It will need to be fixed later on. We guess that the first up and
-      non-loopback interface is the one used to access outside. While it
-      may be a cromulent first guess, it should be validated when actually
-      connecting to the server.
+        /** Apple's OS X */
+        OSX,
+      
+        /** Windows XP */
+        WinXP,
+      
+        /** Windows 7 */
+        Win7,
+      
+        /** Windows 2000, Windows NT, Win6, Win8 */
+        WinOther,
+      
+        /** Some other OS we haven't planned for yet */
+        Unsupported
+    };
+      
+    /** 
+         Finds the interface attached to a given (local) IP address.
+      
+        <p>It will need to be fixed later on. We guess that the first up and
+        non-loopback interface is the one used to access outside. While it
+        may be a cromulent first guess, it should be validated when actually
+        connecting to the server.
 
-      @param filter finds the adapter that has this address. If null, it
-      will proceed to a complete detection of the (most probable) outbound
-      IP address
-   */
-  public void detectInterface(InetAddress filter)
-   {
-    // Mostly inspired from Oracle's example
-    Enumeration<NetworkInterface> interfaces=null;
-    try { interfaces = NetworkInterface.getNetworkInterfaces(); }
-    catch (Exception e) { }
+        @param filter finds the adapter that has this address. If null, it
+        will proceed to a complete detection of the (most probable) outbound
+        IP address
+    */
+    public void detectInterface(InetAddress filter) {
+        // Mostly inspired from Oracle's example
+        Enumeration<NetworkInterface> interfaces = null;
+        try {
+            interfaces = NetworkInterface.getNetworkInterfaces();
+        }
+        catch (Exception e) { }
 
-    if (interfaces!=null)
-     {
-      if (filter==null)
-       {
-        // OK, we have no idea what address
-        // a connection may have, so let us
-        // guess the first up and non-loopback addr
-        //
-        for (NetworkInterface interf : Collections.list(interfaces))
-         {
-          boolean good=false;
-          try { good = interf.isUp() && !interf.isLoopback(); }
-          catch (Exception e) { }
-
-          if (good)
-           {
-            // find a v4 address
-            for (InetAddress addr : Collections.list(interf.getInetAddresses()))
-             if (addr instanceof Inet4Address)
-              {
-               my_local_addr=addr;
-               break;
-              }
-            my_adapter=interf.getDisplayName();
-            break;
-           }
-         }
-       }
-      else
-       {
-        // we have an address to match
-        // so, let's find which interface
-        // has it
-        for (NetworkInterface interf : Collections.list(interfaces))
-         {
-          for (InetAddress addr : Collections.list(interf.getInetAddresses()))
-           if ((addr instanceof Inet4Address) && 
-               addr.equals(filter))
-            {
-             my_local_addr=addr;
-             break;
+        if (interfaces != null) {
+            if (filter == null) {
+                // OK, we have no idea what address a connection may have,
+                // so let us guess the first up and non-loopback addr
+                //
+                for (NetworkInterface interf : Collections.list(interfaces)) {
+                    boolean good = false;
+                    try {
+                        good = interf.isUp() && !interf.isLoopback();
+                    }
+                    catch (Exception e) { }
+                    
+                    if (good) {
+                        // find a v4 address
+                        for (InetAddress addr : Collections.list(interf.getInetAddresses()))
+                            if (addr instanceof Inet4Address) {
+                                m_local_addr = addr;
+                                break;
+                            }
+                        m_adapter = interf.getDisplayName();
+                        break;
+                    }
+                }
             }
-          my_adapter=interf.getDisplayName();
-          break;
-         }
-       }
-     }
-    else
-     {
-      // FIXME: what now?
-     }
-   }
+            else {
+                // We have an address to match so, let's find which
+                // interface has it
+                for (NetworkInterface interf : Collections.list(interfaces)) {
+                    for (InetAddress addr : Collections.list(interf.getInetAddresses()))
+                        if ((addr instanceof Inet4Address) && 
+                            addr.equals(filter)) {
+                            m_local_addr = addr;
+                            break;
+                        }
+                    m_adapter=interf.getDisplayName();
+                    break;
+                }
+            }
+        }
+        else {
+            // FIXME: what now?
+        }
+    }
 
-  /**
-     Detects and caches the OS
-     @return the detected OS
-     @see ClientInfo.OS_Type
-  */
-  public OS_Type getOS()
-   {
-    // Does the detection once,
-    // and caches the result.
-    if (my_os_type!=OS_Type.NotDetected)
-     return my_os_type;
-    else
-     {
-      // let's detect the os.
-      String os_name=System.getProperty("os.name").toLowerCase();
-      //System.out.println(os_name);
+    /**
+       Detects and caches the OS
+       @return the detected OS
+       @see ClientInfo.OSType
+    */
+    public OSType getOS() {
+        // Does the detection once, and caches the result.
+        if (m_os_type != OSType.NotDetected)
+            return m_os_type;
+        else {
+            // let's detect the os.
+            String os_name = System.getProperty("os.name").toLowerCase();
 
-      // FIXME: find the finer-grained
-      // OS names.
-      if ( os_name.compareTo("windows xp") ==0 )
-       my_os_type=OS_Type.WinXP;
-      else if (os_name.compareTo("windows 7") ==0 ) // FIXME: cross-check
-       my_os_type=OS_Type.Win7;
-      else if (os_name.indexOf("win") >=0 )
-       my_os_type=OS_Type.WinOther; // nt 4? 2000? Vista? 8?
-      else if (os_name.compareTo("linux") == 0)
-       my_os_type=OS_Type.Linux; // Ubuntu? Recent? ???
-      else if (os_name.indexOf("bsd") >=0 )
-       my_os_type=OS_Type.BSD;
-      // add other OSes ... Solaris? OSX? ...DOS? :p
-
-      return my_os_type;
-     }
-   }
+            // FIXME: find the finer-grained
+            // OS names.
+            if (os_name.compareTo("windows xp") == 0)
+                m_os_type=OSType.WinXP;
+            else if (os_name.compareTo("windows 7") == 0) // FIXME: cross-check
+                m_os_type=OSType.Win7;
+            else if (os_name.indexOf("win") >=0)
+                m_os_type=OSType.WinOther; // nt 4? 2000? Vista? 8?
+            else if (os_name.compareTo("linux") == 0)
+                m_os_type=OSType.Linux; // Ubuntu? Recent? ???
+            else if (os_name.indexOf("bsd") >=0)
+                m_os_type=OSType.BSD;
+            // add other OSes ... Solaris? OSX? ...DOS? :p
+            
+            return m_os_type;
+        }
+    }
   
-  /**
-     Returns the local address (as detected by the first adapter)
+    /**
+       Returns the local address (as detected by the first adapter)
 
-     @see ClientInfo#detectInterface
+       @see ClientInfo#detectInterface
 
-     @return an InetAddress
-  */
-  public InetAddress getAddress()
-  {
-   if (my_local_addr!=null)
-    return my_local_addr;
-   else
-    {
-     // detect my IP v4 addr (the first one?)
-     detectInterface(null);
-     return my_local_addr;
+       @return an InetAddress
+    */
+    public InetAddress getAddress() {
+        if (m_local_addr!=null)
+            return m_local_addr;
+        else {
+            // detect my IP v4 addr (the first one?)
+            detectInterface(null);
+            return m_local_addr;
+        }
     }
-  }
 
-  /**
-     Return the global address (as seen from
-     the outside world)
+    /**
+       Return the global address (as seen from
+       the outside world)
 
-     @return an InetAddress
-  */
-  public InetAddress getExternalAddress() throws RuntimeException
-   {
-    // FIXME: get external address from
-    // service (or cookie (or...))
-    if (my_global_addr!=null)
-     return my_global_addr;
-    else
-     throw new RuntimeException("External address not set");
-   }
-
-  /**
-     Sets the external address for this client
-     (it is detected while contacting the server
-     so it is not known until the client tries to
-     get its list of addresses to ping
-
-     @param addr an InetAddress
-  */
-  public void setExternalAddress(InetAddress addr)
-   {
-    my_global_addr=addr;
-   }
-
-  /**
-     Detects the (most probable) adapter for this client
-
-     @return the adapter name
-  */
-  public String getInterface()
-  {
-   if (my_adapter!=null)
-    return my_adapter;
-   else
-    {
-     detectInterface(null);
-     return my_adapter;
+       @return an InetAddress
+    */
+    public InetAddress getExternalAddress() throws RuntimeException {
+        // FIXME: get external address from
+        // service (or cookie (or...))
+        if (m_global_addr != null)
+            return m_global_addr;
+        else
+            throw new RuntimeException("External address not set");
     }
-  }
 
-  /**
-     The UUID is generated at first launch or read from the configuration
-     file if it already exists.
+    /**
+       Sets the external address for this client
+       (it is detected while contacting the server
+       so it is not known until the client tries to
+       get its list of addresses to ping
+
+       @param addr an InetAddress
+    */
+    public void setExternalAddress(InetAddress addr) {
+        m_global_addr = addr;
+    }
+
+    /**
+       Detects the (most probable) adapter for this client
+
+       @return the adapter name
+    */
+    public String getInterface() {
+        if (m_adapter != null)
+            return m_adapter;
+        else {
+            detectInterface(null);
+            return m_adapter;
+        }
+    }
+
+    /**
+       The UUID is generated at first launch or read from the configuration
+       file if it already exists.
      
-     @return the client's UUID
-  */
-  public String getUUID() { return my_uuid; }
+       @return the client's UUID
+    */
+    public String getUUID() { return m_uuid; }
 
-  /**
-     @return the user's nickname or null if not set
-  */
-  public String getNickname() { return my_nickname; }
+    /**
+       @return the user's nickname or null if not set
+    */
+    public String getNickname() { return m_nickname; }
 
-  /**
-     Sets the user's nickname
-     @param new_nickname the new nickname
-  */
-  public void setNickname(String new_nickname) { my_nickname=new_nickname; } 
+    /**
+       Sets the user's nickname
+       @param new_nickname the new nickname
+    */
+    public void setNickname(String new_nickname) { m_nickname = new_nickname; } 
 
-  /**
-     @return the number of pings to perform
-  */
-  public int getNumberOfPings() { return number_of_pings; }
+    /**
+       @return the number of pings to perform
+    */
+    public int getNumberOfPings() { return m_number_of_pings; }
 
-  /**
-     The number of pings per hops is, for OS-specific reasons,
-     fixed to the default of 3
+    /**
+       The number of pings per hops is, for OS-specific reasons,
+       fixed to the default of 3
 
-     @return the number of pings per hops
-  */
-  public int getNumberOfTraces() { return number_of_traces; }
+       @return the number of pings per hops
+    */
+    public int getNumberOfTraces() { return m_number_of_traces; }
 
-  /**
-     @return the time in millisecond to wait before TCP_Ping times out
-  */
-  public int getTCPTimeOut() { return tcp_timeout; }
+    /**
+       @return the time in millisecond to wait before TCP_Ping times out
+    */
+    public int getTCPTimeOut() { return m_tcp_timeout; }
 
 
-  /**
-     Loads preferences/sets defaults
-  */
-  public void loadPreferences()
-  {
-   my_os_type=OS_Type.NotDetected;
-   my_local_addr=null;
-   my_global_addr=null;
-   my_adapter=null;
-   my_nickname=null;
-   my_uuid=null;
-   number_of_pings=10;
-   number_of_traces=3;
-   tcp_timeout = 1000; // in milliseconds
+    /**
+       Loads preferences/sets defaults
+    */
+    public void loadPreferences() {
+        m_os_type = OSType.NotDetected;
+        m_local_addr = null;
+        m_global_addr = null;
+        m_adapter = null;
+        m_nickname = null;
+        m_uuid = null;
+        m_number_of_pings = 10;
+        m_number_of_traces = 3;
+        m_tcp_timeout = 1000; // In milliseconds
    
-   my_os_type=getOS(); // detect and set
-   detectInterface(null); // detects and sets my_local_addr and my_adapter
-
+        m_os_type = getOS(); // Detect and set
+        detectInterface(null); // Detects and sets m_local_addr and m_adapter
    
-   my_nickname=prefs.get("nickname",null);
-   System.out.println("nick is "+my_nickname);
+        m_nickname = m_prefs.get("nickname", null);
+        System.out.println("nick is " + m_nickname);
 
-   my_uuid=prefs.get("uuid",UUID.randomUUID().toString());
-   System.out.println("uuid is "+my_uuid);
-  }
+        m_uuid = m_prefs.get("uuid", UUID.randomUUID().toString());
+        System.out.println("uuid is " + m_uuid);
+    }
 
-  /**
-     Saves preferences
-  */
-  public void savePreferences()
-  {
-   if (my_nickname!=null) 
-    prefs.put("nickname",my_nickname);
-   prefs.put("uuid",my_uuid);
+    /**
+       Saves preferences
+    */
+    public void savePreferences() {
+        if (m_nickname != null) 
+            m_prefs.put("nickname", m_nickname);
+        
+        m_prefs.put("uuid", m_uuid);
 
-   // it is magically persistant on
-   // object destruction or something.
-   try { prefs.flush(); }
-   catch (Exception e) { e.printStackTrace(); }
-  }
+        // it is magically persistant on
+        // object destruction or something.
+        try {
+            m_prefs.flush();
+        }
+        catch (Exception e) { e.printStackTrace(); }
+    }
 
-  /**
-     Default constructor
-  */
-  public ClientInfo()
-  {
-   prefs=Preferences.userRoot().node("pinger");//this.getClass().getName());
-   loadPreferences();
-  }
- }
+    /**
+       Default constructor
+    */
+    public ClientInfo() {
+        m_prefs = Preferences.userRoot().node("pinger");
+        loadPreferences();
+    }
+}

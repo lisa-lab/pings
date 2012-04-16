@@ -6,11 +6,11 @@ import java.net.*;
 // to examplify how to use the various
 // pingers and the expected format
 //
-public class external_command
+public class TestPingers
 {
  public static void main(String args[])
  {
-  Client_Info this_client=new Client_Info();
+  ClientInfo this_client=new ClientInfo();
 
   if (this_client.getNickname()==null)
    this_client.setNickname("bobafett");
@@ -33,8 +33,8 @@ public class external_command
 
   if (target!=null)
    {
-    TCP_Pinger this_tcp_pinger=new TCP_Pinger(this_client);
-    ICMP_Pinger this_pinger=new ICMP_Pinger(this_client);
+    TcpPinger this_tcp_pinger=new TcpPinger(this_client);
+    IcmpPinger this_pinger=new IcmpPinger(this_client);
     TraceRouter this_router=new TraceRouter(this_client);
 
     String text_local_addr = my_local_addr.toString().split("/")[1];

@@ -33,7 +33,7 @@ public class ServerProxy {
     }
 
     /** Retrieves a list of addresses to ping. */
-    public Pings getPings(Client_Info client_info) throws IOException {
+    public Pings getPings(ClientInfo client_info) throws IOException {
         // Send request to server. Returns a dict with the following keys
         // and values: "token" (a string), "pings" (a list of IP addresses),
         // "geoip" (a list of dicts, one per IP address).
@@ -67,7 +67,7 @@ public class ServerProxy {
     }
 
     /** Submits the ping results back to the server. */
-    public void submitResults(Client_Info client_info, Pings pings) throws IOException {
+    public void submitResults(ClientInfo client_info, Pings pings) throws IOException {
         // Build JSON request, a dict with the following keys and values:
         // "token" (a string... the same as return by getPings), "results"
         // (a list of arbitrary JSON objects, one per ping), and optionally

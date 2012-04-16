@@ -11,20 +11,20 @@ import java.net.*;
    @version  0.5
    @since    2012-03
 */
-public class ICMP_Pinger
+public class IcmpPinger
 {
  /** Holds the last collected times */
  private String icmp_times;
 
- /** A reference to Client_Info */
- private Client_Info info;
+ /** A reference to ClientInfo */
+ private ClientInfo info;
 
  /** Describes OS-specific commands for external ping command */
  private static final String[][] os_specific_command=
  {
   // the number of pings paramater must be LAST
   // because it is appended at run-time using
-  // Client_Info.getNumberOfPings()
+  // ClientInfo.getNumberOfPings()
   //
   {"ping","-w","30","-W","2","-c"}, // Linux
   {"ping","-c"}, // BSD, OSX ?
@@ -87,8 +87,8 @@ public class ICMP_Pinger
     occured, getLastPings() is undefined (may contain previous call's
     values).
 
-    @see   ICMP_Pinger#getLastPings()
-    @see   ICMP_Pinger#clearPings()
+    @see   IcmpPinger#getLastPings()
+    @see   IcmpPinger#clearPings()
     @param addr The address to ping
 
     @return The external command return code
@@ -168,11 +168,11 @@ public class ICMP_Pinger
  }
 
  /**
-    Creates an ICMP_Pinger (linked to a Client_Info configuration)
-    @param this_info A reference to a Client_Info
-    @see Client_Info
+    Creates an IcmpPinger (linked to a ClientInfo configuration)
+    @param this_info A reference to a ClientInfo
+    @see ClientInfo
  */
- public ICMP_Pinger(Client_Info this_info)
+ public IcmpPinger(ClientInfo this_info)
   {
    icmp_times="";
    info=this_info;

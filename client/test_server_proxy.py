@@ -1,6 +1,6 @@
 """Code snippet to test the Java ServerProxy interface to the Pings server."""
 
-import ServerProxy, Client_Info
+import ServerProxy, ClientInfo
 
 sp = ServerProxy('localhost', 6543)
 
@@ -11,7 +11,7 @@ if False:
     print r
 
 print
-info = Client_Info()
+info = ClientInfo()
 pings = sp.getPings(info)
 print pings.token
 print pings.addresses[0]

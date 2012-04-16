@@ -14,15 +14,15 @@ public class TraceRouter
  /** Holds the last collected trace */
  private String trace_times;
 
- /** A reference to Client_Info */
- private Client_Info info;
+ /** A reference to ClientInfo */
+ private ClientInfo info;
 
  /** Describes the OS-Specific traceroute commands */
  private static final String[][] os_specific_command=
  {
   // number of query per hops must remain the
   // LAST parameter because it is appended using
-  // Client_Info.getNumberOfTraces()
+  // ClientInfo.getNumberOfTraces()
   //
   // (except for windows XP, which doesn't take
   // this argument)
@@ -115,7 +115,7 @@ public class TraceRouter
   for (String s : specific_command)
    command.add(s); // copy the params
 
-  if (info.getOS()!=Client_Info.OS_Type.WinXP)
+  if (info.getOS()!=ClientInfo.OS_Type.WinXP)
    // except for windows xp?
    // FIXME: other Windows version?
    command.add(Integer.toString(info.getNumberOfTraces()));
@@ -165,11 +165,11 @@ public class TraceRouter
  }
 
  /**
-    Creates a TraceRouter (linked to a Client_Info configuration)
-    @param this_info A reference to a Client_Info
-    @see Client_Info
+    Creates a TraceRouter (linked to a ClientInfo configuration)
+    @param this_info A reference to a ClientInfo
+    @see ClientInfo
  */
- public TraceRouter(Client_Info this_info)
+ public TraceRouter(ClientInfo this_info)
  {
   trace_times="";
   info=this_info;

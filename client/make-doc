@@ -5,9 +5,9 @@ mkdir -p doc
 javadoc \
     -private \
     -d doc \
-    external_command.java \
-    Client_Info.java \
+    ServerProxy.java \
+    ClientInfo.java \
     Launcher.java \
-    ICMP_Pinger.java \
-    TCP_Pinger.java \
+    IcmpPinger.java \
+    TcpPinger.java \
     TraceRouter.java

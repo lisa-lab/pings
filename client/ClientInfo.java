@@ -15,7 +15,7 @@ import java.util.prefs.Preferences;
    @version  0.5
    @since    2012-03   
 */
-public class Client_Info
+public class ClientInfo
  {
   /** 
       Stores the preferences in a possibly persistent fashion
@@ -28,7 +28,7 @@ public class Client_Info
   String my_uuid;
   /** 
       Stores the detected OS
-      @see Client_Info.OS_Type
+      @see ClientInfo.OS_Type
   */
   private OS_Type my_os_type;
 
@@ -180,7 +180,7 @@ public class Client_Info
   /**
      Detects and caches the OS
      @return the detected OS
-     @see Client_Info.OS_Type
+     @see ClientInfo.OS_Type
   */
   public OS_Type getOS()
    {
@@ -215,7 +215,7 @@ public class Client_Info
   /**
      Returns the local address (as detected by the first adapter)
 
-     @see Client_Info#detectInterface
+     @see ClientInfo#detectInterface
 
      @return an InetAddress
   */
@@ -358,7 +358,7 @@ public class Client_Info
   /**
      Default constructor
   */
-  public Client_Info()
+  public ClientInfo()
   {
    prefs=Preferences.userRoot().node("pinger");//this.getClass().getName());
    loadPreferences();

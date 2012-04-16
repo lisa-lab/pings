@@ -10,13 +10,13 @@ import java.text.*;
    @version  0.5
    @since    2012-03
 */
-public class TCP_Pinger
+public class TcpPinger
  {
   /** Holds the last collected times */
   private String tcp_times;
 
-  /** A reference to Client_Info */
-  private Client_Info info;
+  /** A reference to ClientInfo */
+  private ClientInfo info;
 
   /**
      Returns the last collected times as a String.
@@ -54,8 +54,8 @@ public class TCP_Pinger
      fails rapidly, * (without time, just * alone) if it timed out, and
      prefixed by ? if some other error occured
 
-    @see   TCP_Pinger#getLastPings()
-    @see   TCP_Pinger#clearPings()
+    @see   TcpPinger#getLastPings()
+    @see   TcpPinger#clearPings()
     @param addr The address to ping
     @param port The port to ping
 
@@ -109,11 +109,11 @@ public class TCP_Pinger
    }
 
   /**
-     Creates a TCP_Pinger (linked to a Client_Info configuration)
-     @param this_info A reference to a Client_Info
-     @see Client_Info
+     Creates a TcpPinger (linked to a ClientInfo configuration)
+     @param this_info A reference to a ClientInfo
+     @see ClientInfo
   */
-  public TCP_Pinger(Client_Info this_info )
+  public TcpPinger(ClientInfo this_info )
    {
     tcp_times="";
     info=this_info;

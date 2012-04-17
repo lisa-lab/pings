@@ -12,7 +12,7 @@ server allows us to decouple these two parts and have the main server
 continue working at serving pings requests and results even if the
 leaderboards server has trouble keeping up under load."""
 
-import sys, json, zmq, ConfigParser, logging, errno
+import sys, json, zmq, ConfigParser, logging, errno, redis
 from logging.config import fileConfig
 
 
@@ -21,6 +21,9 @@ class SimpleLeaderboard:
     leaderboard. Not means to be used in production!"""
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.leaderboard = {}
 
     def incr_score(self, userid, score_increment):
@@ -40,6 +43,29 @@ class SimpleLeaderboard:
         return list(reversed(all_scores[-num_entries_to_return:]))
     
 
+class RedisLeaderboard:
+    """Leaderboard that uses Redis as a backend."""
+
+    leaderboard_name = 'leaderboard'
+
+    def __init__(self, hostname='localhost', port=6379):
+        self.redis_server = redis.StrictRedis(hostname, port)
+
+    def reset(self):
+        self.redis_server.delete(self.leaderboard_name)
+
+    def incr_score(self, userid, score_increment):
+        self.redis_server.zincrby(self.leaderboard_name, userid, score_increment)
+
+    def get_top_scores(self, num_top_entries):
+        if num_top_entries == 0:
+            return []
+        else:
+            return self.redis_server.zrevrange(self.leaderboard_name,
+                                               0, num_top_entries-1,
+                                               withscores=True, score_cast_func = int)
+
+
 def main():
     # Parse command line.
     if len(sys.argv) != 2:
@@ -58,6 +84,7 @@ def main():
     config_parser.read(config_filename)
     config_section = 'leaderboards_server'
 
+    backend_type = config_parser.get(config_section, 'backend')
     incr_scores_port = config_parser.getint(config_section, 'incr_scores_port')
     publish_leaderboards_port = config_parser.getint(config_section, 'publish_leaderboards_port')
     localhost_only = config_parser.getboolean(config_section, 'localhost_only')
@@ -81,8 +108,10 @@ def main():
     else:
         zmq_publish_leaderboards_socket.bind('tcp://*:%d' % publish_leaderboards_port)
 
-    # Do the work
-    leaderboard = SimpleLeaderboard()
+    # Instantiate the backend.
+    leaderboard = globals()[backend_type.capitalize() + 'Leaderboard']()
+
+    # Process events.
     while True:
         if zmq_incr_score_socket.poll(1000) != 0:
             while True:

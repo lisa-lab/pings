@@ -1,13 +1,11 @@
-from pings.leaderboards_server import SimpleLeaderboard
+import subprocess
+
+from pings.leaderboards_server import *
 
 class LeaderboardTester:
     """Unit tests for leaderboard classes. To use, create a derived class
-    and set leaderboard_class to the class you want to test."""
-    leaderboard_class = None
-
-    @classmethod
-    def get_new_leaderboard_instance(cls):
-        return cls.leaderboard_class()
+    and override the get_new_leaderboard_instance classmethod to return
+    an instance of the leaderboard class you want to test."""
 
     def test_more_entries_requested_than_in_leaderboard(self):
         lb = self.get_new_leaderboard_instance()
@@ -19,6 +17,15 @@ class LeaderboardTester:
     
     def test_empty_leaderboard(self):
         lb = self.get_new_leaderboard_instance()
+        assert len(lb.get_top_scores(10)) == 0
+
+    def test_reset_leaderboard(self):
+        lb = self.get_new_leaderboard_instance()
+        lb.incr_score('foo', 10)
+        lb.incr_score('bar', 12)
+        lb.incr_score('baz', 5)
+        assert len(lb.get_top_scores(10)) != 0
+        lb.reset()
         assert len(lb.get_top_scores(10)) == 0
 
     def test_add_entries(self):
@@ -60,5 +67,37 @@ class LeaderboardTester:
 
 
 class TestSimpleLeaderboard(LeaderboardTester):
-    leaderboard_class = SimpleLeaderboard
+    @classmethod
+    def get_new_leaderboard_instance(cls):
+        # The leaderboard state is stored in the object, so we get a clean
+        # slate each time.
+        return SimpleLeaderboard()
 
+class TestRedisLeaderboard(LeaderboardTester):
+    port = 14678
+
+    @classmethod
+    def get_new_leaderboard_instance(cls):
+        r = RedisLeaderboard('localhost', port=cls.port)
+        # Need to reset the leaderboard, as the state of the leaderboard is
+        # stored in the Redis backend, not in the leaderboard object.
+        r.reset()
+        return r
+
+    @classmethod
+    def setup_class(cls):
+        """Start Redis server."""
+        cls.redis_server = subprocess.Popen(['redis-server', '-'],
+                                            stdin=subprocess.PIPE)
+        # Write out configuration file.
+        cls.redis_server.stdin.write('''port %d
+daemonize no
+bind 127.0.0.1
+''' % cls.port)
+        cls.redis_server.stdin.close()
+
+    @classmethod
+    def teardown_class(cls):
+        """Terminate Redis server."""
+        cls.redis_server.terminate()
+        cls.redis_server.wait()

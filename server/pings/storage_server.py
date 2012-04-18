@@ -14,7 +14,7 @@ from daylight saving time.
 To use more than one storage server on a single computer, pass them
 different root directories."""
 
-import sys, os, datetime, errno, json, zmq, ConfigParser, logging
+import sys, os, time, datetime, errno, json, zmq, ConfigParser, logging
 from logging.config import fileConfig
 
 logger = logging.getLogger(__name__)
@@ -66,12 +66,13 @@ class OnDemandFile:
 
         return self.f
         
-    def write_msg(self, msg):
-        """Appends a message to the file. A different file is used every
-        hour. Messages are separated by a newline."""
+    def write_msg(self, msg_string):
+        """Appends a string message to the file. If the string contains
+        newlines, each is replaced by a space. A different file is used every hour.
+        The format for each line is 'timestamp msg_string' (where timestamp is the
+        number of seconds since the Unix epoch."""
         f = self._get_file()
-        f.write(msg)
-        f.write('\n')
+        f.write('%.3f %s\n' % (time.time(), msg_string.replace('\n', ' ')))
 
 
 def main():

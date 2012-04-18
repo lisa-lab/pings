@@ -12,7 +12,7 @@ server allows us to decouple these two parts and have the main server
 continue working at serving pings requests and results even if the
 leaderboards server has trouble keeping up under load."""
 
-import sys, json, zmq, ConfigParser, logging, errno, redis
+import sys, json, zmq, datetime, ConfigParser, logging, errno, redis
 from logging.config import fileConfig
 
 
@@ -45,10 +45,9 @@ class SimpleLeaderboard:
 
 class RedisLeaderboard:
     """Leaderboard that uses Redis as a backend."""
-
-    leaderboard_name = 'leaderboard'
-
-    def __init__(self, hostname='localhost', port=6379):
+    def __init__(self, leaderboard_name = 'leaderboard',
+                 hostname='localhost', port=6379):
+        self.leaderboard_name = leaderboard_name
         self.redis_server = redis.StrictRedis(hostname, port)
 
     def reset(self):
@@ -64,6 +63,55 @@ class RedisLeaderboard:
             return self.redis_server.zrevrange(self.leaderboard_name,
                                                0, num_top_entries-1,
                                                withscores=True, score_cast_func = int)
+
+class MultiLeaderboard:
+    names = ('global', 'weekly', 'daily')
+
+    def __init__(self, hostname='localhost', port=6379):
+        self.current_week, self.current_day = self._compute_week_and_day_ids()
+
+        self.leaderboards = {}
+        for name in self.names:
+            self.leaderboards[name] = RedisLeaderboard(name, hostname, port)
+
+    def _compute_week_and_day_ids(self):
+        today = datetime.date.today()
+
+        year, week = today.isocalendar()[:2]
+        # An ISO week ranges from 1 to 52 or 53, depending on the year.
+        # Assume for this that they all go to 53, as the only goal here
+        # is a single different number for each year & week combination.
+        current_week = year * 53 + week
+        current_day = today.toordinal()
+
+        return (current_week, current_day)
+
+    def _reset_if_needed(self):
+        week, day = self._compute_week_and_day_ids()
+
+        if week != self.current_week:
+            self.leaderboards['weekly'].reset()
+        if day != self.current_day:
+            self.leaderboards['daily'].reset()
+
+        self.current_week = week
+        self.current_day = day
+
+    def reset(self):
+        for name in self.names:
+            self.leaderboards[name].reset()
+
+    def incr_score(self, userid, score_increment):
+        self._reset_if_needed()
+        for name in self.names:
+            self.leaderboards[name].incr_score(userid, score_increment)
+
+    def get_top_scores(self, num_top_entries):
+        self._reset_if_needed()
+        results = {}
+        for name in self.names:
+            results[name] = self.leaderboards[name].get_top_scores(num_top_entries)
+        return results
 
 
 def main():

@@ -1,6 +1,8 @@
-import subprocess
+import subprocess, mock
 
-from pings.leaderboards_server import *
+# mut: module under test
+import pings.leaderboards_server as mut
+from datetime import date
 
 
 def start_redis_process(port):
@@ -15,9 +17,22 @@ bind 127.0.0.1
 
     return redis_process
 
+
 def stop_process(popen_instance):
     popen_instance.terminate()
     popen_instance.wait()
+
+
+class FakeDate(date):
+    "A fake replacement for date that can be mocked for testing."
+    def __new__(cls, *args, **kwargs):
+        return date.__new__(date, *args, **kwargs)
+
+
+class FakeConstantDate(FakeDate):
+    @classmethod
+    def today(cls):
+        return date(2012, 1, 1)
 
 
 class LeaderboardTester:
@@ -89,17 +104,23 @@ class TestSimpleLeaderboard(LeaderboardTester):
     def get_new_leaderboard_instance(cls):
         # The leaderboard state is stored in the object, so we get a clean
         # slate each time.
-        return SimpleLeaderboard()
+        return mut.SimpleLeaderboard()
 
 
-class TestRedisLeaderboard(LeaderboardTester):
+class RedisLeaderboardTestMixin:
+    """Mixin for all the Redis-based leaderboard tests. Take care of
+    starting and stopping a Redis instance, and supplying its port number
+    to the class under test."""
     port = 14678
+    # Override this in derived classes.
+    class_under_test = None
 
     @classmethod
     def get_new_leaderboard_instance(cls):
-        r = RedisLeaderboard('localhost', port=cls.port)
+        r = cls.class_under_test('localhost', port=cls.port)
         # Need to reset the leaderboard, as the state of the leaderboard is
-        # stored in the Redis backend, not in the leaderboard object.
+        # stored in the Redis backend, not in the leaderboard object, and
+        # we reuse the same Redis server process for all tests in this class.
         r.reset()
         return r
 
@@ -112,3 +133,77 @@ class TestRedisLeaderboard(LeaderboardTester):
     def teardown_class(cls):
         """Terminate Redis server."""
         stop_process(cls.redis_process)
+
+
+class TestRedisLeaderboard(LeaderboardTester, RedisLeaderboardTestMixin):
+    class_under_test = mut.RedisLeaderboard
+
+
+class MultiLeaderboardAdapter(mut.MultiLeaderboard):
+    """Adapter class for the TestMultiLeaderboardNoReset, so it can use the
+    tests for a single leaderboard in LeaderboardTester. We make it look like
+    MultiLeaderboard returns a single leaderboard instead of a dict with multiple
+    ones. This way we can reuse the testing code for the single leaderboard.
+
+    Won't work when testing that e.g. the daily leaderboard is reset each
+    day and therefore the multiple leaderboards returned are not identical.
+    Use a different test class to test that aspect."""
+
+    def get_top_scores(self, num_top_entries):
+        results = mut.MultiLeaderboard.get_top_scores(self, num_top_entries)
+        top_scores = results['global']
+        for name in self.names:
+            if name != 'global':
+                assert results[name] == top_scores
+        return top_scores
+
+
+@mock.patch('pings.leaderboards_server.datetime.date', FakeConstantDate)
+class TestMultiLeaderboardNoReset(TestRedisLeaderboard):
+    """Test all the behaviors of MultiLeaderboard that don't involve
+    the periodic reset of the non-global leaderboards."""
+    class_under_test = MultiLeaderboardAdapter
+
+
+@mock.patch('pings.leaderboards_server.datetime.date', FakeDate)
+class TestMultiLeaderboardPeriodicReset(RedisLeaderboardTestMixin):
+    """Test all the features of MultiLeaderboard that involve some
+    of the leaderboards (weekly, daily) being reset periodically.
+    (We can't reuse the tests from LeaderboardTester together
+    with an adapter for this.)"""
+    class_under_test = mut.MultiLeaderboard
+
+    def test_pediodic_reset(self):
+        # Change to today_date will be reflected in the date that
+        # MultiLeaderboard sees.
+        today_date = date(2012, 1, 2) # A Monday (start of ISO week).
+        FakeDate.today = classmethod(lambda cls: today_date)
+
+        lb = self.get_new_leaderboard_instance()
+
+        lb.incr_score('foo', 10)
+        lb.incr_score('bar', 20)
+        top_scores_jan1 = lb.get_top_scores(10)
+        assert all(single_lb == [('bar', 20), ('foo', 10)]
+                   for single_lb in top_scores_jan1.itervalues())
+
+        # Reset of daily leaderboard.
+        today_date = date(2012, 1, 3)
+        top_scores_jan2 = lb.get_top_scores(10)
+        assert top_scores_jan1['global'] == top_scores_jan2['global']
+        assert top_scores_jan1['weekly'] == top_scores_jan2['weekly']
+        assert top_scores_jan2['daily'] == []
+
+        # Reset of weekly leaderboard.
+        today_date = date(2012, 1, 9)
+        top_scores_jan8 = lb.get_top_scores(10)
+        assert top_scores_jan1['global'] == top_scores_jan8['global']
+        assert top_scores_jan8['weekly'] == []
+        assert top_scores_jan2['daily'] == []
+
+        # New addition reflected in all leaderboards.
+        lb.incr_score('foo', 5)
+        top_scores_jan8_part2 = lb.get_top_scores(10)
+        assert top_scores_jan8_part2 == {'global': [('bar', 20), ('foo', 15)],
+                                         'daily': [('foo', 5)],
+                                         'weekly': [('foo', 5)]}

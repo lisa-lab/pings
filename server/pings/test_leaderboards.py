@@ -2,6 +2,24 @@ import subprocess
 
 from pings.leaderboards_server import *
 
+
+def start_redis_process(port):
+    redis_process = subprocess.Popen(['redis-server', '-'],
+                                            stdin=subprocess.PIPE)
+    # Write out configuration file.
+    redis_process.stdin.write('''port %d
+daemonize no
+bind 127.0.0.1
+''' % port)
+    redis_process.stdin.close()
+
+    return redis_process
+
+def stop_process(popen_instance):
+    popen_instance.terminate()
+    popen_instance.wait()
+
+
 class LeaderboardTester:
     """Unit tests for leaderboard classes. To use, create a derived class
     and override the get_new_leaderboard_instance classmethod to return
@@ -73,6 +91,7 @@ class TestSimpleLeaderboard(LeaderboardTester):
         # slate each time.
         return SimpleLeaderboard()
 
+
 class TestRedisLeaderboard(LeaderboardTester):
     port = 14678
 
@@ -87,17 +106,9 @@ class TestRedisLeaderboard(LeaderboardTester):
     @classmethod
     def setup_class(cls):
         """Start Redis server."""
-        cls.redis_server = subprocess.Popen(['redis-server', '-'],
-                                            stdin=subprocess.PIPE)
-        # Write out configuration file.
-        cls.redis_server.stdin.write('''port %d
-daemonize no
-bind 127.0.0.1
-''' % cls.port)
-        cls.redis_server.stdin.close()
+        cls.redis_process = start_redis_process(cls.port)
 
     @classmethod
     def teardown_class(cls):
         """Terminate Redis server."""
-        cls.redis_server.terminate()
-        cls.redis_server.wait()
+        stop_process(cls.redis_process)

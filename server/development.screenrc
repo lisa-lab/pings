@@ -1,0 +1,22 @@
+# Screen config for Pings server development.
+#
+# Use with "screen -c development.screenrc" and all the
+# programs required for a Pings server will be started
+# in different screen windows!
+
+# Start all the processes
+screen -t Redis redis-server
+screen -t Storage ./storage_server development.ini
+screen -t Leaderboards ./leaderboards_server development.ini
+screen -t Web paster serve development.ini
+
+# Make sure we have some kind of status line, even if the user
+# doesn't have one set up. Otherwise it's not really obvious
+# that there are multiple programs running...
+hardstatus on
+hardstatus alwayslastline
+hardstatus string "%{.bY}%-w%{.yW}%n %t%{-}%+w %=%{..G} %H %{..Y} %D %M/%d %c "
+
+# Load the user's settings, as -c overrides the user's .screenrc, sadly.
+# If the user has a preferred status line, it should override the one above.
+source $HOME/.screenrc

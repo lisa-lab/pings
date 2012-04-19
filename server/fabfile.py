@@ -169,7 +169,7 @@ def deploy_test():
                 put(geoip_filename, '.', use_sudo=True)
 
         # Install all requirements.
-        sudo('bin/pip install -r %s' % os.path.join(pings_src_dir, 'requirements.pip'))
+        sudo('bin/pip install -r %s' % os.path.join(pings_src_dir, 'requirements.txt'))
 
         # Ignore dependencies. They are all in the requirements.pip file
         # anyways, and we don't want the --force-reinstall option to

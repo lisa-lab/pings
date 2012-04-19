@@ -9,12 +9,15 @@ def choose_userid():
 
 
 def main():
-    option_parser = optparse.OptionParser()
+    option_parser = optparse.OptionParser(usage='%prog [options] [server_url]')
     option_parser.add_option('--delay', default=0, type='float',
                              help='Delay (in seconds) between the request for pings and the submission of the (fake) results. [Default: %default]')
     options, args = option_parser.parse_args()
 
-    server_url = 'http://localhost:6543/'
+    if len(args) == 1:
+        server_url = args[0]
+    else:
+        server_url = 'http://localhost:6543/'
 
     get_pings_url = server_url + 'get_pings'
     submit_ping_results_url = server_url + 'submit_ping_results'

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 javac -classpath external_libs/json-simple-1.1.1.jar \
+      PingsApplet.java \
       TestPingers.java \
       ClientInfo.java \
       ServerProxy.java \

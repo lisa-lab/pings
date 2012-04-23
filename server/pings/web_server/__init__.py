@@ -45,6 +45,8 @@ def main(global_config, **settings):
     
     # Configure Pyramid app.
     config = Configurator(root_factory=Root, settings=settings)
+    config.include('pyramid_jinja2')
+    config.add_route('main', '/')
     config.add_route('get_pings', '/get_pings')
     config.add_route('submit_ping_results', '/submit_ping_results')
     config.scan()

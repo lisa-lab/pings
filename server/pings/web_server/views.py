@@ -42,3 +42,8 @@ def submit_ping_results(request):
         resources.update_leaderboards(userid, results)
         
     return {'success': True}
+
+@view_config(route_name='main', renderer='main.jinja2')
+def main(request):
+    # TODO Display leaderboards.
+    return {}

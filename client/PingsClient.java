@@ -49,6 +49,8 @@ public class PingsClient extends Thread {
                 m_server_proxy.submitResults(m_client_info, pings);
             }
             catch (IOException e) {
+                // XXX Particularly bad. Thread will busy-loop if IOException keeps
+                // getting raised in call to getPings.
             }
         }
     }

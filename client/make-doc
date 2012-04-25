@@ -5,6 +5,7 @@ mkdir -p doc
 javadoc \
     -private \
     -d doc \
+    PingsClient.java \
     PingsApplet.java \
     ServerProxy.java \
     ClientInfo.java \

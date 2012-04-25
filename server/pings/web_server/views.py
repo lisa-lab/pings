@@ -45,5 +45,4 @@ def submit_ping_results(request):
 
 @view_config(route_name='main', renderer='main.jinja2')
 def main(request):
-    # TODO Display leaderboards.
-    return {}
+    return resources.get_leaderboards()

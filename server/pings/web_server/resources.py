@@ -64,6 +64,8 @@ def init_rankings_zmq(incr_scores_url, publish_leaderboards_url):
 
     zmq_publish_leaderboards_socket = get_zmq_context().socket(zmq.SUB)
     zmq_publish_leaderboards_socket.connect(publish_leaderboards_url)
+    # Subscribe to everything.
+    zmq_publish_leaderboards_socket.setsockopt(zmq.SUBSCRIBE, '')
 
 #
 # GeoIP database
@@ -161,6 +163,9 @@ def get_geoip_data(ip_addresses):
 
 
 def update_leaderboards(userid, results):
+    """Computes the number of points which the ping results is worth, and
+    sends a request to the leaderboards server to add that number to
+    the leaderboards for the given userid."""
     # Compute how many points the given results are worth.
     # Placeholder code for now. We will do something a bit fancier.
     points = len(results) * 100
@@ -168,6 +173,13 @@ def update_leaderboards(userid, results):
     # Send them to server.
     zmq_incr_score_socket.send_json({'userid': userid,
                                      'score_increment': points})
+
+def get_leaderboards():
+    """Retrieves the latest leaderboards top scores."""
+    top_scores = zmq_publish_leaderboards_socket.recv_json(zmq.NOBLOCK)
+    # TODO Handle case where no message is present.
+    logger.debug('Current leaderboards top score: %s', top_scores)
+    return top_scores
 
 
 def store_results(results):

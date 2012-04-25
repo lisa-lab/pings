@@ -1,3 +1,12 @@
+Essential
+========
+
+* Fix leaderboard zeromq retrieval code! The SUB socket does not have the
+  exact semantic that we want (retrieve the latest result always, ignore
+  past ones). Possible fix: spawn thread that reads the SUB socket and
+  makes the latest result available via inproc zeromq socket. Also,
+  actually display leaderboards results in Jinja2 template!
+
 Important
 =========
 

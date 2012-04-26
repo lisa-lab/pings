@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
-rm -v *.class *.css *.html *~
+rm -v *.class *~
 rm -vrf resources doc

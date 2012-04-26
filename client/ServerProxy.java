@@ -63,6 +63,8 @@ public class ServerProxy {
             }
         }
 
+        pings.results = new String[num_addresses];
+
         return pings;
     }
 

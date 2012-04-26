@@ -6,7 +6,8 @@ here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.txt')).read()
 
 version = '0.1'
-requires = ['pyramid', 'pyramid_debugtoolbar']
+# Use requirements.txt for all requirements, at least for now.
+requires = []
 
 
 if __name__ == '__main__':
@@ -37,4 +38,3 @@ if __name__ == '__main__':
           """,
           paster_plugins=['pyramid'],
           )
-

@@ -56,16 +56,19 @@ public class PingsClient extends Thread {
 
                 for (int i = 0; i < pings.addresses.length; i++) {
                     m_pinger.clearPings();
+
                     LOGGER.log(Level.INFO, "Pinging address {0} ({1}/{2}).",
                                new Object[] { pings.addresses[i].toString(),
-                                              i, num_pings });
+                                              i+1, num_pings });
                     m_pinger.ping(pings.addresses[i]);
+
                     pings.results[i] = m_pinger.getLastPings();
                     LOGGER.log(Level.INFO, "Ping result: {0}.", pings.results[i]);
                 }
 
                 // Make sure nick is up-to-date before returning the ping results.
                 m_client_info.setNickname(m_nick.get());
+
                 LOGGER.info("Submitting results to server.");
                 m_server_proxy.submitResults(m_client_info, pings);
             }

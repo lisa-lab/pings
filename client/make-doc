@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-
-mkdir -p doc
-
-javadoc -private -d doc *.java

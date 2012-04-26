@@ -7,7 +7,7 @@ import java.text.*;
 
    @author   Steven Pigeon <pigeon@iro.umontreal.ca>
 */
-public class TcpPinger {
+public class TcpPinger implements Pinger {
     /** Holds the last collected times */
     private String m_tcp_times;
 
@@ -29,10 +29,14 @@ public class TcpPinger {
     */
     public String getLastPings() { return m_tcp_times; }
 
-    /**
-       Clears the last collected times
-    */
     public void clearPings() { m_tcp_times = ""; }
+
+    /**
+       Pings an external IP address using the default port (80).
+    */
+    public int ping(InetAddress addr) {
+        return ping(addr, 80);
+    }
 
     /**
        Pings an external IP address using a specific port. A string
@@ -56,7 +60,7 @@ public class TcpPinger {
 
        @return 0 (for compatibility with other pinger-classes that return the exit code)
     */
-    public int ping(InetAddress addr,int port) {
+    public int ping(InetAddress addr, int port) {
         DecimalFormat format = new DecimalFormat("0.000");
         InetSocketAddress sock_addr = new InetSocketAddress(addr,port);
         String times = "";
@@ -118,7 +122,7 @@ public class TcpPinger {
        @param this_info A reference to a ClientInfo
        @see ClientInfo
     */
-    public TcpPinger(ClientInfo this_info ) {
+    public TcpPinger(ClientInfo this_info) {
         m_tcp_times = "";
         m_info = this_info;
     }

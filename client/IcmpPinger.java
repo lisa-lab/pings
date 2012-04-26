@@ -8,7 +8,7 @@ import java.net.*;
 
    @author   Steven Pigeon <pigeon@iro.umontreal.ca>
 */
-public class IcmpPinger {
+public class IcmpPinger implements Pinger {
     /** Holds the last collected times */
     private String m_icmp_times;
 
@@ -37,24 +37,8 @@ public class IcmpPinger {
         {"[\\s|\\w|:]+=\\s([0-9]+),[\\s|\\w]+=\\s([0-9]+),.*", "$1 $2 ?ms"}
     };
 
-    /**
-       Returns the last collected times as a String.
-
-       <p>The output is structed as follows:
-
-       <p>protocol addr sent received total_elapsed_time [times+]
-
-       <p>for example:
-
-       <p><tt>ICMP 132.204.24.179 11 10 10022ms 3.66ms 7.14ms 2.39ms 11.6ms 3.59ms 5.56ms 2.93ms 7.54ms 5.75ms 4.54m</tt>
-
-       @return The last collected times
-    */
     public String getLastPings() { return m_icmp_times; }
 
-    /**
-       Clears the last collected times
-    */
     public void clearPings() { m_icmp_times = ""; }
 
     /**
@@ -73,19 +57,6 @@ public class IcmpPinger {
         return "invalid syntax"; // If something bad happens?
     }
 
-    /**
-       Pings an external IP address. A string containing the summary and times
-       gathered is constructed, and accessible through
-       ICMP_Ping.getLastPings() after having called ping(). If an error
-       occured, getLastPings() is undefined (may contain previous call's
-       values).
-
-       @see   IcmpPinger#getLastPings()
-       @see   IcmpPinger#clearPings()
-       @param addr The address to ping
-
-       @return The external command return code
-    */
     public int ping(InetAddress addr) {
         String[] specific_command;
         String[] summary_regex;

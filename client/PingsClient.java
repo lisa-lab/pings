@@ -18,7 +18,7 @@ public class PingsClient extends Thread {
     // These variables are initialized in the constructor and then
     // only accessed by the PingsClient thread. No need for locking, etc.
     private ClientInfo m_client_info;
-    private IcmpPinger m_pinger;
+    private Pinger m_pinger;
     private ServerProxy m_server_proxy;
     private final static Logger LOGGER = Logger.getLogger(PingsClient.class.getName());
 
@@ -31,7 +31,7 @@ public class PingsClient extends Thread {
 
     public PingsClient(String server_hostname, int server_port) {
         m_client_info = new ClientInfo();
-        m_pinger = new IcmpPinger(m_client_info);
+        m_pinger = new TcpPinger(m_client_info);
         m_server_proxy = new ServerProxy(server_hostname, server_port);
 
         m_is_running = new AtomicBoolean(true);

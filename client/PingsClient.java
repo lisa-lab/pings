@@ -34,6 +34,7 @@ public class PingsClient extends Thread {
         m_pinger = new TcpPinger(m_client_info);
         m_server_proxy = new ServerProxy(server_hostname, server_port);
 
+        m_nick = new AtomicReference<String>("");
         m_is_running = new AtomicBoolean(true);
     }
 

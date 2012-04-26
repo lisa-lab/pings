@@ -68,4 +68,9 @@ public class PingsClient extends Thread {
             }
         }
     }
+
+    public static void main(String args[]) {
+        PingsClient client = new PingsClient("localhost", 6543);
+        client.start();
+    }
 }

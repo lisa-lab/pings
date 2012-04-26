@@ -1,6 +1,7 @@
 import java.util.*;
 import java.net.*;
 import java.util.prefs.Preferences;
+import java.util.logging.Logger;
 
 /**
    This class holds the configuration of the client, some elements of which
@@ -14,7 +15,10 @@ import java.util.prefs.Preferences;
    @author   Steven Pigeon <pigeon@iro.umontreal.ca>
 */
 public class ClientInfo {
-    /** 
+    /// Logging
+    private final static Logger LOGGER = Logger.getLogger(ClientInfo.class.getName());
+
+    /**
         Stores the preferences in a possibly persistent fashion
     */
     private Preferences m_prefs;
@@ -310,10 +314,10 @@ public class ClientInfo {
         detectInterface(null); // Detects and sets m_local_addr and m_adapter
    
         m_nickname = m_prefs.get("nickname", null);
-        System.out.println("nick is " + m_nickname);
+        LOGGER.info("nick is " + m_nickname);
 
         m_uuid = m_prefs.get("uuid", UUID.randomUUID().toString());
-        System.out.println("uuid is " + m_uuid);
+        LOGGER.info("uuid is " + m_uuid);
     }
 
     /**

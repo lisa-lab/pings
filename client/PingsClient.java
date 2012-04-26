@@ -1,4 +1,6 @@
 import java.io.IOException;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -18,6 +20,7 @@ public class PingsClient extends Thread {
     private ClientInfo m_client_info;
     private IcmpPinger m_pinger;
     private ServerProxy m_server_proxy;
+    private final static Logger LOGGER = Logger.getLogger(PingsClient.class.getName());
 
     // These variables are accessed both by the PingsClient thread and
     // by other threads using this class. They need to use something
@@ -44,20 +47,29 @@ public class PingsClient extends Thread {
 
     public void run() {
         while (m_is_running.get()) {
+            LOGGER.info("PingsClient worker thread starting.");
             try {
                 ServerProxy.Pings pings = m_server_proxy.getPings(m_client_info);
+                final int num_pings = pings.addresses.length;
+                LOGGER.log(Level.INFO, "Got {0} pings from server.", num_pings);
 
                 for (int i = 0; i < pings.addresses.length; i++) {
                     m_pinger.clearPings();
+                    LOGGER.log(Level.INFO, "Pinging address {0} ({1}/{2}).",
+                               new Object[] { pings.addresses[i].toString(),
+                                              i, num_pings });
                     m_pinger.ping(pings.addresses[i]);
                     pings.results[i] = m_pinger.getLastPings();
+                    LOGGER.log(Level.INFO, "Ping result: {0}.", pings.results[i]);
                 }
 
                 // Make sure nick is up-to-date before returning the ping results.
                 m_client_info.setNickname(m_nick.get());
+                LOGGER.info("Submitting results to server.");
                 m_server_proxy.submitResults(m_client_info, pings);
             }
             catch (IOException e) {
+                LOGGER.log(Level.WARNING, "Exception caught in PingsClient thread.", e);
                 // Avoid thread busy-loop if IOException keeps getting raised
                 // in call to getPings.
                 try {
@@ -67,6 +79,8 @@ public class PingsClient extends Thread {
                 }
             }
         }
+
+        LOGGER.info("PingsClient worker thread ending.");
     }
 
     public static void main(String args[]) {

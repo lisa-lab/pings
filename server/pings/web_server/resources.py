@@ -105,7 +105,6 @@ def get_token():
 
 def check_token(token):
     """Checks that a given security token is still valid."""
-    return True
     if token is None:
         return False
     return token_mc.get(token) is not None

@@ -97,7 +97,7 @@ class Root(object):
 #
 
 def get_token():
-    """Get a security token."""
+    """Gets a security token. (A random base64 ascii string.)"""
     token = os.urandom(16).encode("base64")[:22]
     token_mc.set(token, True, token_exptime)
     return token
@@ -107,7 +107,17 @@ def check_token(token):
     """Checks that a given security token is still valid."""
     if token is None:
         return False
-    return token_mc.get(token) is not None
+
+    # Lookup token in memcache.
+    #
+    # Memcache doesn't like getting Unicode for keys. And even though
+    # get_token() returns a str, by the time it's sent to the client and
+    # back, it will likely have been converted to Unicode (happening now,
+    # at least). Convert the token back to a str here to handle this
+    # problem in a localized way. Since the token is currently a base64
+    # string, ascii is okay as an encoding. (If fed a token that can't be
+    # converted to ASCII, Pyramid will convert the exception to a 500 error.)
+    return token_mc.get(token.encode('ascii')) is not None
 
 
 def get_pings(num_addresses=3):

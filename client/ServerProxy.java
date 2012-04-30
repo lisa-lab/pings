@@ -2,6 +2,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.InetAddress;
 import java.io.*;
+import java.util.Arrays;
 
 import org.json.simple.JSONValue;
 import org.json.simple.JSONObject;
@@ -76,7 +77,7 @@ public class ServerProxy {
         // "userid" (a string).
         JSONObject json_request = new JSONObject();
         json_request.put("token", pings.token);
-        json_request.put("results", pings.results);
+        json_request.put("results", Arrays.asList(pings.results));
         String nick = client_info.getNickname();
         if (nick != null && nick.length() != 0)
             json_request.put("userid", nick);

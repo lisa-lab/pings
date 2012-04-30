@@ -17,6 +17,10 @@ print pings.token
 print pings.addresses[0]
 print pings.geoip_info[0]
 
+# Fill in results.
+for i in range(len(pings.addresses)):
+    pings.results[i] = 'FOO %d' % i
+
 print
 print 'Submitting results'
 sp.submitResults(info, pings)

@@ -11,13 +11,15 @@ logger = logging.getLogger(__name__)
              renderer='json', request_method='POST')
 def get_pings(request):
     """Called by the client to get a list of addresses to ping."""
+    client_addr = request.client_addr
     logger.debug('get_pings request: %s', request.json_body)
-    logger.debug('get_pings request client address: %s', request.client_addr)
+    logger.debug('get_pings request client address: %s', client_addr)
 
     ip_addresses = resources.get_pings()
     return {'token': resources.get_token(),
             'pings': ip_addresses,
-            'geoip': resources.get_geoip_data(ip_addresses)}
+            'geoip': resources.get_geoip_data(ip_addresses),
+            'client_geoip': resources.get_geoip_data([client_addr])[0]}
 
 @view_config(route_name='submit_ping_results',
              renderer='json', request_method='POST')

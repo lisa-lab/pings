@@ -110,6 +110,9 @@ def main():
 
     # Do the work
     while True:
-        msg = zmq_socket.recv_json()
-        f.write_msg(json.dumps(msg))
-        logger.debug('Stored message: %s', msg)
+        try:
+            msg = zmq_socket.recv_json()
+            f.write_msg(json.dumps(msg))
+            logger.debug('Stored message: %s', msg)
+        except Exception, e:
+            logging.exception('Exception while processing message: %s', msg)

@@ -174,6 +174,9 @@ def main():
                         break
                     else:
                         raise
+                except Exception, e:
+                    logging.exception('Exception while processing message: %s',
+                                      msg)
 
         top_scores = leaderboard.get_top_scores(15)
         zmq_publish_leaderboards_socket.send_json(top_scores)

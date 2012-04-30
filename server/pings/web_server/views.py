@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 def get_pings(request):
     """Called by the client to get a list of addresses to ping."""
     client_addr = request.client_addr
-    logger.debug('get_pings request: %s', request.json_body)
     logger.debug('get_pings request client address: %s', client_addr)
 
     ip_addresses = resources.get_pings()

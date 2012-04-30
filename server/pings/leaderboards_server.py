@@ -122,7 +122,8 @@ def main():
 
     config_filename = sys.argv[1]
 
-    # First configure logging.
+    # First configure logging. Must be done before anything else that could
+    # use the logger.
     fileConfig(config_filename)
     global logger
     logger = logging.getLogger(__name__)
@@ -165,6 +166,7 @@ def main():
             while True:
                 try:
                     msg = zmq_incr_score_socket.recv_json(zmq.NOBLOCK)
+                    logger.debug('Received message: %s', msg)
                     leaderboard.incr_score(msg['userid'],
                                            msg['score_increment'])
                 except zmq.ZMQError, e:

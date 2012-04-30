@@ -180,6 +180,7 @@ def update_leaderboards(userid, results):
     points = len(results) * 100
 
     # Send them to server.
+    logger.debug('Adding %d to score of user "%s"', points, userid)
     zmq_incr_score_socket.send_json({'userid': userid,
                                      'score_increment': points})
 
@@ -194,5 +195,5 @@ def get_leaderboards():
 def store_results(results):
     """Stores ping results. The results are sent via Zeromq to a
     storage_server instance."""
-    logger.debug('Ping results: %s', results)
+    logger.debug('Storing ping results: %s', results)
     zmq_send_results_socket.send_json(results)

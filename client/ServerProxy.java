@@ -33,14 +33,18 @@ public class ServerProxy {
         m_server_port = server_port;
     }
 
-    /** Retrieves a list of addresses to ping. */
+    /** Retrieves and returns a list of addresses to ping. Also updates
+        the ClientInfo object with the geoip data for the client address. */
     public Pings getPings(ClientInfo client_info) throws IOException {
         // Send request to server. Returns a dict with the following keys
         // and values: "token" (a string), "pings" (a list of IP addresses),
         // "geoip" (a list of dicts, one per IP address).
         JSONObject json_result = (JSONObject)doJsonRequest("/get_pings", null);
 
-        // Parse out json_result.
+        // Update client_info with new client-related information.
+        client_info.setGeoipData((JSONObject)json_result.get("client_geoip"));
+
+        // Fill Pings instance from JSON results of our request.
         Pings pings = new Pings();
         pings.token = (String)json_result.get("token");
 

@@ -3,6 +3,8 @@ import java.net.*;
 import java.util.prefs.Preferences;
 import java.util.logging.Logger;
 
+import org.json.simple.JSONObject;
+
 /**
    This class holds the configuration of the client, some elements of which
    are detected at launch, and where some others may be set through the
@@ -10,7 +12,11 @@ import java.util.logging.Logger;
    implementation-specific fashion; possibly in a cookie).
 
    <p>
-   FIXME: add hooks for certain information (roaming and internal IP addr)
+   FIXME
+   <ul>
+     <li>Add hooks for certain information (roaming and internal IP addr).
+     <li>Add getters to return the needed pieces of the geoip information.
+   </ul>
 
    @author   Steven Pigeon <pigeon@iro.umontreal.ca>
 */
@@ -75,6 +81,11 @@ public class ClientInfo {
        as such.
     */
     private int m_tcp_timeout;
+
+    /**
+       Geoip information for the client address.
+    */
+    private JSONObject m_client_geoip_data;
 
     /**
        List the supported OSes.
@@ -295,6 +306,19 @@ public class ClientInfo {
     */
     public int getTCPTimeOut() { return m_tcp_timeout; }
 
+    /**
+       Sets the geoip information for the client's IP address.
+    */
+    public void setGeoipData(JSONObject geoip_data) {
+        m_client_geoip_data = geoip_data;
+    }
+
+    /**
+       @return The geoip information for the client's IP address.
+    */
+    public JSONObject getGeoipData() {
+        return m_client_geoip_data;
+    }
 
     /**
        Loads preferences/sets defaults

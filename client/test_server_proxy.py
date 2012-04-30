@@ -13,10 +13,11 @@ if False:
 print
 info = ClientInfo()
 pings = sp.getPings(info)
+
+print 'Client Geoip', info.getGeoipData()
 print 'Token', pings.token
 print 'First address', pings.addresses[0]
 print 'Geoip for first address', pings.geoip_info[0]
-print 'Client Geoip', pings.client_geoip
 
 # Fill in results.
 for i in range(len(pings.addresses)):

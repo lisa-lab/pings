@@ -68,7 +68,6 @@ public class TcpPinger implements Pinger {
         int fails = 0;
         
         for (int p = 0; p < m_info.getNumberOfPings(); p++) {
-            Socket ping_socket = new Socket();
             String prefix = " ";
 
             if (p != 0) {
@@ -78,8 +77,9 @@ public class TcpPinger implements Pinger {
 
             boolean timed_out = false;
             long start = System.nanoTime();
-            
+
             try {
+                Socket ping_socket = new Socket();
                 ping_socket.connect(sock_addr, m_info.getTCPTimeOut());
             }
             catch (ConnectException e) {
@@ -94,6 +94,13 @@ public class TcpPinger implements Pinger {
             catch (IOException e) {
                 fails++;
                 prefix = " ?";
+            }
+            finally {
+                try {
+                    ping_socket.close();
+                }
+                catch (IOException e) {
+                }
             }
 
             long stop = System.nanoTime();

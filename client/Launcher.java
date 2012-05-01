@@ -18,7 +18,7 @@ public class Launcher {
        @param stderr_lines returns the output on stderr as a list of strings
        @param max_nb_lines specifies how many lines to capture (extra lines are ignored)
 
-       @return program exit code (or -1 if a runtime exception occurs)
+       @return program exit code (or -1 if a IO error occurs)
     */
     public static int launch(List<String> args,
                              List<String> stdout_lines,
@@ -54,7 +54,6 @@ public class Launcher {
                 // Don't leave subprocess hanging around...
                 proc.destroy();
             }
-            // FIXME Improve error handling.
             return -1;
         }
         catch (InterruptedException ie) {

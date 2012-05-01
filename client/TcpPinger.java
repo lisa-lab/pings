@@ -1,5 +1,6 @@
 import java.net.*;
 import java.text.*;
+import java.io.IOException;
 
 /**
    This class does TCP-based pinging of a remote destination using a
@@ -90,7 +91,7 @@ public class TcpPinger implements Pinger {
                 prefix = " *";
                 timed_out = true;
             }
-            catch (Exception e) {
+            catch (IOException e) {
                 fails++;
                 prefix = " ?";
             }

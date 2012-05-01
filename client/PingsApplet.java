@@ -16,7 +16,7 @@ public class PingsApplet extends Applet {
 
     public void destroy() {
         // Don't leave the Pings client thread running!
-        m_pings_client.halt();
+        m_pings_client.interrupt();
     }
 
     public void paint(Graphics g) {

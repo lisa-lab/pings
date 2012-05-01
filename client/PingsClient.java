@@ -26,7 +26,6 @@ public class PingsClient extends Thread {
     // by other threads using this class. They need to use something
     // like the Java Atomic types or other to prevent fun multithreading
     // bugs!
-    private AtomicBoolean m_is_running;
     private AtomicReference<String> m_nick;
 
     public PingsClient(String server_hostname, int server_port) {
@@ -35,53 +34,53 @@ public class PingsClient extends Thread {
         m_server_proxy = new ServerProxy(server_hostname, server_port);
 
         m_nick = new AtomicReference<String>("");
-        m_is_running = new AtomicBoolean(true);
     }
 
     public void setNickname(String nick) {
         m_nick.set(nick);
     }
 
-    public void halt() {
-        m_is_running.set(false);
-    }
-
     public void run() {
-        while (m_is_running.get()) {
-            LOGGER.info("PingsClient worker thread starting.");
-            try {
-                ServerProxy.Pings pings = m_server_proxy.getPings(m_client_info);
-                final int num_pings = pings.addresses.length;
-                LOGGER.log(Level.INFO, "Got {0} pings from server.", num_pings);
-
-                for (int i = 0; i < pings.addresses.length; i++) {
-                    m_pinger.clearPings();
-
-                    LOGGER.log(Level.INFO, "Pinging address {0} ({1}/{2}).",
-                               new Object[] { pings.addresses[i].toString(),
-                                              i+1, num_pings });
-                    m_pinger.ping(pings.addresses[i]);
-
-                    pings.results[i] = m_pinger.getLastPings();
-                    LOGGER.log(Level.INFO, "Ping result: {0}.", pings.results[i]);
-                }
-
-                // Make sure nick is up-to-date before returning the ping results.
-                m_client_info.setNickname(m_nick.get());
-
-                LOGGER.info("Submitting results to server.");
-                m_server_proxy.submitResults(m_client_info, pings);
-            }
-            catch (IOException e) {
-                LOGGER.log(Level.WARNING, "Exception caught in PingsClient thread.", e);
-                // Avoid thread busy-loop if IOException keeps getting raised
-                // in call to getPings.
+        try {
+            while (true) {
+                LOGGER.info("PingsClient worker thread starting.");
                 try {
+                    ServerProxy.Pings pings = m_server_proxy.getPings(m_client_info);
+                    final int num_pings = pings.addresses.length;
+                    LOGGER.log(Level.INFO, "Got {0} pings from server.", num_pings);
+
+                    for (int i = 0; i < pings.addresses.length; i++) {
+                        if (Thread.interrupted()) {
+                            throw new InterruptedException();
+                        }
+
+                        m_pinger.clearPings();
+
+                        LOGGER.log(Level.INFO, "Pinging address {0} ({1}/{2}).",
+                                   new Object[] { pings.addresses[i].toString(),
+                                                  i+1, num_pings });
+                        m_pinger.ping(pings.addresses[i]);
+
+                        pings.results[i] = m_pinger.getLastPings();
+                        LOGGER.log(Level.INFO, "Ping result: {0}.", pings.results[i]);
+                    }
+
+                    // Make sure nick is up-to-date before returning the ping results.
+                    m_client_info.setNickname(m_nick.get());
+
+                    LOGGER.info("Submitting results to server.");
+                    m_server_proxy.submitResults(m_client_info, pings);
+                }
+                catch (IOException e) {
+                    LOGGER.log(Level.WARNING, "Exception caught in PingsClient thread.", e);
+                    // Avoid thread busy-loop if IOException keeps getting raised
+                    // in call to getPings.
                     sleep(1000);
                 }
-                catch (InterruptedException e2) {
-                }
             }
+        }
+        catch (InterruptedException e) {
+            // We've been interrupted. No more work.
         }
 
         LOGGER.info("PingsClient worker thread ending.");

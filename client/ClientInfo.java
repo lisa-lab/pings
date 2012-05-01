@@ -5,6 +5,7 @@ import java.util.logging.Logger;
 
 import org.json.simple.JSONObject;
 
+
 /**
    This class holds the configuration of the client, some elements of which
    are detected at launch, and where some others may be set through the
@@ -23,11 +24,6 @@ import org.json.simple.JSONObject;
 public class ClientInfo {
     /// Logging
     private final static Logger LOGGER = Logger.getLogger(ClientInfo.class.getName());
-
-    /**
-        Stores the preferences in a possibly persistent fashion
-    */
-    private Preferences m_prefs;
 
     /**
        Stores this client's UUID
@@ -86,6 +82,12 @@ public class ClientInfo {
        Geoip information for the client address.
     */
     private JSONObject m_client_geoip_data;
+
+
+    /**
+       The name of the cookie
+    */
+    public final static String m_cookie_name="udem_ping";
 
     /**
        List the supported OSes.
@@ -323,7 +325,7 @@ public class ClientInfo {
     /**
        Loads preferences/sets defaults
     */
-    public void loadPreferences() {
+    public void setPreferences(String cookie) {
         m_os_type = OSType.NotDetected;
         m_local_addr = null;
         m_global_addr = null;
@@ -336,36 +338,44 @@ public class ClientInfo {
    
         m_os_type = getOS(); // Detect and set
         detectInterface(null); // Detects and sets m_local_addr and m_adapter
-   
-        m_nickname = m_prefs.get("nickname", null);
-        LOGGER.info("nick is " + m_nickname);
 
-        m_uuid = m_prefs.get("uuid", UUID.randomUUID().toString());
+        if (cookie.length()!=0) {
+            // gets the contents between the curly braces
+            String[] keys=cookie.replaceAll("([^{]+)\\{([^}]+)\\}.*","$2").split(";");
+
+            m_nickname=keys[0].split("=")[1];
+            m_uuid=keys[1].split("=")[1];
+        }
+        else {
+            m_nickname="";
+            m_uuid = UUID.randomUUID().toString();
+        }
+
+        LOGGER.info("nick is " + m_nickname);
         LOGGER.info("uuid is " + m_uuid);
     }
 
     /**
        Saves preferences
     */
-    public void savePreferences() {
-        if (m_nickname != null) 
-            m_prefs.put("nickname", m_nickname);
-        
-        m_prefs.put("uuid", m_uuid);
+    public String getPreferences() {
 
-        // it is magically persistant on
-        // object destruction or something.
-        try {
-            m_prefs.flush();
-        }
-        catch (Exception e) { e.printStackTrace(); }
+        String cookie=m_cookie_name+"={nickname=";
+        if (m_nickname != null) 
+            cookie+=m_nickname;
+
+        // FIXME: expiration date may be necessary;
+        // maybe it should be done in the cookie manager
+        // also: not sure path=/ is useful.
+        cookie+=":uuid="+m_uuid+"};path=/';"; // expires="+expirationDate();
+
+        return cookie;
     }
 
     /**
        Default constructor
     */
-    public ClientInfo() {
-        m_prefs = Preferences.userRoot().node("pinger");
-        loadPreferences();
+    public ClientInfo(String cookie) {
+        setPreferences(cookie);
     }
 }

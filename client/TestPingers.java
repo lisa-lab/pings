@@ -12,7 +12,8 @@ public class TestPingers {
             System.exit(2);
         }
         
-        ClientInfo this_client = new ClientInfo();
+        // FIXME: get from applet's cookie
+        ClientInfo this_client = new ClientInfo(ClientInfo.m_cookie_name+"={user=bobafett;uuid=fatalapouet};path=/;expires=eventually");
 
         if (this_client.getNickname() == null)
             this_client.setNickname("bobafett");
@@ -69,6 +70,7 @@ public class TestPingers {
 
         }
 
-        this_client.savePreferences();
+        //FIXME: save to applet cookie
+        System.out.println(this_client.getPreferences());
     }
 }

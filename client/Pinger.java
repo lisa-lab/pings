@@ -39,5 +39,5 @@ public interface Pinger {
 
        @return The external command return code
     */
-    public int ping(InetAddress addr);
+    public int ping(InetAddress addr) throws InterruptedException;
 }

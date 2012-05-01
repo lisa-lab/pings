@@ -23,8 +23,8 @@ public class Launcher {
     public static int launch(List<String> args,
                              List<String> stdout_lines,
                              List<String> stderr_lines,
-                             int max_nb_lines) {
-        Process proc;
+                             int max_nb_lines) throws InterruptedException {
+        Process proc = null;
         try {
             proc = Runtime.getRuntime().exec(args.toArray(new String[args.size()]));
 
@@ -49,10 +49,20 @@ public class Launcher {
             stderr.close();
             proc.waitFor();
         }
-        catch (Exception error) {
-            // Some error occured!
+        catch (IOException error) {
+            if (proc != null) {
+                // Don't leave subprocess hanging around...
+                proc.destroy();
+            }
             // FIXME Improve error handling.
             return -1;
+        }
+        catch (InterruptedException ie) {
+            if (proc != null) {
+                // Don't leave subprocess hanging around...
+                proc.destroy();
+            }
+            throw ie;
         }
 
         // ...else we return the process's exit value.

@@ -34,7 +34,7 @@ public class TcpPinger implements Pinger {
     /**
        Pings an external IP address using the default port (80).
     */
-    public int ping(InetAddress addr) {
+    public int ping(InetAddress addr) throws InterruptedException {
         return ping(addr, 80);
     }
 
@@ -60,7 +60,7 @@ public class TcpPinger implements Pinger {
 
        @return 0 (for compatibility with other pinger-classes that return the exit code)
     */
-    public int ping(InetAddress addr, int port) {
+    public int ping(InetAddress addr, int port) throws InterruptedException {
         DecimalFormat format = new DecimalFormat("0.000");
         InetSocketAddress sock_addr = new InetSocketAddress(addr,port);
         String times = "";
@@ -71,11 +71,8 @@ public class TcpPinger implements Pinger {
             String prefix = " ";
 
             if (p != 0) {
-                try {
-                    // Sleep half a second
-                    Thread.sleep(500);
-                }
-                catch (Exception e) { /* Slept less? */ }
+                // Sleep half a second
+                Thread.sleep(500);
             }
 
             boolean timed_out = false;

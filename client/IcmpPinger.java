@@ -57,7 +57,7 @@ public class IcmpPinger implements Pinger {
         return "invalid syntax"; // If something bad happens?
     }
 
-    public int ping(InetAddress addr) {
+    public int ping(InetAddress addr) throws InterruptedException {
         String[] specific_command;
         String[] summary_regex;
 

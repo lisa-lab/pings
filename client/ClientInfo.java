@@ -29,7 +29,7 @@ public class ClientInfo {
        Stores this client's UUID
     */
     String m_uuid;
-    /** 
+    /**
         Stores the detected OS
         @see ClientInfo.OSType
     */
@@ -95,32 +95,32 @@ public class ClientInfo {
     public enum OSType {
         /** not detected yet */
         NotDetected,
-            
+
         /** A Linux distribution */
         Linux,
 
         /** A variant of BSD */
         BSD,
-      
+
         /** Apple's OS X */
         OSX,
-      
+
         /** Windows XP */
         WinXP,
-      
+
         /** Windows 7 */
         Win7,
-      
+
         /** Windows 2000, Windows NT, Win6, Win8 */
         WinOther,
-      
+
         /** Some other OS we haven't planned for yet */
         Unsupported
     };
-      
-    /** 
+
+    /**
          Finds the interface attached to a given (local) IP address.
-      
+
         <p>It will need to be fixed later on. We guess that the first up and
         non-loopback interface is the one used to access outside. While it
         may be a cromulent first guess, it should be validated when actually
@@ -149,7 +149,7 @@ public class ClientInfo {
                         good = interf.isUp() && !interf.isLoopback();
                     }
                     catch (Exception e) { }
-                    
+
                     if (good) {
                         // find a v4 address
                         for (InetAddress addr : Collections.list(interf.getInetAddresses()))
@@ -167,7 +167,7 @@ public class ClientInfo {
                 // interface has it
                 for (NetworkInterface interf : Collections.list(interfaces)) {
                     for (InetAddress addr : Collections.list(interf.getInetAddresses()))
-                        if ((addr instanceof Inet4Address) && 
+                        if ((addr instanceof Inet4Address) &&
                             addr.equals(filter)) {
                             m_local_addr = addr;
                             break;
@@ -208,11 +208,11 @@ public class ClientInfo {
             else if (os_name.indexOf("bsd") >=0)
                 m_os_type=OSType.BSD;
             // add other OSes ... Solaris? OSX? ...DOS? :p
-            
+
             return m_os_type;
         }
     }
-  
+
     /**
        Returns the local address (as detected by the first adapter)
 
@@ -274,10 +274,17 @@ public class ClientInfo {
     /**
        The UUID is generated at first launch or read from the configuration
        file if it already exists.
-     
+
        @return the client's UUID
     */
     public String getUUID() { return m_uuid; }
+
+    /**
+       Sets a UUID, if none was read from the cookie.
+    */
+    void public setUUID() {
+        m_uuid = UUID.randomUUID().toString()
+    }
 
     /**
        @return the user's nickname or null if not set
@@ -288,7 +295,7 @@ public class ClientInfo {
        Sets the user's nickname
        @param new_nickname the new nickname
     */
-    public void setNickname(String new_nickname) { m_nickname = new_nickname; } 
+    public void setNickname(String new_nickname) { m_nickname = new_nickname; }
 
     /**
        @return the number of pings to perform
@@ -323,7 +330,8 @@ public class ClientInfo {
     }
 
     /**
-       Loads preferences/sets defaults
+       Uses the cookie strings to set preferences
+       or (if the string is empty) sets defaults.
     */
     public void setPreferences(String cookie) {
         m_os_type = OSType.NotDetected;
@@ -335,7 +343,7 @@ public class ClientInfo {
         m_number_of_pings = 10;
         m_number_of_traces = 3;
         m_tcp_timeout = 1000; // In milliseconds
-   
+
         m_os_type = getOS(); // Detect and set
         detectInterface(null); // Detects and sets m_local_addr and m_adapter
 
@@ -361,7 +369,7 @@ public class ClientInfo {
     public String getPreferences() {
 
         String cookie=m_cookie_name+"={nickname=";
-        if (m_nickname != null) 
+        if (m_nickname != null)
             cookie+=m_nickname;
 
         // FIXME: expiration date may be necessary;

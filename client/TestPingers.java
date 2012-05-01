@@ -6,7 +6,7 @@ import java.net.*;
     pingers and the expected format
 */
 public class TestPingers {
-    public static void main(String args[]) throws InterruptedException {
+    public static void main(String args[])  {
         if (args.length != 1) {
             System.err.println("Usage: java TestPinger hostname");
             System.exit(2);
@@ -17,7 +17,7 @@ public class TestPingers {
 
         if (this_client.getNickname() == null)
             this_client.setNickname("bobafett");
-
+ 
         InetAddress my_local_addr = this_client.getAddress();
         InetAddress my_global_addr = null;
 

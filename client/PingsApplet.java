@@ -1,7 +1,7 @@
-import java.applet.*;
 import java.awt.*;
+import javax.swing.*;
 
-public class PingsApplet extends Applet {
+public class PingsApplet extends JApplet {
 
     private final String SERVER_HOSTNAME = "localhost";
     private final int SERVER_PORT = 6543;

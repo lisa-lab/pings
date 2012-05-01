@@ -8,7 +8,7 @@ import java.net.*;
 public class TestPingers {
     public static void main(String args[]) throws InterruptedException {
         if (args.length != 1) {
-            System.err.println("Usage: java TestPinger hostname");
+            System.err.println("Usage: java TestPingers hostname");
             System.exit(2);
         }
         

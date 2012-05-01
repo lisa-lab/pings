@@ -282,8 +282,8 @@ public class ClientInfo {
     /**
        Sets a UUID, if none was read from the cookie.
     */
-    void public setUUID() {
-        m_uuid = UUID.randomUUID().toString()
+    public void setUUID() {
+        m_uuid = UUID.randomUUID().toString();
     }
 
     /**
@@ -381,9 +381,13 @@ public class ClientInfo {
     }
 
     /**
-       Default constructor
+       Constructor
     */
     public ClientInfo(String cookie) {
         setPreferences(cookie);
+    }
+
+    public ClientInfo() {
+        this("");
     }
 }

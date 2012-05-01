@@ -18,13 +18,13 @@ public class Launcher {
        @param stderr_lines returns the output on stderr as a list of strings
        @param max_nb_lines specifies how many lines to capture (extra lines are ignored)
 
-       @return program exit code (or -1 if a runtime exception occurs)
+       @return program exit code (or -1 if a IO error occurs)
     */
     public static int launch(List<String> args,
                              List<String> stdout_lines,
                              List<String> stderr_lines,
-                             int max_nb_lines) {
-        Process proc;
+                             int max_nb_lines) throws InterruptedException {
+        Process proc = null;
         try {
             proc = Runtime.getRuntime().exec(args.toArray(new String[args.size()]));
 
@@ -49,10 +49,19 @@ public class Launcher {
             stderr.close();
             proc.waitFor();
         }
-        catch (Exception error) {
-            // Some error occured!
-            // FIXME Improve error handling.
+        catch (IOException error) {
+            if (proc != null) {
+                // Don't leave subprocess hanging around...
+                proc.destroy();
+            }
             return -1;
+        }
+        catch (InterruptedException ie) {
+            if (proc != null) {
+                // Don't leave subprocess hanging around...
+                proc.destroy();
+            }
+            throw ie;
         }
 
         // ...else we return the process's exit value.

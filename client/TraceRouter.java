@@ -77,7 +77,7 @@ public class TraceRouter {
 
        @return The external command exit code
     */
-    public int trace(InetAddress addr) {
+    public int trace(InetAddress addr) throws InterruptedException {
         String[] specific_command;
         String reject_regex;
         String[] translator;

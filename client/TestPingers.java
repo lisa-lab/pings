@@ -6,7 +6,7 @@ import java.net.*;
     pingers and the expected format
 */
 public class TestPingers {
-    public static void main(String args[])  {
+    public static void main(String args[]) throws InterruptedException {
         if (args.length != 1) {
             System.err.println("Usage: java TestPinger hostname");
             System.exit(2);

@@ -1,13 +1,13 @@
 SRC = Pinger.java PingsClient.java PingsApplet.java TestPingers.java \
       ClientInfo.java ServerProxy.java Launcher.java IcmpPinger.java \
-      TcpPinger.java TraceRouter.java
+      TcpPinger.java TraceRouter.java GeoipInfo.java
 
 # Join multiple libraries together with ":" (e.g. foo.jar:bar.jar)
 EXTERNAL_LIBS = external_libs/json-simple-1.1.1.jar:external_libs/plugin.jar
 JAVADOC_OUTPUT_DIR = doc
 
 JAVAC = javac
-JFLAGS = -classpath .:$(EXTERNAL_LIBS)
+JFLAGS = -classpath .:$(EXTERNAL_LIBS) -Xlint:unchecked
 
 JAVADOC = javadoc
 JDOCFLAGS = -private -d $(JAVADOC_OUTPUT_DIR) -classpath .:$(EXTERNAL_LIBS)

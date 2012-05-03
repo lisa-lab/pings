@@ -18,7 +18,7 @@ public class ServerProxy {
 
     public static class Pings {
         public InetAddress[] addresses;
-        public JSONObject[] geoip_info;
+        public GeoipInfo[] geoip_info;
         public String[] results;
         public String token;
     }
@@ -42,7 +42,9 @@ public class ServerProxy {
         JSONObject json_result = (JSONObject)doJsonRequest("/get_pings", null);
 
         // Update client_info with new client-related information.
-        client_info.setGeoipData((JSONObject)json_result.get("client_geoip"));
+        JSONObject client_geoip = (JSONObject)json_result.get("client_geoip");
+        if (client_geoip != null)
+            client_info.setGeoipInfo(new GeoipInfo(client_geoip));
 
         // Fill Pings instance from JSON results of our request.
         Pings pings = new Pings();
@@ -56,12 +58,12 @@ public class ServerProxy {
         }
 
         JSONArray all_geoip_data = (JSONArray)json_result.get("geoip");
-        pings.geoip_info = new JSONObject[num_addresses];
+        pings.geoip_info = new GeoipInfo[num_addresses];
         if (all_geoip_data != null) {
             for (int i = 0; i < num_addresses; i++) {
                 Object o = all_geoip_data.get(i);
                 if (o != null) {
-                    pings.geoip_info[i] = (JSONObject)o;
+                    pings.geoip_info[i] = new GeoipInfo((JSONObject)o);
                 }
                 else
                     pings.geoip_info[i] = null;

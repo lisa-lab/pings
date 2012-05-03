@@ -5,8 +5,6 @@ import java.util.logging.Level;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.json.simple.JSONObject;
-
 /** Pings client. Connects to the Pings server, retrieves addresses
  *  to be pinged, pings them and submits the results back to the server.
  *
@@ -31,8 +29,8 @@ public class PingsClient extends Thread {
     // bugs!
     private AtomicReference<String> m_nick;
     private AtomicReference<InetAddress> m_current_ping_dest;
-    private AtomicReference<JSONObject> m_current_dest_geoip;
-    private AtomicReference<JSONObject> m_source_geoip;
+    private AtomicReference<GeoipInfo> m_current_dest_geoip;
+    private AtomicReference<GeoipInfo> m_source_geoip;
 
     public PingsClient(String server_hostname, int server_port) {
         m_client_info = new ClientInfo();
@@ -41,8 +39,8 @@ public class PingsClient extends Thread {
 
         m_nick = new AtomicReference<String>("");
         m_current_ping_dest = new AtomicReference<InetAddress>();
-        m_current_dest_geoip = new AtomicReference<JSONObject>();
-        m_source_geoip = new AtomicReference<JSONObject>();
+        m_current_dest_geoip = new AtomicReference<GeoipInfo>();
+        m_source_geoip = new AtomicReference<GeoipInfo>();
     }
 
     public void setNickname(String nick) {
@@ -53,11 +51,11 @@ public class PingsClient extends Thread {
         return m_current_ping_dest.get();
     }
 
-    public JSONObject getSourceGeoip() {
+    public GeoipInfo getSourceGeoip() {
         return m_source_geoip.get();
     }
 
-    public JSONObject getCurrentDestGeoip() {
+    public GeoipInfo getCurrentDestGeoip() {
         return m_current_dest_geoip.get();
     }
 
@@ -67,7 +65,7 @@ public class PingsClient extends Thread {
                 LOGGER.info("PingsClient worker thread starting.");
                 try {
                     ServerProxy.Pings pings = m_server_proxy.getPings(m_client_info);
-                    m_source_geoip.set(m_client_info.getGeoipData());
+                    m_source_geoip.set(m_client_info.getGeoipInfo());
                     final int num_pings = pings.addresses.length;
                     LOGGER.log(Level.INFO, "Got {0} pings from server.", num_pings);
 
@@ -120,10 +118,21 @@ public class PingsClient extends Thread {
         client.start();
 
         while (true) {
-            Thread.sleep(1000);
+            Thread.sleep(2000);
 
-            System.out.printf("Current ping dest: %s\n",
-                              client.getCurrentPingDest().toString());
+            InetAddress current_ping_dest = client.getCurrentPingDest();
+            if (current_ping_dest != null)
+                System.out.printf("Current ping dest: %s\n",
+                                  current_ping_dest.toString());
+
+            GeoipInfo dest_geoip_info = client.getCurrentDestGeoip();
+            if (dest_geoip_info != null) {
+                System.out.printf("Long: %f; lat: %f; city: %s; country: %s\n",
+                                  dest_geoip_info.longitude,
+                                  dest_geoip_info.latitude,
+                                  dest_geoip_info.city,
+                                  dest_geoip_info.country);
+            }
         }
     }
 }

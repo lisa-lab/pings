@@ -3,8 +3,6 @@ import java.net.*;
 import java.util.prefs.Preferences;
 import java.util.logging.Logger;
 
-import org.json.simple.JSONObject;
-
 
 /**
    This class holds the configuration of the client, some elements of which
@@ -16,7 +14,6 @@ import org.json.simple.JSONObject;
    FIXME
    <ul>
      <li>Add hooks for certain information (roaming and internal IP addr).
-     <li>Add getters to return the needed pieces of the geoip information.
    </ul>
 
    @author   Steven Pigeon <pigeon@iro.umontreal.ca>
@@ -81,7 +78,7 @@ public class ClientInfo {
     /**
        Geoip information for the client address.
     */
-    private JSONObject m_client_geoip_data;
+    private GeoipInfo m_client_geoip_info;
 
 
     /**
@@ -318,15 +315,15 @@ public class ClientInfo {
     /**
        Sets the geoip information for the client's IP address.
     */
-    public void setGeoipData(JSONObject geoip_data) {
-        m_client_geoip_data = geoip_data;
+    public void setGeoipInfo(GeoipInfo geoip_info) {
+        m_client_geoip_info = geoip_info;
     }
 
     /**
        @return The geoip information for the client's IP address.
     */
-    public JSONObject getGeoipData() {
-        return m_client_geoip_data;
+    public GeoipInfo getGeoipInfo() {
+        return m_client_geoip_info;
     }
 
     /**

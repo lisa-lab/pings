@@ -28,7 +28,10 @@ simple.
 5. Then run ``python setup.py develop`` to install (in-place) the Pings
 server code itself.
 
-6. Start the Pings servers. In separate windows, run:
+6. Run the script ``./download_geoip_db`` to download a copy of the free
+GeoIP database from MaxMind.
+
+7. Start the Pings servers. In separate windows, run:
    * ``./storage_server development.ini``
    * ``./leaderboards_server development.ini``
    * ``paster serve development.ini``

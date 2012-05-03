@@ -1,0 +1,44 @@
+Installation Guide
+==================
+
+This document will guide you in installing a local copy of the Pings server
+for development, etc.
+
+You will need virtualenv and virtualenvwrapper to follow this guide. On top
+of Python (obviously), you will need memcached and redis installed. And
+finally you will also require the development packages for libevent and
+zeromq.
+
+Once you have all the requirements above installed, the rest is pretty
+simple.
+
+1. Create and activate a virtualenv project directory (an isolated Python
+   installation) by running `mkproject pings`. You can check that the
+   virtualenv was activated by running ``showvirtualenv``, which should ouput
+   "pings".
+
+2. Get a copy of the source code by running ``git clone
+   git://github.com/lisa-lab/pings.git`` (if this is not already done).
+
+3. Go to the "server" subdirectory of the Pings source code: ``cd pings/server``.
+
+4. To install all the Python dependencies for the Pings, run ``pip install
+-r requirements.txt``. This takes a little while.
+
+5. Then run ``python setup.py develop`` to install (in-place) the Pings
+server code itself.
+
+6. Start the Pings servers. In separate windows, run:
+   * ``./storage_server development.ini``
+   * ``./leaderboards_server development.ini``
+   * ``paster serve development.ini``
+
+You should now have a Pings server running, listening on port 6543.
+
+A few notes. The above assumes that the Redis and Memcache servers
+installed are running. If this is not the case, start the missing ones (in
+separate windows again) with ``redis-server`` or ``memcached``. If you have
+the Screen program installed, you can also use the ``development.screenrc``
+file instead, which starts all the above programs (except memcached) in
+separate screen windows. Simply to ``screen -c development.screenrc`` to do
+that.

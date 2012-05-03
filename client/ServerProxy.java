@@ -3,6 +3,7 @@ import java.net.URL;
 import java.net.InetAddress;
 import java.io.*;
 import java.util.Arrays;
+import java.util.HashMap;
 
 import org.json.simple.JSONValue;
 import org.json.simple.JSONObject;
@@ -81,7 +82,12 @@ public class ServerProxy {
         // "token" (a string... the same as return by getPings), "results"
         // (a list of arbitrary JSON objects, one per ping), and optionally
         // "userid" (a string).
-        JSONObject json_request = new JSONObject();
+        //
+        // Don't use JSONObject here. As currently written, it's not
+        // generics-aware and so it's possible to use it without triggering
+        // unchecked exception warnings. JSONObject doesn't buy us anything
+        // over using a HashMap<String, Object> here anyways.
+        HashMap<String, Object> json_request = new HashMap<String, Object>();
         json_request.put("token", pings.token);
         json_request.put("results", Arrays.asList(pings.results));
         String nick = client_info.getNickname();

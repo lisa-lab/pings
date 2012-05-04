@@ -46,6 +46,10 @@ public class PingsClient extends Thread {
     public void setNickname(String nick) {
         m_nick.set(nick);
     }
+    
+    public String getNickname() {
+    	return m_nick.get();
+    }
 
     public InetAddress getCurrentPingDest() {
         return m_current_ping_dest.get();
@@ -96,6 +100,11 @@ public class PingsClient extends Thread {
 
                     LOGGER.info("Submitting results to server.");
                     m_server_proxy.submitResults(m_client_info, pings);
+                    
+                    //FIXME
+                    if (false) {
+                    	throw new IOException();
+                    }
                 }
                 catch (IOException e) {
                     LOGGER.log(Level.WARNING, "Exception caught in PingsClient thread.", e);

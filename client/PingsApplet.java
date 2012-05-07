@@ -1,5 +1,7 @@
 import java.awt.*;
 import java.awt.event.*;
+import java.util.Random;
+
 import javax.swing.*;
 
 
@@ -32,13 +34,13 @@ public class PingsApplet extends JApplet implements ActionListener{
 	public void init() {
 		
 		// Initialization (on page load).
-		m_pings_client = new PingsClient(SERVER_HOSTNAME, SERVER_PORT);
+		m_pings_client = new PingsClient(SERVER_HOSTNAME, SERVER_PORT);		
 		m_pings_client.start();
 		
 		initGUI();
 		
-		//FIXME : Remove dummy examples
-		useDummyExamples();
+		//FIXME : Remove simulation
+		new PingsClientSimulation(ping_globe).start();
 	}
 	
 	public void main(String[] arg1){
@@ -163,19 +165,8 @@ public class PingsApplet extends JApplet implements ActionListener{
 		}
 	}
 	
-	private void useDummyExamples() {
-		//FIXME
-		//For test purpose only :
+	//FIXME : delete this when done
+	//For test purpose only
+	
 		
-		GeoipInfo montreal = new GeoipInfo("Montreal","Canada",-73.55f,45.5f);
-		GeoipInfo newyork = new GeoipInfo("New-York","United States",-70.93f, 40.65f);
-		GeoipInfo paris = new GeoipInfo("Paris","France",2.35f, 48.85f);
-		GeoipInfo tokyo = new GeoipInfo("Tokyo","Japan",139.68f, 35.68f);
-		
-		ping_globe.setOrigin(montreal);
-		
-		ping_globe.addPing(newyork);
-		ping_globe.addPing(paris);
-		ping_globe.addPing(tokyo);
-	}
 }

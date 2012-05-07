@@ -27,7 +27,7 @@ public class GeoipInfo {
     /*
      * An alternative constructor for testing purpose
      */
-    //TODO : remove it
+    //TODO : remove it when useless
     public GeoipInfo(String city,String country,double longitude,double latitude) {
     	this.city = city;
     	this.country = country;

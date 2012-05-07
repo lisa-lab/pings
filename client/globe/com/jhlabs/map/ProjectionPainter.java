@@ -462,8 +462,8 @@ public class ProjectionPainter {
 	 * Draw a simple arc between (clon1,clat1) and (clon2,clat2)
 	 */
     public final static void basicArc( float clon1, float clat1, float clon2, float clat2, GeneralPath path ) {
-		path.moveTo((float)clon1, (float)clat1 );
-		path.lineTo((float)clon2, (float)clat2 );
+		path.moveTo(clon1, clat1 );
+		path.lineTo(clon2, clat2 );
     }
 	
 	/**

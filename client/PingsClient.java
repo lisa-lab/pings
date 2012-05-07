@@ -63,6 +63,7 @@ public class PingsClient extends Thread {
         return m_current_dest_geoip.get();
     }
 
+    @Override
     public void run() {
         try {
             while (true) {

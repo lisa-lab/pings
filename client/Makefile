@@ -41,7 +41,7 @@ jar: compile
 	tempdir=`mktemp -d`; echo $$tempdir; for f in $$PWD/external_libs/*.jar; do (cd $$tempdir; jar xf $$f); done; \
 	$(RM) -rf $$tempdir/META-INF; $(JAR) uf pings.jar -C $$tempdir .; $(RM) -rf $$tempdir
         # Add globe data files.
-	$(JAR) uf pings.jar -C globe world.shp -C globe globe.dbf
+	$(JAR) uf pings.jar -C globe world.shp -C globe world.dbf
         # Add Jar Index.
 	$(JAR) i pings.jar
 

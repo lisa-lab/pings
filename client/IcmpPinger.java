@@ -17,7 +17,7 @@ public class IcmpPinger implements Pinger {
 
     /** Describes OS-specific commands for external ping command */
     private static final String[][] OS_SPECIFIC_COMMAND =  {
-        // The number of pings paramater must be LAST because it is
+        // The number of pings parameter must be LAST because it is
         // appended at run-time using ClientInfo.getNumberOfPings()
         //
         // Linux        

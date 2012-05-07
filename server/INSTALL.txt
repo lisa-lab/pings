@@ -9,8 +9,8 @@ of Python (obviously), you will need memcached and redis installed. And
 finally you will also require the development packages for libevent and
 zeromq.
 
-Once you have all the requirements above installed, the rest is pretty
-simple.
+Once you have all the requirements above installed (remember to source
+virtualenvwrapper to activate it), the rest is pretty simple.
 
 1. Create and activate a virtualenv project directory (an isolated Python
    installation) by running `mkproject pings`. You can check that the

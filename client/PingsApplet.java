@@ -1,7 +1,7 @@
 import java.awt.*;
 import java.awt.event.*;
-
 import javax.swing.*;
+
 
 /**
  * This class holds the web applet. It creates the GUI and links it to the
@@ -24,7 +24,7 @@ public class PingsApplet extends JApplet implements ActionListener{
 	private PingGlobe ping_globe;
 	
 	/**
-	* The initialization of the applet, it creates the PingsClient and then GUI
+	* The initialization of the applet, it creates the PingsClient and the GUI
 	* <p>
 	* @see PingsClient
 	* @see  #initGUI()
@@ -33,12 +33,16 @@ public class PingsApplet extends JApplet implements ActionListener{
 		
 		// Initialization (on page load).
 		m_pings_client = new PingsClient(SERVER_HOSTNAME, SERVER_PORT);
-		new Thread(m_pings_client).start();
+		m_pings_client.start();
 		
 		initGUI();
 		
 		//FIXME : Remove dummy examples
 		useDummyExamples();
+	}
+	
+	public void main(String[] arg1){
+		init();
 	}
 	
 	/**
@@ -97,7 +101,8 @@ public class PingsApplet extends JApplet implements ActionListener{
 	 * shows "Resume".
 	 */
 	private void refreshPauseButton() {
-			if (m_pings_client.m_is_running.get()) {
+		//FIXME
+			if (true) {//m_pings_client.m_is_running.get()) {
 				pause_button.setText("Pause");
 				pause_button.setActionCommand("pause");				
 			}
@@ -119,7 +124,9 @@ public class PingsApplet extends JApplet implements ActionListener{
 		//Handle the pause/resume button
 		if (command.equals("pause")) {
 			//Pause the client if it was running, do nothing otherwise
-			boolean was_running = m_pings_client.m_is_running.compareAndSet(true, false);
+
+			//FIXME
+			boolean was_running = true;//m_pings_client.m_is_running.compareAndSet(true, false);
 			//Issue a warning if the client was not running
 			if (!was_running) {
 				//FIXME
@@ -130,7 +137,9 @@ public class PingsApplet extends JApplet implements ActionListener{
 		}
 		else if (command.equals("resume")) {
 			//resume the client if it was paused, do nothing otherwise
-			boolean was_running = !m_pings_client.m_is_running.compareAndSet(false, true);
+
+			//FIXME
+			boolean was_running = false;//!m_pings_client.m_is_running.compareAndSet(false, true);
 			//Issue a warning if the client was running
 			if (was_running) {
 				//FIXME

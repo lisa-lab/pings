@@ -121,6 +121,7 @@ public class ServerProxy {
         connection.setRequestProperty("Content-Type", "application/json;charset=" + CHARSET);
 
         // Write request.
+        // FIXME: This can crash with java.net.ConnectException: Connection refused
         OutputStream output = connection.getOutputStream();
         try {
             output.write(json_request.getBytes(CHARSET));

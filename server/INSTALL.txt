@@ -4,10 +4,10 @@ Installation Guide
 This document will guide you in installing a local copy of the Pings server
 for development, etc.
 
-You will need virtualenv and virtualenvwrapper to follow this guide. On top
-of Python (obviously), you will need memcached and redis installed. And
-finally you will also require the development packages for libevent and
-zeromq.
+You will need virtualenv and virtualenvwrapper (2.9 or greater) to follow
+this guide. On top of Python (obviously), you will need memcached and redis
+installed. And finally you will also require the development packages for
+libevent and zeromq.
 
 Once you have all the requirements above installed (remember to source
 virtualenvwrapper to activate it), the rest is pretty simple.
@@ -15,10 +15,12 @@ virtualenvwrapper to activate it), the rest is pretty simple.
 1. Create and activate a virtualenv project directory (an isolated Python
    installation) by running `mkproject pings`. You can check that the
    virtualenv was activated by running ``showvirtualenv``, which should ouput
-   "pings".
+   "pings". After executing the ``mkproject`` command, your current directory
+   will be the project directory, and all Python packages installed through
+   ``pip`` will be kept in a separate location from your system Python packages.
 
-2. Get a copy of the source code by running ``git clone
-   git://github.com/lisa-lab/pings.git`` (if this is not already done).
+2. Get a copy of the source code into the current directory by running
+   ``git clone git://github.com/lisa-lab/pings.git .``
 
 3. Go to the "server" subdirectory of the Pings source code: ``cd pings/server``.
 

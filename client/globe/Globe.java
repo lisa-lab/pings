@@ -101,7 +101,7 @@ public class Globe extends JComponent {
 //			map.addLayer( worldLayer = new ShapefileLayer( getClass().getResource("world.shp"), style ) );
 			SeaLayer seaLayer2;
 			mapLayer.addLayer( seaLayer2 = new SeaLayer( null ) );
-			seaLayer2.addLayer( worldLayer = new ShapefileLayer( getClass().getResource("globe/world.shp"), getClass().getResource("globe/world.dbf"), style ) );
+			seaLayer2.addLayer( worldLayer = new ShapefileLayer( getClass().getResource("world.shp"), getClass().getResource("world.dbf"), style ) );
 //			mapLayer.addLayer( worldLayer = new ShapefileLayer( new File("out.shp").toURL(), new Style( Color.black, null ) ) );
 		}
 		catch ( IOException e ) {

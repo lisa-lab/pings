@@ -2,20 +2,26 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.util.Observable;
+import java.util.Observer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-/** Pings client. Connects to the Pings server, retrieves addresses
- *  to be pinged, pings them and submits the results back to the server.
+/**
+ * Pings client. Connects to the Pings server, retrieves addresses
+ * to be pinged, pings them and submits the results back to the server.
+ *
+ * To use, embed in a thread object, then start the thread. If you want
+ * to be notified when the source geoip info or ping destination change, you
+ * can register yourself with addNotifier().
  *
  * @todo IMPORTANT: Give up after a certain number of errors in a row,
  * instead of continuously hammering the server! If doing more than a few
  * retries, exponential backoff would probably be a good idea too.
  * @todo Improve error handling when server_proxy raises an exception.
- * @todo Figure out a good way to send notifications from across threads.
  * @author Christian Hudon <chrish@pianocktail.org>
  */
-public class PingsClient extends Thread {
+public class PingsClient extends Observable implements Runnable {
     // These variables are initialized in the constructor and then
     // only accessed by the PingsClient thread. No need for locking, etc.
     private ClientInfo m_client_info;
@@ -63,6 +69,12 @@ public class PingsClient extends Thread {
         return m_current_dest_geoip.get();
     }
 
+    /** Combines java.util.Observable's setChanged() and notifyObservers(). */
+    private void notifyObserversOfChange() {
+        setChanged();
+        notifyObservers();
+    }
+
     @Override
     public void run() {
         try {
@@ -71,6 +83,7 @@ public class PingsClient extends Thread {
                 try {
                     ServerProxy.Pings pings = m_server_proxy.getPings(m_client_info);
                     m_source_geoip.set(m_client_info.getGeoipInfo());
+                    notifyObserversOfChange();
                     final int num_pings = pings.addresses.length;
                     LOGGER.log(Level.INFO, "Got {0} pings from server.", num_pings);
 
@@ -86,6 +99,7 @@ public class PingsClient extends Thread {
                                                   i+1, num_pings });
                         m_current_ping_dest.set(pings.addresses[i]);
                         m_current_dest_geoip.set(pings.geoip_info[i]);
+                        notifyObserversOfChange();
                         m_pinger.ping(pings.addresses[i]);
 
                         m_current_ping_dest.set(null);
@@ -101,17 +115,12 @@ public class PingsClient extends Thread {
 
                     LOGGER.info("Submitting results to server.");
                     m_server_proxy.submitResults(m_client_info, pings);
-                    
-                    //FIXME
-                    if (false) {
-                    	throw new IOException();
-                    }
                 }
                 catch (IOException e) {
                     LOGGER.log(Level.WARNING, "Exception caught in PingsClient thread.", e);
                     // Avoid thread busy-loop if IOException keeps getting
                     // raised in call to getPings.
-                    sleep(1000);
+                    Thread.sleep(1000);
                 }
             }
         }
@@ -125,24 +134,29 @@ public class PingsClient extends Thread {
     public static void main(String args[]) throws InterruptedException {
         PingsClient client = new PingsClient("localhost", 6543);
         client.setNickname("yoda");
-        client.start();
 
-        while (true) {
-            Thread.sleep(2000);
+        client.addObserver(new Observer() {
+                public void update(Observable o, Object arg) {
+                    PingsClient client = (PingsClient)o;
 
-            InetAddress current_ping_dest = client.getCurrentPingDest();
-            if (current_ping_dest != null)
-                System.out.printf("Current ping dest: %s\n",
-                                  current_ping_dest.toString());
+                    InetAddress current_ping_dest = client.getCurrentPingDest();
+                    if (current_ping_dest != null)
+                        System.out.printf("Current ping dest: %s\n",
+                                          current_ping_dest.toString());
 
-            GeoipInfo dest_geoip_info = client.getCurrentDestGeoip();
-            if (dest_geoip_info != null) {
-                System.out.printf("Long: %f; lat: %f; city: %s; country: %s\n",
-                                  dest_geoip_info.longitude,
-                                  dest_geoip_info.latitude,
-                                  dest_geoip_info.city,
-                                  dest_geoip_info.country);
-            }
-        }
+                    GeoipInfo dest_geoip_info = client.getCurrentDestGeoip();
+                    if (dest_geoip_info != null) {
+                        System.out.printf("Long: %f; lat: %f; city: %s; country: %s\n",
+                                          dest_geoip_info.longitude,
+                                          dest_geoip_info.latitude,
+                                          dest_geoip_info.city,
+                                          dest_geoip_info.country);
+                    }
+                }
+            });
+
+        Thread thread = new Thread(client);
+        thread.start();
+        thread.join();
     }
 }

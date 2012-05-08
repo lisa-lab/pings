@@ -15,9 +15,13 @@ __pycache__/
 
 # Ignore Javadoc output directory for client.
 client/doc/
+# Ignore output jar
+client/pings.jar
 
 # Ignore directories created by storage_server.
 server/20??-??-??/
+# Ignore dump created by Redis.
+server/dump.rdb
 
 # Don't add GeoIP data
 server/Geo*.dat

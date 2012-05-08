@@ -300,7 +300,7 @@ public class Globe extends JComponent {
 		map.paint( mg );
 
 		if ( showNight ) {
-			Color c = new Color(0, 0, 0, 0.5f);
+			Color c = new Color(1f, 0, 0, 0.15f);
 			GeneralPath gc = new GeneralPath();
 			ProjectionPainter.smallCircle( 45, 5, 87, 180, gc, true );
 			gc.closePath();

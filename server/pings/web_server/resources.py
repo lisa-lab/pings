@@ -1,5 +1,6 @@
 import os, logging, memcache, ipaddr, random, pygeoip
 from gevent_zeromq import zmq
+from . import leaderboards
 
 logger = logging.getLogger(__name__)
 
@@ -54,18 +55,14 @@ def init_storage_zmq(zmq_urls):
 
 # Zeromq sockets for leaderboards server
 zmq_incr_score_socket = None
-zmq_publish_leaderboards_socket = None
 
 def init_rankings_zmq(incr_scores_url, publish_leaderboards_url):
-    global zmq_incr_score_socket, zmq_publish_leaderboards_socket
+    global zmq_incr_score_socket, leaderboards_proxy
 
     zmq_incr_score_socket = get_zmq_context().socket(zmq.PUSH)
     zmq_incr_score_socket.connect(incr_scores_url)
 
-    zmq_publish_leaderboards_socket = get_zmq_context().socket(zmq.SUB)
-    zmq_publish_leaderboards_socket.connect(publish_leaderboards_url)
-    # Subscribe to everything.
-    zmq_publish_leaderboards_socket.setsockopt(zmq.SUBSCRIBE, '')
+    leaderboards.init(get_zmq_context(), publish_leaderboards_url)
 
 #
 # GeoIP database
@@ -186,8 +183,7 @@ def update_leaderboards(userid, results):
 
 def get_leaderboards():
     """Retrieves the latest leaderboards top scores."""
-    top_scores = zmq_publish_leaderboards_socket.recv_json(zmq.NOBLOCK)
-    # TODO Handle case where no message is present.
+    top_scores = leaderboards.get_latest()
     logger.debug('Current leaderboards top score: %s', top_scores)
     return top_scores
 

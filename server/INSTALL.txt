@@ -9,6 +9,14 @@ this guide. On top of Python (obviously), you will need memcached and redis
 installed. And finally you will also require the development packages for
 libevent and zeromq.
 
+On Ubuntu or Debian, you can install all the above by running first:
+
+sudo apt-get install $(< ubuntu-requirements.txt)
+
+and second either ``sudo apt-get install virtualenvwrapper`` (if running
+Ubuntu 12.04, Debian wheezy or more recent) or ``sudo pip install
+virtualenvwrapper`` (if running an earlier version of Ubuntu or Debian).
+
 Once you have all the requirements above installed (remember to source
 virtualenvwrapper to activate it), the rest is pretty simple.
 

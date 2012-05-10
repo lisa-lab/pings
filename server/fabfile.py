@@ -80,6 +80,15 @@ def prepare_host():
     bootstrap_python_install()
 
 @task
+def setup_virtualenv(rootdir):
+    """Creates the virtualenv if needed."""
+    # Running virtualenv when said virtualenv already exists and a process
+    # is using it fails with a "text file busy" error on the python
+    # executable. So check beforehand.
+    if not exists(os.path.join(rootdir), 'lib'):
+        sudo('virtualenv --distribute ' + rootdir)
+
+@task
 @roles('test')
 def prepare_test_host():
     """Installs all required packages for all roles, to prepare a host for
@@ -158,7 +167,7 @@ def deploy_test():
 
     # Install everything
     rootdir = '/srv/pings_test'
-    sudo('virtualenv --distribute ' + rootdir)
+    setup_virtualenv(rootdir)
     with cd(rootdir):
         put('development.ini', '.', use_sudo=True)
 
@@ -176,7 +185,7 @@ def deploy_test():
         # reinstall all dependencies. Said --force-reinstall option is
         # there so the version we have now is installed even if the version
         # number wasn't bumped up (kinda handy during development).
-        sudo('bin/pip install --no-deps --force-reinstall %s' % pings_src_dir)
+        sudo('bin/pip install --no-deps --ignore-installed %s' % pings_src_dir)
 
     # Install and start all the services
     start_leaderboards_server(rootdir, wipe_data=True)

@@ -6,5 +6,28 @@
   <body>
     <h1>Pings Project</h1>
 
+    <h2>Leaderboards</h2>
+
+    <h3>Global</h3>
+    <ol>
+      {% for item in global %}
+      <li>{{ item[0] }} ({{ item[1] }})
+      {% endfor %}
+    </ol>
+
+    <h3>Weekly</h3>
+    <ol>
+      {% for item in weekly %}
+      <li>{{ item[0] }} ({{ item[1] }})
+      {% endfor %}
+    </ol>
+
+    <h3>Daily</h3>
+    <ol>
+      {% for item in daily %}
+      <li>{{ item[0] }} ({{ item[1] }})
+      {% endfor %}
+    </ol>
+
   </body>
 </html>

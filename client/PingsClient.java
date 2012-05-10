@@ -105,6 +105,7 @@ public class PingsClient extends Observable implements Runnable {
                         m_current_ping_dest.set(null);
                         m_current_dest_geoip.set(null);
                         pings.results[i] = m_pinger.getLastPings();
+                        notifyObserversOfChange();
                         LOGGER.log(Level.INFO, "Ping result: {0}.",
                                    pings.results[i]);
                     }

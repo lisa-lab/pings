@@ -43,7 +43,7 @@ class OnDemandFile:
 
         if date != self.current_date:
             try:
-                os.mkdir(date.isoformat())
+                os.mkdir(os.path.join(self.root_dir, date.isoformat()))
             except OSError, e:
                 if e.errno == errno.EEXIST:
                     # Ignore error when directory already exists. This can

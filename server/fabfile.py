@@ -80,6 +80,15 @@ def prepare_host():
     bootstrap_python_install()
 
 @task
+def setup_virtualenv(rootdir):
+    """Creates the virtualenv if needed."""
+    # Running virtualenv when said virtualenv already exists and a process
+    # is using it fails with a "text file busy" error on the python
+    # executable. So check beforehand.
+    if not exists(os.path.join(rootdir), 'lib'):
+        sudo('virtualenv --distribute ' + rootdir)
+
+@task
 @roles('test')
 def prepare_test_host():
     """Installs all required packages for all roles, to prepare a host for
@@ -158,7 +167,7 @@ def deploy_test():
 
     # Install everything
     rootdir = '/srv/pings_test'
-    sudo('virtualenv --distribute ' + rootdir)
+    setup_virtualenv(rootdir)
     with cd(rootdir):
         put('development.ini', '.', use_sudo=True)
 

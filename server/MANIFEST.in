@@ -1,3 +1,3 @@
 include *.txt *.ini *.cfg *.rst
-recursive-include pings *.ico *.png *.css *.gif *.jpg *.pt *.txt *.mak *.mako *.js *.html *.xml
+recursive-include pings *.ico *.png *.css *.gif *.jpg *.js *.html *.jinja2
 include requirements.pip

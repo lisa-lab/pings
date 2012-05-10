@@ -1,4 +1,4 @@
-import subprocess, mock
+import subprocess, mock, socket, time, errno
 
 # mut: module under test
 import pings.leaderboards_server as mut
@@ -6,14 +6,29 @@ from datetime import date
 
 
 def start_redis_process(port):
+    address = '127.0.0.1'
     redis_process = subprocess.Popen(['redis-server', '-'],
                                             stdin=subprocess.PIPE)
     # Write out configuration file.
     redis_process.stdin.write('''port %d
 daemonize no
-bind 127.0.0.1
-''' % port)
+bind %s
+''' % (port, address))
     redis_process.stdin.close()
+
+    # Wait until we can connect. Try for 2 seconds max.
+    start_time = time.time()
+    accepting_connections = False
+    while not accepting_connections and (time.time() - start_time < 2):
+        try:
+            s = socket.create_connection((address, port))
+            s.close()
+            accepting_connections = True
+        except socket.error, e:
+            if e.errno == errno.ECONNREFUSED:
+                pass
+            else:
+                raise
 
     return redis_process
 

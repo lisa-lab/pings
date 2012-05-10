@@ -1,0 +1,6 @@
+libevent-dev
+libzmq-dev
+memcached
+python-dev
+python-distribute
+redis-server

@@ -185,7 +185,7 @@ def deploy_test():
         # reinstall all dependencies. Said --force-reinstall option is
         # there so the version we have now is installed even if the version
         # number wasn't bumped up (kinda handy during development).
-        sudo('bin/pip install --no-deps --force-reinstall %s' % pings_src_dir)
+        sudo('bin/pip install --no-deps --ignore-installed %s' % pings_src_dir)
 
     # Install and start all the services
     start_leaderboards_server(rootdir, wipe_data=True)

@@ -27,7 +27,7 @@ public class PingsClient extends Observable implements Runnable {
     // These variables are initialized in the constructor and then
     // only accessed by the PingsClient thread. No need for locking, etc.
     private ClientInfo m_client_info;
-    private Pinger m_pinger;
+    private Prober m_prober;
     private ServerProxy m_server_proxy;
     private int m_consecutive_error_count;
     private final static Logger LOGGER = Logger.getLogger(PingsClient.class.getName());
@@ -44,7 +44,7 @@ public class PingsClient extends Observable implements Runnable {
 
     public PingsClient(String server_hostname, int server_port) {
         m_client_info = new ClientInfo();
-        m_pinger = new TcpPinger(m_client_info);
+        m_prober = new TcpPinger(m_client_info);
         m_server_proxy = new ServerProxy(server_hostname, server_port);
 
         m_nick = new AtomicReference<String>("");
@@ -112,7 +112,7 @@ public class PingsClient extends Observable implements Runnable {
                         }
 
                         // Clear old data.
-                        m_pinger.clearPings();
+                        m_prober.clearProbe();
 
                         // Ping address.
                         LOGGER.log(Level.INFO, "Pinging address {0} ({1}/{2}).",
@@ -121,12 +121,12 @@ public class PingsClient extends Observable implements Runnable {
                         m_current_ping_dest.set(pings.addresses[i]);
                         m_current_dest_geoip.set(pings.geoip_info[i]);
                         notifyObserversOfChange();
-                        m_pinger.ping(pings.addresses[i]);
+                        m_prober.probe(pings.addresses[i]);
 
                         // Save ping result.
                         m_current_ping_dest.set(null);
                         m_current_dest_geoip.set(null);
-                        pings.results[i] = m_pinger.getLastPings();
+                        pings.results[i] = m_prober.getLastProbe();
                         notifyObserversOfChange();
                         LOGGER.log(Level.INFO, "Ping result: {0}.",
                                    pings.results[i]);

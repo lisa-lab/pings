@@ -8,7 +8,7 @@ import java.io.IOException;
 
    @author   Steven Pigeon <pigeon@iro.umontreal.ca>
 */
-public class TcpPinger implements Pinger {
+public class TcpPinger implements Prober {
     /** Holds the last collected times */
     private String m_tcp_times;
 
@@ -28,15 +28,15 @@ public class TcpPinger implements Pinger {
 
        @return The last collected times
     */
-    public String getLastPings() { return m_tcp_times; }
+    public String getLastProbe() { return m_tcp_times; }
 
-    public void clearPings() { m_tcp_times = ""; }
+    public void clearProbe() { m_tcp_times = ""; }
 
     /**
        Pings an external IP address using the default port (80).
     */
-    public int ping(InetAddress addr) throws InterruptedException {
-        return ping(addr, 80);
+    public int probe(InetAddress addr) throws InterruptedException {
+        return probe(addr, 80);
     }
 
     /**
@@ -61,7 +61,7 @@ public class TcpPinger implements Pinger {
 
        @return 0 (for compatibility with other pinger-classes that return the exit code)
     */
-    public int ping(InetAddress addr, int port) throws InterruptedException {
+    public int probe(InetAddress addr, int port) throws InterruptedException {
         DecimalFormat format = new DecimalFormat("0.000");
         InetSocketAddress sock_addr = new InetSocketAddress(addr,port);
         String times = "";

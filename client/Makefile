@@ -1,4 +1,4 @@
-SRC = Pinger.java PingsClient.java PingsApplet.java TestPingers.java \
+SRC = Prober.java PingsClient.java PingsApplet.java TestPingers.java \
       ClientInfo.java ServerProxy.java Launcher.java IcmpPinger.java \
       TcpPinger.java TraceRouter.java GeoipInfo.java PingGlobe.java
 

@@ -7,7 +7,7 @@ import java.net.*;
 
    @author   Steven Pigeon <pigeon@iro.umontreal.ca>
 */
-public class TraceRouter {
+public class TraceRouter implements Prober {
     /** Holds the last collected trace */
     private String m_trace_times;
 
@@ -62,12 +62,12 @@ public class TraceRouter {
 
        @return The last collected routes
     */
-    public String getLastTrace() { return m_trace_times; }
+    public String getLastProbe() { return m_trace_times; }
 
     /**
        Clears the last collected times
     */
-    public void clearTrace() { m_trace_times = ""; }
+    public void clearProbe() { m_trace_times = ""; }
 
 
     /**
@@ -77,7 +77,7 @@ public class TraceRouter {
 
        @return The external command exit code
     */
-    public int trace(InetAddress addr) throws InterruptedException {
+    public int probe(InetAddress addr) throws InterruptedException {
         String[] specific_command;
         String reject_regex;
         String[] translator;

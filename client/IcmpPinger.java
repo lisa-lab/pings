@@ -8,7 +8,7 @@ import java.net.*;
 
    @author   Steven Pigeon <pigeon@iro.umontreal.ca>
 */
-public class IcmpPinger implements Pinger {
+public class IcmpPinger implements Prober {
     /** Holds the last collected times */
     private String m_icmp_times;
 
@@ -37,9 +37,9 @@ public class IcmpPinger implements Pinger {
         {"[\\s|\\w|:]+=\\s([0-9]+),[\\s|\\w]+=\\s([0-9]+),.*", "$1 $2 ?ms"}
     };
 
-    public String getLastPings() { return m_icmp_times; }
+    public String getLastProbe() { return m_icmp_times; }
 
-    public void clearPings() { m_icmp_times = ""; }
+    public void clearProbe() { m_icmp_times = ""; }
 
     /**
        Returns the ping summary (how many sent, how many received, and if
@@ -57,7 +57,7 @@ public class IcmpPinger implements Pinger {
         return "invalid syntax"; // If something bad happens?
     }
 
-    public int ping(InetAddress addr) throws InterruptedException {
+    public int probe(InetAddress addr) throws InterruptedException {
         String[] specific_command;
         String[] summary_regex;
 

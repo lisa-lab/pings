@@ -1,11 +1,11 @@
 import java.net.InetAddress;
 
 /**
-   Common interface to all pingers.
+   Common interface to all ping & traceroute classes.
 
    @author Christian Hudon <chrish@pianocktail.org>
 */
-public interface Pinger {
+public interface Prober {
     /**
        Returns the last collected times as a String.
 
@@ -19,25 +19,26 @@ public interface Pinger {
 
        @return The last collected times
     */
-    public String getLastPings();
+    public String getLastProbe();
 
     /**
        Clears the last collected times
     */
-    public void clearPings();
+    public void clearProbe();
 
     /**
-       Pings an external IP address. A string containing the summary and times
+       Probes (via one of ping, traceroute, etc.) an external IP address.
+       A string containing the summary and times
        gathered is constructed, and accessible through
-       Pinger.getLastPings() after having called ping(). If an error
-       occured, getLastPings() is undefined (may contain previous call's
+       Prober.getLastProbe() after having called probe(). If an error
+       occured, getLastProbe() is undefined (may contain previous call's
        values).
 
-       @see   Pinger#getLastPings()
-       @see   Pinger#clearPings()
+       @see   Prober#getLastProbe()
+       @see   Prober#clearProbe()
        @param addr The address to ping
 
        @return The external command return code
     */
-    public int ping(InetAddress addr) throws InterruptedException;
+    public int probe(InetAddress addr) throws InterruptedException;
 }

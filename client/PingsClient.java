@@ -6,6 +6,7 @@ import java.util.Observable;
 import java.util.Observer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Pings client. Connects to the Pings server, retrieves addresses
@@ -15,18 +16,20 @@ import java.util.concurrent.atomic.AtomicReference;
  * to be notified when the source geoip info or ping destination change, you
  * can register yourself with addNotifier().
  *
- * @todo IMPORTANT: Give up after a certain number of errors in a row,
- * instead of continuously hammering the server! If doing more than a few
- * retries, exponential backoff would probably be a good idea too.
- * @todo Improve error handling when server_proxy raises an exception.
+ * We give up after a total of MAX_ERROR_COUNT errors has occured. We also
+ * do exponential backoff on consecutive errors, to avoid overloading the servers.
+ *
  * @author Christian Hudon <chrish@pianocktail.org>
  */
 public class PingsClient extends Observable implements Runnable {
+    public final int MAX_ERROR_COUNT = 20;
+
     // These variables are initialized in the constructor and then
     // only accessed by the PingsClient thread. No need for locking, etc.
     private ClientInfo m_client_info;
     private Pinger m_pinger;
     private ServerProxy m_server_proxy;
+    private int m_consecutive_error_count;
     private final static Logger LOGGER = Logger.getLogger(PingsClient.class.getName());
 
     // These variables are accessed both by the PingsClient thread and
@@ -37,6 +40,7 @@ public class PingsClient extends Observable implements Runnable {
     private AtomicReference<InetAddress> m_current_ping_dest;
     private AtomicReference<GeoipInfo> m_current_dest_geoip;
     private AtomicReference<GeoipInfo> m_source_geoip;
+    private AtomicInteger m_total_error_count;
 
     public PingsClient(String server_hostname, int server_port) {
         m_client_info = new ClientInfo();
@@ -47,6 +51,9 @@ public class PingsClient extends Observable implements Runnable {
         m_current_ping_dest = new AtomicReference<InetAddress>();
         m_current_dest_geoip = new AtomicReference<GeoipInfo>();
         m_source_geoip = new AtomicReference<GeoipInfo>();
+        m_total_error_count = new AtomicInteger();
+
+        resetErrorCount();
     }
 
     public void setNickname(String nick) {
@@ -69,18 +76,30 @@ public class PingsClient extends Observable implements Runnable {
         return m_current_dest_geoip.get();
     }
 
+    public int getErrorCount() {
+        return m_total_error_count.get();
+    }
+
     /** Combines java.util.Observable's setChanged() and notifyObservers(). */
     private void notifyObserversOfChange() {
         setChanged();
         notifyObservers();
     }
 
+    private void resetErrorCount() {
+        m_consecutive_error_count = 0;
+        m_total_error_count.set(0);
+    }
+
     @Override
     public void run() {
+        LOGGER.info("PingsClient worker thread starting.");
+        resetErrorCount();
+
         try {
             while (true) {
-                LOGGER.info("PingsClient worker thread starting.");
                 try {
+                    // Get source geoip data and list of addresses to ping.
                     ServerProxy.Pings pings = m_server_proxy.getPings(m_client_info);
                     m_source_geoip.set(m_client_info.getGeoipInfo());
                     notifyObserversOfChange();
@@ -92,8 +111,10 @@ public class PingsClient extends Observable implements Runnable {
                             throw new InterruptedException();
                         }
 
+                        // Clear old data.
                         m_pinger.clearPings();
 
+                        // Ping address.
                         LOGGER.log(Level.INFO, "Pinging address {0} ({1}/{2}).",
                                    new Object[] { pings.addresses[i].toString(),
                                                   i+1, num_pings });
@@ -102,26 +123,42 @@ public class PingsClient extends Observable implements Runnable {
                         notifyObserversOfChange();
                         m_pinger.ping(pings.addresses[i]);
 
+                        // Save ping result.
                         m_current_ping_dest.set(null);
                         m_current_dest_geoip.set(null);
                         pings.results[i] = m_pinger.getLastPings();
                         notifyObserversOfChange();
                         LOGGER.log(Level.INFO, "Ping result: {0}.",
                                    pings.results[i]);
+
+                        // Clear consecutive error count.
+                        m_consecutive_error_count = 0;
                     }
 
                     // Make sure nick is up-to-date before returning the
                     // ping results.
                     m_client_info.setNickname(m_nick.get());
 
+                    // Submit results to server.
                     LOGGER.info("Submitting results to server.");
                     m_server_proxy.submitResults(m_client_info, pings);
                 }
                 catch (IOException e) {
+                    final int total_error_count = m_total_error_count.incrementAndGet();
+                    m_consecutive_error_count++;
+
                     LOGGER.log(Level.WARNING, "Exception caught in PingsClient thread.", e);
-                    // Avoid thread busy-loop if IOException keeps getting
-                    // raised in call to getPings.
-                    Thread.sleep(1000);
+
+                    if (total_error_count > MAX_ERROR_COUNT) {
+                        LOGGER.log(Level.SEVERE, "Too many errors; stopping PingsClient thread.");
+                        throw new InterruptedException();
+                    }
+                    else {
+                        // Exponential backoff for consecutive errors. Also
+                        // avoid thread busy-loop if IOException keeps getting
+                        // raised in call to getPings.
+                        Thread.sleep(1000 * (int)Math.pow(2, m_consecutive_error_count));
+                    }
                 }
             }
         }

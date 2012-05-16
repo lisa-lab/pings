@@ -9,14 +9,18 @@ import org.json.simple.JSONValue;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
 
-/** Interface to the Pings server.
- *  @todo Add methods to get addresses to ping, and to submit ping results.
- *  @todo Error handling when the http status returned is not 200.
+/** Interface to the Pings server. Allows retrieving a list
+ *  of addresses to ping (together with their geoip information),
+ *  and submitting back the results.
  *
  *  @author Christian Hudon <chrish@pianocktail.org>
  */
 public class ServerProxy {
 
+    /** Container class for the Pings data. Obtained from getPings().
+        To use, fill in the results array with the corresponding Prober
+        results for each address, and give to submitResults() method
+        of ServerProxy. */
     public static class Pings {
         public InetAddress[] addresses;
         public GeoipInfo[] geoip_info;
@@ -24,11 +28,21 @@ public class ServerProxy {
         public String token;
     }
 
-    public ServerProxy(String server_hostname) {
-        m_server_hostname = server_hostname;
-        m_server_port = 80;
+    /** Exception class for communication errors with the server. */
+    public static class Exception extends IOException {
+        public Exception(String error_msg) {
+            super(error_msg);
+        }
     }
 
+    /** Constructs a new ServerProxy instance, with the server
+        at the given hostname and default port (80). */
+    public ServerProxy(String server_hostname) {
+        this(server_hostname, 80);
+    }
+
+    /** Constructs a new ServerProxy instance, with the server
+        at the given hostname and port. */
     public ServerProxy(String server_hostname, int server_port) {
         m_server_hostname = server_hostname;
         m_server_port = server_port;
@@ -121,7 +135,6 @@ public class ServerProxy {
         connection.setRequestProperty("Content-Type", "application/json;charset=" + CHARSET);
 
         // Write request.
-        // FIXME: This can crash with java.net.ConnectException: Connection refused
         OutputStream output = connection.getOutputStream();
         try {
             output.write(json_request.getBytes(CHARSET));
@@ -132,8 +145,7 @@ public class ServerProxy {
 
         int status = connection.getResponseCode();
         if (status != HttpURLConnection.HTTP_OK) {
-            // TODO Improve error handling.
-            return null;
+            throw new ServerProxy.Exception(String.format("Server returned HTTP status %d", status));
         }
 
         // Read back reply.

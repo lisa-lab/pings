@@ -44,7 +44,7 @@ public class PingsClient extends Observable implements Runnable {
 
     public PingsClient(String server_hostname, int server_port) {
         m_client_info = new ClientInfo();
-        m_prober = new TcpPinger(m_client_info);
+        m_prober = new CompositeProber(m_client_info);
         m_server_proxy = new ServerProxy(server_hostname, server_port);
 
         m_nick = new AtomicReference<String>("");

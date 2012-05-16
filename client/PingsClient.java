@@ -16,8 +16,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * to be notified when the source geoip info or ping destination change, you
  * can register yourself with addNotifier().
  *
- * We give up after a total of MAX_ERROR_COUNT errors has occured. We also
- * do exponential backoff on consecutive errors, to avoid overloading the servers.
+ * We give up (and stop the thread) after a total of MAX_ERROR_COUNT errors
+ * has occured. We also do exponential backoff on consecutive errors,
+ * to avoid overloading the servers if they have a problem.
  *
  * @author Christian Hudon <chrish@pianocktail.org>
  */

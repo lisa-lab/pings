@@ -117,7 +117,7 @@ def check_token(token):
     return token_mc.get(token.encode('ascii')) is not None
 
 
-def get_pings(num_addresses=3):
+def get_pings(num_addresses=15):
     """Returns a list (of length 'num_addresses') of IP addresses to be
     pinged."""
     ip_addresses = []

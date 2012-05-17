@@ -171,7 +171,25 @@ public class PingsClient extends Observable implements Runnable {
     }
 
     public static void main(String args[]) throws InterruptedException {
-        PingsClient client = new PingsClient("localhost", 6543);
+        if (args.length > 2) {
+            System.err.println("Usage: PingsClient [hostname [port]]");
+            System.exit(1);
+        }
+
+        String hostname = (args.length >= 1) ? args[0] : "localhost";
+
+        int port = 6543;
+        if (args.length >= 2) {
+            try {
+                port = Integer.parseInt(args[1]);
+            }
+            catch (NumberFormatException e) {
+                System.err.println("Error: port argument must be an integer.");
+                System.exit(2);
+            }
+        }
+
+        PingsClient client = new PingsClient(hostname, port);
         client.setNickname("yoda");
 
         client.addObserver(new Observer() {

@@ -209,3 +209,10 @@ def deploy_test():
     start_leaderboards_server(rootdir, wipe_data=True)
     start_storage_server(rootdir)
     start_http_server(rootdir)
+
+@task
+@roles('test')
+def ssh_test():
+    """Opens an interactive ssh session to the test hosts. Saves remembering
+    the long AWS hostname and manually supplying the correct host key."""
+    open_shell()

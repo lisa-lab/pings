@@ -12,9 +12,8 @@ from fabconfig import *
 from setup import version as pings_version
 here = os.path.dirname(__file__)
 
-# TODO Create (in prepare_host) and use a different user for all the pings
-# servers, as the 'ubuntu' user can sudo to root without a password.
-PINGS_USER = 'ubuntu'
+# User under which the Pings servers run.
+PINGS_USER = 'pings'
 
 @task
 def prepare_source():
@@ -74,10 +73,18 @@ def prepare_leaderboard_role():
     install_system_packages(['redis-server'])
 
 @task
+def create_users():
+    """Add users for running Pings server processes. Right now, all
+    the Pings server processes share a single user."""
+    sudo('adduser --system %s --home /srv --no-create-home --disabled-password' % PINGS_USER)
+
+@task
 def prepare_host():
-    """Install all system base packages, basic Python environment, etc."""
+    """Install all system base packages, basic Python environment,
+    creates users, etc."""
     install_system_base_packages()
     bootstrap_python_install()
+    create_users()
 
 @task
 def setup_virtualenv(rootdir):
@@ -101,6 +108,7 @@ def generate_upstart_conf(rootdir, program, args, description):
     """Create a .conf file for an Upstart service. Returns it
     as a StringIO object."""
     name = os.path.basename(program)
+    user = PINGS_USER
     return StringIO('''description "%(description)s"
 
 start on runlevel [2345]
@@ -114,7 +122,7 @@ respawn
 # We need to specify an absolute path for the program even though
 # we use --chdir to work around the following bug:
 # http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=669047
-exec start-stop-daemon --start --chdir %(rootdir)s --chuid ubuntu --name %(name)s --startas %(rootdir)s/%(program)s -- %(args)s
+exec start-stop-daemon --start --chdir %(rootdir)s --chuid %(user)s --name %(name)s --startas %(rootdir)s/%(program)s -- %(args)s
 ''' % locals())
 
 def start_upstart_service(name, rootdir, program, args, description):
@@ -138,7 +146,11 @@ def start_storage_server(rootdir):
     """Starts the Pings storage server."""
     data_dir = '%s/data' % rootdir
     sudo('mkdir -p ' + data_dir)
-    sudo('chown %s. %s' % (PINGS_USER, data_dir))
+    # The -R is there in case the data dir already existed and has content,
+    # but the PINGS_USER just changed, etc. We want to make sure that the
+    # storage server has access to everything under the data dir, whatever
+    # the configuration changes were.
+    sudo('chown -R %s. %s' % (PINGS_USER, data_dir))
     start_upstart_service('pings-storage-server', rootdir,
                           program='bin/storage_server',
                           args='development.ini %s' % data_dir,
@@ -165,7 +177,10 @@ def deploy_test():
     prepare_source()
     pings_src_dir = upload_source()
 
-    # Install everything
+    # Install everything. We install under a different rootdir than the
+    # staging and deployment versions because we don't want to overwrite
+    # things if we ever run this task mistake on the staging/deployment
+    # servers.
     rootdir = '/srv/pings_test'
     setup_virtualenv(rootdir)
     with cd(rootdir):

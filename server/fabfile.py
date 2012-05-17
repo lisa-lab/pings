@@ -166,6 +166,9 @@ def start_leaderboards_server(rootdir, wipe_data=False):
                           program='bin/leaderboards_server', args='development.ini',
                           description='Pings leaderboards server')
 
+def get_python_version():
+    return run('''python -c 'import platform; print("%s.%s" % tuple(platform.python_version_tuple()[:2]))' ''')
+
 @task
 @roles('test')
 def deploy_test():
@@ -186,8 +189,8 @@ def deploy_test():
     with cd(rootdir):
         put('development.ini', '.', use_sudo=True)
 
-        # TODO Remove hardcoded python version in path.
-        with cd('/srv/pings_test/local/lib/python2.7/site-packages'):
+        # Copy over Geoip db if needed.
+        with cd('/srv/pings_test/local/lib/python%s/site-packages' % get_python_version()):
             geoip_filename = 'GeoLiteCity.dat'
             if not exists(geoip_filename):
                 put(geoip_filename, '.', use_sudo=True)

@@ -42,23 +42,24 @@ public class Layer extends MapObject {
 	public void paint( MapGraphics g ) {
 		if ( isVisible() ) {
 			Graphics2D g2d = g.getGraphics2D();
-			AffineTransform saveTransform = g2d.getTransform();
-			Composite saveComposite = g2d.getComposite();
-			Projection saveProjection = g.getProjection();
-			Style saveStyle = g.getStyle();
+			//AffineTransform saveTransform = g2d.getTransform();
+			//Composite saveComposite = g2d.getComposite();
+			//Projection saveProjection = g.getProjection();
+			//Style saveStyle = g.getStyle();
 			if ( composite != null )
 				g2d.setComposite( composite );
 			if ( transform != null )
-				g2d.transform( transform );
+				//g2d.setTransform(transform);
+				//g2d.transform( transform );
 			if ( style != null )
 				g.setStyle( style );
 			if ( projection != null )
 				g.setProjection( projection );
 			paintContents( g );
-			g.setStyle( saveStyle );
-			g.setProjection( saveProjection );
-			g2d.setComposite( saveComposite );
-			g2d.setTransform( saveTransform );
+			//g.setStyle( saveStyle );
+			//g.setProjection( saveProjection );
+			//g2d.setComposite( saveComposite );
+			//g2d.setTransform( saveTransform );
 		}
 	}
 

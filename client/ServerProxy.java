@@ -1,3 +1,4 @@
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.InetAddress;
@@ -135,17 +136,26 @@ public class ServerProxy {
         connection.setRequestProperty("Content-Type", "application/json;charset=" + CHARSET);
 
         // Write request.
-        OutputStream output = connection.getOutputStream();
+        OutputStream output = null;
         try {
+        	output = connection.getOutputStream();
             output.write(json_request.getBytes(CHARSET));
         }
-        finally {
-            output.close();
+        catch (ConnectException e){
+        	//FIXME
         }
-
-        int status = connection.getResponseCode();
-        if (status != HttpURLConnection.HTTP_OK) {
-            throw new ServerProxy.Exception(String.format("Server returned HTTP status %d", status));
+        finally {
+        	if (output != null) output.close();
+        }
+        
+        int status= HttpURLConnection.HTTP_UNAVAILABLE;
+        try {
+        	status = connection.getResponseCode();
+        }
+        finally {
+        	if (status != HttpURLConnection.HTTP_OK) {
+                throw new ServerProxy.Exception(String.format("Server returned HTTP status %d", status));
+        	}
         }
 
         // Read back reply.

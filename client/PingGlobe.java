@@ -1,19 +1,30 @@
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.Toolkit;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Point2D;
+import java.awt.geom.Point2D.Double;
+import java.awt.image.BufferedImage;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import com.jhlabs.map.proj.Projection;
+import com.jhlabs.map.util.PanZoomMouseListener;
+import com.jhlabs.map.util.ProjectionMouseListener;
+import com.jhlabs.map.MapMath;
 import com.jhlabs.map.ProjectionPainter;
 import com.jhlabs.map.layer.MapGraphics;
+import com.sun.image.codec.jpeg.JPEGImageEncoder;
 
 /**
  * The globe component modified to show pings
@@ -28,7 +39,8 @@ public class PingGlobe extends Globe {
 	
 	private GeoipInfo origin;
 	private PingGUI[] stored_pings;
-	private static final int stored_pings_size = 75;
+	private static final int stored_pings_size = 20;
+	private static final float attenuation_offset_for_cities = 10f / 20f;
 	
 	//The last index of the array used to store a ping, as null case are handle
 	//its value as no impact as long as it's in the bounds of the array
@@ -37,8 +49,13 @@ public class PingGlobe extends Globe {
 	private static final Color origin_color = new Color(32f / 255f, 207f / 255f, 14f / 255f,	0.9f);
 	
 	private static final float[] waiting_color = { 69, 178, 110};	
-	private static final float[] no_result_color = {131, 13, 44};	
-	private BasicStroke link_stroke = new BasicStroke(3.5f);
+	private static final float[] timed_out_color = {131, 13, 44};	
+	private static final float[] connection_refused_color = {20, 20, 20};
+	private static final float[] unknown_error_color = {255, 255, 255};
+	
+	private BasicStroke link_stroke = new BasicStroke(2.5f);
+
+	private Graphics2D text_render;
 	
 	private static final float [][] color_scale = {
 		{0,255,0,			0.025f },
@@ -55,7 +72,6 @@ public class PingGlobe extends Globe {
 		{78,57,58,			0.700f },
 		{76,76,76,			0.850f },
 		{31,29,29,			1.000f },
-			
 	};
 	
 	
@@ -65,11 +81,11 @@ public class PingGlobe extends Globe {
 		//The globe currently shows only the landmasses
 		super.setShowGraticule(false);
 		super.setShowTissot(false);
-		super.setShowSea(false);
+		super.setShowSea(true);
 		// The night could be added using
 		super.setShowNight(true);
 		// although this method currently add a fixed black circle which wouldn't
-		// show much. 
+		// show much.
 		
 		stored_pings = new PingGUI[stored_pings_size];
 	}
@@ -85,17 +101,41 @@ public class PingGlobe extends Globe {
 		}
 		
 		private void UpdateColor() {
-			if (value < 0) {color = no_result_color;}
+			if (value == -1) {color = connection_refused_color;}
+			else if (value == -2) {color = timed_out_color;}
+			else if (value == -3) {color = unknown_error_color;}
 			else {
 				int i = 0;
-				while (color_scale[i][3] < value && i < color_scale.length)
+				while ((color_scale[i][3] < value) && (i < color_scale.length-1))
 					{i++;}
 				color = color_scale[i];
 			}
 		}
 		
+		public GeoipInfo getGeoip() {
+			return target;
+		}
+		
 		public void SetValue(double new_ping_value) {
 			this.value = new_ping_value;
+			UpdateColor();
+			PingGlobe.this.repaint();
+		}
+
+		public void unknownError() {
+			this.value = -3;
+			UpdateColor();
+			PingGlobe.this.repaint();
+		}
+		
+		public void timedOut() {
+			this.value = -2;
+			UpdateColor();
+			PingGlobe.this.repaint();
+		}
+		
+		public void connectionRefused () {
+			this.value = -1;
 			UpdateColor();
 			PingGlobe.this.repaint();
 		}
@@ -113,7 +153,7 @@ public class PingGlobe extends Globe {
 					color[2]/255f,
 					color_attenuation);	
 			
-			//Draw the circle
+			//Draw the circle around the target
 			GeneralPath gc = new GeneralPath();
 			ProjectionPainter.smallCircle(
 					(float) target.longitude,(float) target.latitude,
@@ -122,19 +162,33 @@ public class PingGlobe extends Globe {
 			ProjectionPainter  pp = ProjectionPainter.getProjectionPainter(projection);
 			pp.drawPath(g2, gc, null, peer_color);
 			
+			//Draw the description above the target
+			if ((color_attenuation > attenuation_offset_for_cities) &&
+					(isVisible(target.longitude,target.latitude))) {
+			//if (isVisible(target.longitude,target.latitude)) {
+			
+				Point2D.Double target_geo = new Point2D.Double(target.longitude, target.latitude);
+				
+				projection.transform(target_geo,target_geo);
+				
+				String desrcription = target.city + ", " + target.country;
+				
+				text_render.setColor(peer_color);
+				text_render.drawString( desrcription , (int) target_geo.x,(int)- target_geo.y -8 );
+			}
+			
 			//Draw the arc
 			if (origin== null || value < 0) return;
 
 			g2.setStroke(link_stroke);
-			 gc = new GeneralPath();
+			gc = new GeneralPath();
 			ProjectionPainter.basicArc(
 					(float) origin.longitude,(float) origin.latitude,
 					(float) target.longitude,(float) target.latitude,
 					gc);
+			//gc.closePath();
 			pp = ProjectionPainter.getProjectionPainter(projection);
-			pp.drawPath(g2, gc, peer_color, null);
-			
-			
+			pp.drawPath(g2, gc,peer_color, null);
 		}
 		
 	}
@@ -171,8 +225,8 @@ public class PingGlobe extends Globe {
 
 	public void centerView(GeoipInfo new_center) {
 		projection.setProjectionLatitude(Math.PI / 180 * new_center.latitude);
-
-		projection.setProjectionLongitude(Math.PI / 180 * new_center.longitude);
+		//FIXME
+		projection.setProjectionLongitude(Math.PI / 180 * new_center.longitude);//- 0.7);
 		projection.initialize();
 		this.repaint();
 	}
@@ -182,7 +236,7 @@ public class PingGlobe extends Globe {
 		GeneralPath gc = new GeneralPath();
 		ProjectionPainter.smallCircle(
 				(float)origin.longitude, (float) origin.latitude,
-				2.5f,20, gc, true);
+				2.5f,10, gc, true);
 		gc.closePath();
 		ProjectionPainter pp = ProjectionPainter.getProjectionPainter(projection);
 		pp.drawPath(g2, gc, null, origin_color);
@@ -195,11 +249,39 @@ public class PingGlobe extends Globe {
 	 * @see #paintOrigin(Graphics2D, GeoipInfo)
 	 * @see #paintLink(Graphics2D, GeoipInfo, GeoipInfo)
 	 */
+	
+	
 	public void paint(Graphics g) {
+		
+		//Paint the globe
 		super.paint(g);
 		
+		//set_fast_graphics(g2);
+		
+		//Paint the origin (the client position)
 		paintOrigin(g2, origin);
 		
+		
+		//Paint the targets
+		
+		//Set up the text rendering
+		//Create a new graphics for the text to be able to select a different 
+		//transformation and a different font
+		
+		//The new transformation is used to draw the text upward
+		text_render = (Graphics2D) g2.create();
+		AffineTransform uptransform = new AffineTransform();
+		uptransform.translate(getWidth()/2,getHeight()/2);
+		uptransform.concatenate(transform);
+		text_render.setTransform(uptransform);
+		
+		//We calculate a new font according to the current zoom
+		int screenRes = Toolkit.getDefaultToolkit().getScreenResolution();
+	    int fontSize = (int)Math.round(12.0 * screenRes / 72.0 / uptransform.getScaleX());
+		Font font = new Font("Arial", Font.PLAIN, fontSize);
+		text_render.setFont(font);
+		
+		//We paint the currently stored pings
 		int actual_index = last_ping;
 		for (int i = 0;i < stored_pings_size ;i++) {
 			PingGUI current_ping = stored_pings[actual_index];

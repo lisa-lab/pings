@@ -15,28 +15,27 @@ limitations under the License.
 */
 
 import java.util.*;
-import java.util.List;
 import java.io.*;
 import java.awt.*;
 import java.awt.geom.*;
-import java.awt.event.*;
 import java.awt.image.*;
 import java.awt.print.*;
-import java.beans.*;
 import javax.swing.*;
-import javax.imageio.*;
 import com.jhlabs.map.*;
 import com.jhlabs.map.proj.*;
 import com.jhlabs.map.util.*;
-import com.jhlabs.map.shapefile.*;
 import com.jhlabs.map.layer.*;
-import com.jhlabs.dbf.*;
 
 /**
  * A component which displays a globe.
  */
 public class Globe extends JComponent {
-
+	
+	protected static long quality_paint_delay = 100;
+	private BufferedImage buffered_image;
+	private boolean quality_image_buffered = false;
+	private long last_time_update = 0;
+	
 	protected Graphics2D g2;
 	private float globeRadius = 275;
 	protected Projection projection;
@@ -48,7 +47,7 @@ public class Globe extends JComponent {
 	private boolean showTissot = false;
 	private ProjectionMouseListener mouseListener;
 	private PanZoomMouseListener zoomListener;
-	private AffineTransform transform = new AffineTransform();
+	protected AffineTransform transform = new AffineTransform();
 	private BufferedImage image;
 
 	private Layer map;
@@ -79,6 +78,8 @@ public class Globe extends JComponent {
 			new Style( Color.white,new Color( 27f/255f, 84f/255f, 143f/255f, 1.0f ) ),
 			new Style( Color.white,new Color( 36f/255f, 56f/255f, 91f/255f, 1.0f ) ),
 			};
+	private Projection last_projection;
+	private AffineTransform last_transform;
 
 	public Globe() {
 		// Create the map projection
@@ -114,7 +115,6 @@ public class Globe extends JComponent {
 //		createInterruptedMap();
 //		map.addLayer( linkLayer );
 		AffineTransform t = new AffineTransform();
-//		t.scale( 0.5f, 0.5f );
 		t.translate( 100, 100 );
 		linkLayer.setTransform( t );
 		linkLayer.setStyle( new Style( Color.black, Color.orange ) );
@@ -133,7 +133,8 @@ public class Globe extends JComponent {
 		// Add the virtual trackball
 		addMouseListener( mouseListener = new ProjectionMouseListener( this, projection ) );
 		addMouseListener( zoomListener = new PanZoomMouseListener( this, transform ) );
-		selectLayer( map );
+		//add
+		//selectLayer( map );
 	}
 	
 	public void createInterruptedMap() {
@@ -274,12 +275,48 @@ public class Globe extends JComponent {
 		}
 	}
 	
-	public void paint( Graphics g ) {
+	/**
+	 * Tell if the specified point (given by longitude, latitude coordinates) is
+	 * visible or not.(Does not consider the scale factor that can make a visible
+	 * point render out of the screen.
+	 * 
+	 * @param longitude
+	 * @param latitude
+	 * @return if the point is visible
+	 */
+	public boolean isVisible(double longitude, double latitude) {
+		double mapRadiusR, distanceFromCentre;
+		
+		mapRadiusR= MapMath.DTR * ((AzimuthalProjection)projection).getMapRadius();
+		distanceFromCentre = MapMath.greatCircleDistance(
+				MapMath.DTR *longitude,  MapMath.DTR * latitude,
+				projection.getProjectionLongitude(), projection.getProjectionLatitude() );
+		boolean is_visible = distanceFromCentre <= mapRadiusR;
+		
+		return is_visible;
+	}
+	
+	public boolean compareProjection (Projection p1, Projection p2) {
+		return (p1.getPROJ4Description().equals(p2.getPROJ4Description()));
+	}
+	
+	public void checkChanges () {
+		if (!transform.equals(last_transform) || !(compareProjection(projection,last_projection))) {
+			last_transform = (AffineTransform) transform.clone(); 
+			last_projection = (Projection) projection.clone();
+			last_time_update  = System.currentTimeMillis();
+			buffered_image = null;
+			quality_image_buffered = false;
+		}
+	}
+	
+	public boolean readyToQualityPaint() {
+		long time_passed = System.currentTimeMillis() - last_time_update;
+		return (time_passed > quality_paint_delay);
+	}
+	
+	protected void create_g2 (Graphics g) {
 		g2 = (Graphics2D)g;
-
-		// Turn on antialiasing - otherwise it looks horrible
-		g2.setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON  );
-
 		// Put the origin at bottom left
 		g2.translate( 0, getHeight() );
 		g2.scale( 1, -1 );
@@ -291,6 +328,55 @@ public class Globe extends JComponent {
 		transform.deltaTransform( p, p );
 		float rscale = 1.0f/(float)Math.sqrt( p.x*p.x + p.y*p.y );
 		g2.setStroke( new BasicStroke( rscale*0.5f ) );
+		g2.transform( transform );
+		
+	}
+	
+	protected void setFastGraphics (Graphics2D g) {
+		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+		g.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
+		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+		g.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);
+		g.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_SPEED);
+		g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+	}
+	
+	protected void setQualityGraphics (Graphics2D g) {
+		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON  );
+		g.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_ENABLE);
+		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+		g.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
+		g.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
+		g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE);
+		g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+	}
+	
+	private void paintNight (int numPoints) {
+		Color c = new Color(1f, 0, 0, 0.15f);
+		GeneralPath gc = new GeneralPath();
+		ProjectionPainter.fractionnedCircle( 45, 5, 85, numPoints, gc, true );
+		gc.closePath();
+		ProjectionPainter pp = ProjectionPainter.getProjectionPainter( projection );//FIXME
+		pp.drawPath( g2, gc, null, c );
+	}
+	
+	private void paint_fast( Graphics g ) {
+		create_g2(g);
+		setFastGraphics(g2);
+		
+		MapGraphics mg = MapGraphics.getGraphics( g2, new Rectangle( getSize() ) );
+		seaLayer.setVisible( showSea );
+		tissotLayer.setVisible( false );
+		worldLayer.setVisible( showWorld );
+		graticuleLayer.setVisible( false );
+		map.paint( mg );
+		
+		if ( showNight ) paintNight(10);
+	}
+	
+	private void paint_quality( Graphics g ) {
+		create_g2(g);
+		setQualityGraphics (g2);
 		
 		MapGraphics mg = MapGraphics.getGraphics( g2, new Rectangle( getSize() ) );
 		seaLayer.setVisible( showSea );
@@ -298,16 +384,43 @@ public class Globe extends JComponent {
 		worldLayer.setVisible( showWorld );
 		graticuleLayer.setVisible( showGraticule );
 		map.paint( mg );
-
-		if ( showNight ) {
-			Color c = new Color(1f, 0, 0, 0.15f);
-			GeneralPath gc = new GeneralPath();
-			ProjectionPainter.smallCircle( 45, 5, 87, 180, gc, true );
-			gc.closePath();
-            ProjectionPainter pp = ProjectionPainter.getProjectionPainter( projection );//FIXME
-			pp.drawPath( g2, gc, null, c );
+		
+		if ( showNight ) paintNight(100);
+	}
+	
+	public void paint( Graphics g ) {
+		
+		checkChanges();
+		
+		if (!quality_image_buffered) {
+			if (buffered_image == null) {
+				//Initialize the bufferdImage
+				Dimension size = this.getSize();
+//				GraphicsConfiguration gc = GraphicsEnvironment
+//					.getLocalGraphicsEnvironment()
+//				 	.getDefaultScreenDevice()
+//				 	.getDefaultConfiguration();
+//				buffered_image = gc.createCompatibleImage(size.width, size.height,Transparency.TRANSLUCENT);
+				
+				buffered_image = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_RGB);
+				//Paint the map fast and store it
+				Graphics2D ng = buffered_image.createGraphics();
+				paint_fast(ng);
+				ng.dispose();
+			}
+			else if (readyToQualityPaint()) {
+				//Initialize the bufferdImage
+				Dimension size = this.getSize();
+				buffered_image = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
+				//Paint the map fast and store it
+				Graphics2D ng = buffered_image.createGraphics();
+				paint_quality(ng);
+				ng.dispose();
+				quality_image_buffered = true;
+			}
 		}
-
+		g.drawImage(buffered_image, 0, 0, this);
+		create_g2(g);
 	}
 	
 	public Dimension getPreferredSize() {

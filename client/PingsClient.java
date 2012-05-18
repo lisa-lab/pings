@@ -40,6 +40,7 @@ public class PingsClient extends Observable implements Runnable {
     private AtomicReference<String> m_nick;
     private AtomicReference<InetAddress> m_current_ping_dest;
     private AtomicReference<GeoipInfo> m_current_dest_geoip;
+    private AtomicReference<String> m_current_ping_result;
     private AtomicReference<GeoipInfo> m_source_geoip;
     private AtomicInteger m_total_error_count;
 
@@ -71,6 +72,10 @@ public class PingsClient extends Observable implements Runnable {
 
     public GeoipInfo getSourceGeoip() {
         return m_source_geoip.get();
+    }
+    
+    public String getCurrentPingResult() {
+    	return m_current_ping_result.get();
     }
 
     public GeoipInfo getCurrentDestGeoip() {
@@ -123,15 +128,18 @@ public class PingsClient extends Observable implements Runnable {
                         m_current_dest_geoip.set(pings.geoip_info[i]);
                         notifyObserversOfChange();
                         m_prober.probe(pings.addresses[i]);
-
-                        // Save ping result.
-                        m_current_ping_dest.set(null);
-                        m_current_dest_geoip.set(null);
+                        
+                        // Save ping result.                      
                         pings.results[i] = m_prober.getLastProbe();
+                        m_current_ping_result.set(pings.results[i]);
                         notifyObserversOfChange();
                         LOGGER.log(Level.INFO, "Ping result: {0}.",
                                    pings.results[i]);
 
+                        m_current_ping_dest.set(null);
+                        m_current_dest_geoip.set(null);
+                        m_current_ping_result.set("");
+                        
                         // Clear consecutive error count.
                         m_consecutive_error_count = 0;
                     }

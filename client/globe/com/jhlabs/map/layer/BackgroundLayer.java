@@ -32,7 +32,10 @@ public class BackgroundLayer extends Layer {
 		Rectangle r = g.getRenderRectangle();
 //		g2d.setPaint( new GradientPaint( 0, r.y, Color.black, 0, r.y+r.height, Color.darkGray ) );
 		g2d.setPaint( Color.black );
-		g2d.fill( g2d.getClipBounds() );
+		Rectangle bounds = g2d.getClipBounds();
+		if (bounds != null) {
+			g2d.fill( bounds);
+		}
 	}
 	
 	public String toString() {

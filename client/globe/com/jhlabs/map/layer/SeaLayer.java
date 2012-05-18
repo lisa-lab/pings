@@ -30,7 +30,8 @@ public class SeaLayer extends Layer {
 	private Paint paint;
 	
 	public SeaLayer() {
-		this( new Color(0xff4060cc) );
+		//TODO : Tweak me
+		this( new Color(22,22,22));//(0xff4060cc) );
 	}
 	
 	public SeaLayer( Paint paint ) {

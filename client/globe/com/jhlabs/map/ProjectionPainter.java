@@ -390,9 +390,9 @@ public class ProjectionPainter {
 
 		angle = Math.toDegrees(angle);
 
-		int numPoints = (int)(angle / distance);
+		int numPoints = Math.min(30,(int)(angle / distance));
 		if (numPoints > 0) {
-			double fraction = distance / angle;
+			double fraction = 1./ ((double) numPoints);
 			for (int i = 1; i < numPoints; i++) {
 				c = i * fraction;
 				double d = 1 - c;
@@ -416,8 +416,51 @@ public class ProjectionPainter {
 	}
 
 	/**
-	 * Adds the points of a small circle centred on clat/clon. All angles are in degrees.
+	 * Adds the points of a circle centred on clat/clon. Act as smallcircle but 
+	 * come back to the center between each point.
 	 */
+    public final static void fractionnedCircle( float clon, float clat, float radius, int numPoints, GeneralPath path, boolean addMoveTo ) {
+		clon *= MapMath.DTR;
+		clat *= MapMath.DTR;
+		radius *= MapMath.DTR;
+
+		// This code is actually for the more general case of a centre and point on circumference, so....
+		double plon = clon;
+		double plat = clat+radius;
+		double hclat = MapMath.HALFPI - clat;
+		double hclon = MapMath.HALFPI - clon;
+		double hplat = MapMath.HALFPI - plat;
+		double cdelta = Math.cos( hclat ) * Math.cos( hplat ) + Math.sin( hclat ) * Math.sin( hplat ) * Math.cos( clon - plon );
+		double delta = Math.acos( cdelta );
+		double dd = MapMath.HALFPI - delta;
+		double ct = Math.cos( hclat );
+		double st = Math.sin( hclat );
+		double cb = Math.cos( hclon );
+		double sb = Math.sin( hclon );
+
+		double increment = Math.PI*2/numPoints;
+		double angle = 0;
+
+		for ( int i = 0; i < numPoints; i++ ) {
+			angle += increment;
+			double x = Math.cos( dd )*Math.cos( angle );
+			double y = Math.cos( dd )*Math.sin( angle );
+			double z = Math.sin( dd );
+			double xl = x*cb + y*sb*ct + z*sb*st;
+			double yl = -x*sb + y*cb*ct + z*cb*st;
+			double zl = -y*st + z*ct;
+			double r = Math.sqrt( xl*xl + yl*yl );
+			double lon = Math.atan2( yl, xl ) * MapMath.RTD;
+			double lat = Math.atan2( zl, r ) * MapMath.RTD;
+			if ( i == 0 && addMoveTo )
+				path.moveTo( (float)lon, (float)lat );
+			else {
+				path.lineTo( (float)lon, (float)lat );
+				path.lineTo(clon, clat);
+				path.lineTo( (float)lon, (float)lat );}
+		}
+    }
+    
     public final static void smallCircle( float clon, float clat, float radius, int numPoints, GeneralPath path, boolean addMoveTo ) {
 		clon *= MapMath.DTR;
 		clat *= MapMath.DTR;
@@ -457,6 +500,7 @@ public class ProjectionPainter {
 				path.lineTo( (float)lon, (float)lat );
 		}
     }
+    
     
     /**
 	 * Draw a simple arc between (clon1,clat1) and (clon2,clat2)
@@ -582,6 +626,7 @@ public class ProjectionPainter {
 			return MapMath.greatCircleDistance(lon, lat, projection.getProjectionLongitude(), projection.getProjectionLatitude()) >= mapRadiusR;
 		}
 
+		//FIXME : this function doesn't give a correct output
 		// Careful! Arguments are in radians, output in degrees!
 		private void findCrossingPoint(double lon1, double lat1, double lon2, double lat2, double dist1, double dist2, double[] out) {
 			double delta = dist2 - dist1;
@@ -592,6 +637,254 @@ public class ProjectionPainter {
 			out[0] = MapMath.RTD*(lon1 + rlon * eps);
 			out[1] = MapMath.RTD*(lat1 + (lat2 - lat1) * eps);
 		}
+		
+		/**
+		 * Takes a longitude and latitude in degree and output the coordinate of
+		 * the point in cartesian system
+		 * @param longitude
+		 * @param latitude
+		 * @return {x, y, z} (in earth radius)
+		 */
+		public double[] longLatToCartesian(double longitude,double latitude) {
+			double[] point =  {
+					Math.cos(MapMath.DTR * latitude) * Math.cos(MapMath.DTR * longitude ),
+					Math.cos(MapMath.DTR * latitude) * Math.sin(MapMath.DTR * longitude),
+					Math.sin(MapMath.DTR * latitude)
+				};
+			return point;
+		}
+		
+		/**
+		 * Takes a cartesian description of a point and store the corresponding 
+		 * longitude  and latitude (in this order) in 'out'.
+		 * 
+		 * @param x
+		 * @param y
+		 * @param z
+		 * @param out {longitude, latitude} in degree
+		 */
+		public void cartesianToLongLat(double x, double y, double z, double[] out) {
+			double latR, longR;
+			latR = Math.asin(z);
+			if (Math.cos(z) == 0) longR = 0;
+			else {
+				longR = Math.acos( x / Math.cos(z) );
+				if (y < 0) longR = -longR;
+			}
+			out[0] = MapMath.RTD * longR;
+			out[1] = MapMath.RTD * latR;
+		}
+		
+		/** 
+		 * Return the angle (in radians) between two unit cartesian vectors
+		 * @param x1
+		 * @param x2
+		 * @param y1
+		 * @param y2
+		 * @param z1
+		 * @param z2
+		 * @return the angle in radians between (x1,y1,y2) and (x2,y2,z2)
+		 */
+		public double getAngle(double x1,double y1,double z1,double x2,double y2,double z2) {
+			return Math.acos(x1*x2 + y1*y2 + z1*z2);
+		}
+		
+		/**
+		 * Return the angle (in radians) between two (longitude,latitude)
+		 * couples.
+		 */
+		public double getAngle(double lon1, double lat1, double lon2, double lat2) {
+			double[] p1, p2;
+			p1 =  longLatToCartesian(lon1,lat1);
+			p2 = longLatToCartesian(lon2,lat2);
+			return getAngle(p1[0],p1[1],p1[2],p2[0],p2[1],p2[2]);
+		}
+		
+		/**
+		 * A alternative function for findCrossingPoint.
+		 * 
+		 * The crossing points (there can be multiple if any) are characterized
+		 * by there location on the intersection of the the geodesic(s) linking
+		 * the two end points -located in the plane(s) passing by (p1,p2,center 
+		 * of the earth)- and of the horizon circle -which is itself the 
+		 * intersection of a certain plane and the unit sphere-.
+		 * <p>
+		 * This consideration is described as a system of three equations where 
+		 * variables x,y and z describes the position of the crossing point in
+		 * the usual cartesian representation. The system is described by 
+		 * equations denoted as (1), (2) and (3).
+		 * <p>
+		 * There can be zero, one, two or an infinity of crossing point :
+		 * there is either a single geodesic or an infinity of geodesics (the 
+		 * Intersection of a plane and the sphere that contain a shortest path
+		 * between the two end points) if the two end points are diametrically 
+		 * opposite.
+		 * 
+		 * In the latest case the function raise Exception("Diametrically 
+		 * opposite")
+		 * 
+		 * In the first case there is a single geodesic and then the possible
+		 * points come from the possible intersection of a circle with a plane :
+		 * 
+		 *  _ null : the entire path between the point is invisible from the
+		 *  	current perspective.
+		 *  	raise Exception("No point");
+		 * 
+		 * _ one point : the geodesic is tangent to the horizon
+		 * 		store this single point in 'out' and raise Exception("Tangent")
+		 * 
+		 * _ two points : the geodesic crosses the horizon in two points
+		 * 		store the point on the shortest path between the two end points
+		 * 		in 'out' and return normally
+		 * 
+		 * _ the horizon circle : the two end points themselves are on the
+		 * 		horizon. There was probably no need to call this function are 
+		 * 		both points are visible.
+		 * 		raise Exception("Full horizon")
+		 * 
+		 * @param lon1 the longitude of the first end point (in degree)
+		 * @param lat1 the latitude of the first end point (in degree)
+		 * @param lon2 the longitude of the second end point (in degree)
+		 * @param lat2 the latitude of the second end point (in degree)
+		 * @param projection the perspective
+		 * @param out the point to output the result, if it is null an new array
+		 * 	will be created
+		 * @throws Exception 
+		 */
+		private void findCrossingPoint(double lon1, double lat1, double lon2, double lat2, Projection projection,double[] out) throws Exception {
+			
+			if (out == null) {out = new double[2];}
+			
+			double[] p_1, p_2, projcetion_center;
+			p_1 = longLatToCartesian(lon1,lat1);
+			p_2 = longLatToCartesian(lon2,lat2);
+			projcetion_center = longLatToCartesian(
+					MapMath.RTD*projection.getProjectionLongitude(),
+					MapMath.RTD*projection.getProjectionLatitude()
+				);
+			
+			//The equation of the plane passing by p_1 p_2 and the center of the
+			//earth (containing the shortest path between p_1 and p_2) is :
+			// 'as x + bs y + cs z = 0' (1)
+			double as, bs, cs;
+			as = p_1[1]*p_2[2] - p_1[2]*p_2[1];
+			bs = p_1[2]*p_2[0] - p_1[0]*p_2[2];
+			cs = p_1[0]*p_2[1] - p_1[1]*p_2[0];
+			
+			//The equation of the plane defining the horizon is :
+			// 'ah x + bh y + ch z + dh= 0' (2)
+			//TODO : modify it for most general cases where mapRadiusR != Pi
+			double ah, bh, ch, dh;
+			ah = projcetion_center[0];
+			bh = projcetion_center[1];
+			ch = projcetion_center[2];
+			dh = 0;
+			
+			//The third and last equation of the system expresses that the point
+			//is on the sphere :
+			// 'x^2 + y^2 +z^2 = 1' (3)
+			
+			
+			if (as != 0) {
+				//Then (1) can be rewritten as :
+				// 'x = ps y + qs z' (1') 
+				double ps, qs;
+				ps = -bs / as;
+				qs = -cs / as;
+				
+				//thus (2) yields : (ah ps + bh ) y =  -(ah qs + ch) z - dh
+				
+				if ( ah*ps + bh != 0) {
+					//We can then rewrite (2) as :
+					// 'y = rh z + sh' (2')
+					double rh, sh;
+					rh = - (ah*qs + ch) / (ah*ps + bh);
+					sh = - dh /(ah*qs + ch);
+					
+					//(3) can then be rewrite as :
+					// '(ps (rh z + sh) +  qs z)^2 + (rh z + sh)^2 + z^2'
+					// or 'a z²  + b z + c = 0 ' (3') with
+					double a, b, c;
+					a = (ps*rh + qs)*(ps*rh + qs) + rh*rh + 1;
+					b = 2*(ps*rh + qs)*(ps*sh) + 2*rh*sh;
+					c = (ps*sh)*(ps*sh) + sh*sh - 1;
+					
+					//We can do a classical resolution of (3')
+					double delta = b*b - 4*a*c;
+					
+					if (delta < 0) {
+						//Then there is no real solution for the z-coordinate of
+						//the system.
+						//This means that the path between the two end points is
+						//invisible from the current perspective.
+						throw new Exception("No point");
+					}
+					else if (delta == 0) {
+						//Then all the crossing points share the same 
+						//z-coordinate.which is
+						double z = (-b) / (2*a);
+						
+						//From (2') :
+						double y = rh*z + sh;
+						
+						//From (1') :
+						double x =  ps*y + qs*z;
+						
+						//As there is a single point, we will return it and 
+						//throw the 'Tangent' exception
+						cartesianToLongLat(x,y,z,out);
+						
+						throw new Exception("Tangent");
+					}
+					else { //delta > 0
+						//Then there are only two distinct possible z-coordinate
+						//for the crossing points :
+						double z1, z2, y1, y2, x1, x2;
+
+						z1 = (-b + Math.sqrt(delta)) / (2*a);
+						z2 = (-b - Math.sqrt(delta)) / (2*a);
+						
+						//From (2') :
+						y1 = rh*z1 + sh;
+						y2 = rh*z2 + sh;
+						
+						//From (1') :
+						x1 =  ps*y1 + qs*z1;
+						x2 =  ps*y2 + qs*z2;
+						
+						//We need to choose a point that allows for the 
+						//shortest path (they might be both suitable).
+						//We will consider the sum of principal angles between 
+						//the vectors defined by the end point and the crossings
+						//points.
+						
+						double angle1, angle2;
+						angle1 = getAngle(p_1[0],p_1[1],p_1[2],x1,y1,z1) +
+							getAngle(p_2[0],p_2[1],p_2[2],x1,y1,z1);
+						angle2 = getAngle(p_1[0],p_1[1],p_1[2],x2,y2,z2) +
+							getAngle(p_2[0],p_2[1],p_2[2],x2,y2,z2);
+						
+						if (angle1 <= angle2) {
+							cartesianToLongLat(x1,y1,z1,out);
+						}
+						else {
+							cartesianToLongLat(x2,y2,z2,out);
+						}					
+					}
+				}
+				else { //if ah ps + bh = 0
+					//TODO : implement case
+					throw new Exception("case not implemented yet");
+				}
+				
+			}
+			else { //if as = 0
+				//TODO : implement case
+				throw new Exception("case not implemented yet");
+			}
+		}
+		
+		
 
 		/**
 		 * Projects and clips the given shape, optionally transformed by the transform t.
@@ -658,11 +951,18 @@ public class ProjectionPainter {
 					double thisY = points[1];
 					double rlon = MapMath.DTR*thisX;
 					double rlat = MapMath.DTR*thisY;
-					distanceFromCentre = MapMath.greatCircleDistance( rlon, rlat, projection.getProjectionLongitude(), projection.getProjectionLatitude() );
+					//distanceFromCentre = MapMath.greatCircleDistance( rlon, rlat, projection.getProjectionLongitude(), projection.getProjectionLatitude() );
+					distanceFromCentre = getAngle(MapMath.RTD*rlon, MapMath.RTD*rlat,
+							MapMath.RTD*projection.getProjectionLongitude(), MapMath.RTD*projection.getProjectionLatitude());
 					isOutside = distanceFromCentre >= mapRadiusR;
 					if (wasOutside != isOutside) {
 						// This segment crosses the horizon
-						findCrossingPoint(lastX, lastY, rlon, rlat, lastDistanceFromCentre, distanceFromCentre, points);
+						try {
+							findCrossingPoint(MapMath.RTD*lastX, MapMath.RTD*lastY, MapMath.RTD*rlon, MapMath.RTD*rlat, projection,points);
+						} catch (Exception e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
 						if (isOutside) {
 							// We've just exited the visible hemisphere - draw to the horizon crossing point
 							hasExited = true;

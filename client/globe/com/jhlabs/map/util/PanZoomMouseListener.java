@@ -74,9 +74,10 @@ public class PanZoomMouseListener implements MouseListener, MouseMotionListener 
 		float rscale = 1.0f/(float)Math.sqrt( p.x*p.x + p.y*p.y );
 		double s = 0.001/**rscale*/;
 		transform.setTransform( saveTransform );
-		if ( e.isShiftDown() )
-			transform.translate( rscale*(x-lastX), -rscale*(y-lastY) );
-		else if ( e.isAltDown() )
+//		if ( e.isShiftDown() )
+//			transform.translate( rscale*(x-lastX), -rscale*(y-lastY) );
+//		else
+		if ( e.isAltDown() || e.isShiftDown() )
 			transform.scale( 1+(y-lastY)*s, 1+(y-lastY)*s );
 		else if ( e.isMetaDown() )
 			transform.rotate( Math.atan2( component.getWidth()/2-y, x-component.getHeight()/2 )-startAngle );

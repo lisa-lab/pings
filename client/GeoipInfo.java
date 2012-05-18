@@ -24,7 +24,7 @@ public class GeoipInfo {
         latitude = ((Double)json.get("latitude")).floatValue();
     }
     
-    /*
+    /**
      * An alternative constructor for testing purpose
      */
     //TODO : remove it when useless

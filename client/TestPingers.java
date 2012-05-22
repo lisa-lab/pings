@@ -53,24 +53,24 @@ public class TestPingers {
             else
                 text_global_addr = "<unknown>";
 
-            this_pinger.ping(target);
+            this_pinger.probe(target);
             System.out.println(text_local_addr + " " +
                                text_global_addr + " " +
-                               this_pinger.getLastPings());
+                               this_pinger.getLastProbe());
     
-            this_router.trace(target);
+            this_router.probe(target);
             System.out.println(text_local_addr + " " +
                                text_global_addr + " " +
-                               this_router.getLastTrace());
+                               this_router.getLastProbe());
 
-            this_tcp_pinger.ping(target,50);
+            this_tcp_pinger.probe(target,50);
             System.out.println(text_local_addr + " " +
                                text_global_addr + " " +
-                               this_tcp_pinger.getLastPings());
+                               this_tcp_pinger.getLastProbe());
 
         }
 
-        //FIXME: save to applet cookie
+        // FIXME: save to applet cookie
         System.out.println(this_client.getPreferences());
     }
 }

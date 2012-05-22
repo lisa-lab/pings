@@ -1,4 +1,3 @@
-import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.InetAddress;
@@ -13,6 +12,9 @@ import org.json.simple.JSONArray;
 /** Interface to the Pings server. Allows retrieving a list
  *  of addresses to ping (together with their geoip information),
  *  and submitting back the results.
+ *
+ *  All connection problems are throws as subclasses of IOException
+ *  and must be handled by the caller.
  *
  *  @author Christian Hudon <chrish@pianocktail.org>
  */
@@ -136,26 +138,17 @@ public class ServerProxy {
         connection.setRequestProperty("Content-Type", "application/json;charset=" + CHARSET);
 
         // Write request.
-        OutputStream output = null;
+        OutputStream output = connection.getOutputStream();
         try {
-        	output = connection.getOutputStream();
             output.write(json_request.getBytes(CHARSET));
         }
-        catch (ConnectException e){
-        	//FIXME
-        }
         finally {
-        	if (output != null) output.close();
+            output.close();
         }
         
-        int status= HttpURLConnection.HTTP_UNAVAILABLE;
-        try {
-        	status = connection.getResponseCode();
-        }
-        finally {
-        	if (status != HttpURLConnection.HTTP_OK) {
-                throw new ServerProxy.Exception(String.format("Server returned HTTP status %d", status));
-        	}
+        int status = connection.getResponseCode();
+        if (status != HttpURLConnection.HTTP_OK) {
+            throw new ServerProxy.Exception(String.format("Server returned HTTP status %d", status));
         }
 
         // Read back reply.

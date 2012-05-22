@@ -17,6 +17,8 @@ limitations under the License.
 import java.util.*;
 import java.io.*;
 import java.awt.*;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 import java.awt.geom.*;
 import java.awt.image.*;
 import java.awt.print.*;
@@ -35,6 +37,9 @@ public class Globe extends JComponent {
 	private BufferedImage buffered_image;
 	private boolean quality_image_buffered = false;
 	private long last_time_update = 0;
+	private Color day_color = new Color(1f, 0, 0, 0.10f);
+	private double max_zoom = 20;
+	private double min_zoom = 0.6;
 	
 	protected Graphics2D g2;
 	private float globeRadius = 275;
@@ -42,7 +47,7 @@ public class Globe extends JComponent {
 	private boolean showSea = true;
 	private boolean showWorld = true;
 	private boolean showGraticule = true;
-	private boolean showNight = false;
+	private boolean showDay = false;
 	private boolean showTest = false;
 	private boolean showTissot = false;
 	private ProjectionMouseListener mouseListener;
@@ -133,8 +138,25 @@ public class Globe extends JComponent {
 		// Add the virtual trackball
 		addMouseListener( mouseListener = new ProjectionMouseListener( this, projection ) );
 		addMouseListener( zoomListener = new PanZoomMouseListener( this, transform ) );
-		//add
+		
+		//Add the mousewheel listener
+		addMouseWheelListener(
+			new MouseWheelListener() {
+				public void mouseWheelMoved(MouseWheelEvent e) {
+					int steps = e.getWheelRotation();
+					mouseZoom(-steps);
+				}
+		    }
+		);
 		//selectLayer( map );
+	}
+	
+	public void mouseZoom(int steps) {
+		double zoom_factor = Math.pow(1.05, steps);
+		zoom_factor = Math.min(max_zoom / transform.getScaleX(), zoom_factor);
+		zoom_factor = Math.max(min_zoom/  transform.getScaleX(), zoom_factor);
+		transform.scale(zoom_factor,zoom_factor);
+		this.repaint();
 	}
 	
 	public void createInterruptedMap() {
@@ -203,12 +225,12 @@ public class Globe extends JComponent {
 		return showGraticule;
 	}
 	
-	public void setShowNight( boolean showNight ) {
-		this.showNight = showNight;
+	public void setShowDay( boolean showDay ) {
+		this.showDay = showDay;
 	}
 	
-	public boolean getShowNight() {
-		return showNight;
+	public boolean getShowDay() {
+		return showDay;
 	}
 	
 	public void setShowSea( boolean showSea ) {
@@ -351,13 +373,15 @@ public class Globe extends JComponent {
 		g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 	}
 	
-	private void paintNight (int numPoints) {
-		Color c = new Color(1f, 0, 0, 0.15f);
+	private void paintDay (int numPoints) {
+		
+		
+		
 		GeneralPath gc = new GeneralPath();
 		ProjectionPainter.fractionnedCircle( 45, 5, 85, numPoints, gc, true );
 		gc.closePath();
-		ProjectionPainter pp = ProjectionPainter.getProjectionPainter( projection );//FIXME
-		pp.drawPath( g2, gc, null, c );
+		ProjectionPainter pp = ProjectionPainter.getProjectionPainter( projection );
+		pp.drawPath( g2, gc, null, day_color );
 	}
 	
 	private void paint_fast( Graphics g ) {
@@ -371,7 +395,7 @@ public class Globe extends JComponent {
 		graticuleLayer.setVisible( false );
 		map.paint( mg );
 		
-		if ( showNight ) paintNight(10);
+		if ( showDay ) paintDay(10);
 	}
 	
 	private void paint_quality( Graphics g ) {
@@ -385,7 +409,7 @@ public class Globe extends JComponent {
 		graticuleLayer.setVisible( showGraticule );
 		map.paint( mg );
 		
-		if ( showNight ) paintNight(100);
+		if ( showDay ) paintDay(100);
 	}
 	
 	public void paint( Graphics g ) {

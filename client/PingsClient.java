@@ -54,6 +54,8 @@ public class PingsClient extends Observable implements Runnable {
         m_current_dest_geoip = new AtomicReference<GeoipInfo>();
         m_source_geoip = new AtomicReference<GeoipInfo>();
         m_total_error_count = new AtomicInteger();
+        
+        m_current_ping_result = new AtomicReference<String>("");
 
         resetErrorCount();
     }

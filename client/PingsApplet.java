@@ -7,6 +7,8 @@ import java.util.Observer;
 import java.util.Random;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 
 /**
@@ -20,7 +22,7 @@ public class PingsApplet extends JApplet implements ActionListener{
 	private static final long serialVersionUID = 1L;
 	
 	// PingsClient related variables
-	private final String SERVER_HOSTNAME = "localhost";
+	private final String SERVER_HOSTNAME = "ec2-184-72-202-57.compute-1.amazonaws.com";
 	private final int SERVER_PORT = 6543;
 	private PingsClient m_pings_client;
 	
@@ -52,6 +54,8 @@ public class PingsApplet extends JApplet implements ActionListener{
 		
 		//FIXME : Remove simulation
 		//new Thread((Runnable) new PingsClientSimulation(ping_globe)).start();
+		
+		this.repaint(1);
 	}
 	
 	public static void main(String [ ] args) {}
@@ -80,26 +84,26 @@ public class PingsApplet extends JApplet implements ActionListener{
 		Dimension update_name_size =  rename_button.getPreferredSize();
 		Dimension client_info_size = client_info_display.getPreferredSize();
 		
-		int first_row_height = name_size.height;
+		int row_height = name_size.height;
 		
 		nickname_field.setBounds(5,5,
-				name_size.width,first_row_height);
+				name_size.width,row_height);
 		
 		rename_button.setBounds(8 + name_size.width, 5,
-				update_name_size.width, first_row_height);
+				update_name_size.width, row_height);
 		
 		client_info_display.setBounds(11 + name_size.width + update_name_size.width, 5,
-				client_info_size.width,first_row_height );
+				client_info_size.width,row_height );
 		
 		//Second raw of display
 		Dimension counter_size = pings_counter_display.getPreferredSize();
 		Dimension pause_size = pause_button.getMinimumSize();
 		
-		pings_counter_display.setBounds(5, 8 + first_row_height,
-				counter_size.width, counter_size.height);
+		pings_counter_display.setBounds(5, 8 + row_height,
+				counter_size.width, row_height);
 		
-		pause_button.setBounds(8 + counter_size.width,8 + first_row_height,
-				pause_size.width, counter_size.height);
+		pause_button.setBounds(8 + counter_size.width,8 + row_height,
+				pause_size.width, row_height);
 	}
 	
 	/**
@@ -114,12 +118,12 @@ public class PingsApplet extends JApplet implements ActionListener{
 		}
 	}
 	
-	private void updatePingGUIValue(PingGlobe.PingGUI ping_gui, String value) {
-		final String regex = "\\S+\\s\\S+\\s(\\d+)\\s(\\d+)\\s(\\d+).+";
-		String[] values = value.split(regex);
-		int nb_try = Integer.parseInt(values[0]);
-		int nb_worked = Integer.parseInt(values[1]);
-		float totaltime = Float.parseFloat(values[2]) /1000f;
+	static void updatePingGUIValue(PingGlobe.PingGUI ping_gui, String value) {
+		//final String regex = "\\S+\\s\\S+\\s(\\d+)\\s(\\d+)\\s(\\d+).+";
+		String[] groups = value.split(" |ms",6);
+		int nb_try = Integer.parseInt(groups[2]);
+		int nb_worked = Integer.parseInt(groups[3]);
+		float totaltime = Float.parseFloat(groups[4]) /1000f;
 		if (nb_worked < nb_try -1 )
 		{
 			ping_gui.SetValue(-1);
@@ -131,9 +135,21 @@ public class PingsApplet extends JApplet implements ActionListener{
 	}
 	
 	private void updateClientInfoDisplay(String ip_adress, GeoipInfo client_info) {
-		String info_str = ": " +ip_adress + " "+client_info.city +", " + client_info.country;
+		String info_str = ": " + ip_adress + " ";
+		if (client_info.city != null) info_str += client_info.city + ", ";
+		info_str += client_info.country;
 		client_info_display.setText(info_str);
+		ping_globe.setOrigin(client_info);
 		setLayout();
+	}
+	
+	public void check_enable_button() {
+		if (nickname_field.getText().equals(m_pings_client.getNickname())) {
+			rename_button.setEnabled(false);
+		}
+		else {
+			rename_button.setEnabled(true);
+		}
 	}
 	
 	/**
@@ -158,11 +174,6 @@ public class PingsApplet extends JApplet implements ActionListener{
 		pause_button.addActionListener(this);
 		button_container.add (pause_button);
 		
-		//Add the field to change the nickname
-		nickname_field = new JTextField(15);
-		button_container.add (nickname_field);
-		//nickname_field.setText(m_pings_client.getNickname());
-		
 		//Add the button to change the nickname
 		rename_button = new JButton ("Ok");
 		rename_button.setMnemonic(KeyEvent.VK_U);
@@ -170,6 +181,27 @@ public class PingsApplet extends JApplet implements ActionListener{
 		rename_button.setActionCommand("rename");
 		rename_button.addActionListener(this);
 		rename_button.setEnabled(false);
+		
+		//Add the field to change the nickname
+		nickname_field = new JTextField(15);
+		nickname_field.setText(m_pings_client.getNickname());
+		nickname_field.getDocument().addDocumentListener(
+			new DocumentListener() {
+				@Override
+				public void changedUpdate(DocumentEvent e) {
+					check_enable_button();
+				}
+				@Override
+				public void insertUpdate(DocumentEvent e) {
+					check_enable_button();
+				}
+				@Override
+				public void removeUpdate(DocumentEvent e) {
+					check_enable_button();
+				}
+			});
+		button_container.add (nickname_field);		
+		
 		button_container.add (rename_button);
 		
 		//Add the display for the number of pings done
@@ -217,11 +249,14 @@ public class PingsApplet extends JApplet implements ActionListener{
 					updatePingGUIValue(gui_effect,client.getCurrentPingResult());
 					gui_effect = null;
 				}
-				//Else we somehow missed the result of the previous ping, hence 
-				// we need to do some workaround for the old ping and declare a 
+				//Else there are two case :
+				//_ either the destination geoip is the same (and with the 
+				//current implementation there is no way to know it ...)
+				//_ or we somehow missed the result of the previous ping, hence 
+				//we need to do some workaround for the old ping and declare a 
 				// new one.
 				else {
-					gui_effect.unknownError();
+					if (gui_effect != null) gui_effect.unknownError();
 					gui_effect = ping_globe.addPing(current_ping_geoip);
 				}
 			}
@@ -296,6 +331,7 @@ public class PingsApplet extends JApplet implements ActionListener{
 		else if (command.equals("rename")) {
 			String new_name = nickname_field.getText();
 			m_pings_client.setNickname(new_name);
+			rename_button.setEnabled(false);
 			System.out.println("Nick updated to " + new_name);
 		}
 		

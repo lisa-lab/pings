@@ -15,11 +15,11 @@ public class PingsClientSimulation extends Observable implements Runnable{
 	//Some random time due to any kind of factor (routers ...)
 	double average_random_time = 0.025;
 	//Some additional residual time (added on every network transmission)
-	double residual_time = 1.;
+	double residual_time = 0.05;
 	
 	//the fraction of the ping that randomly time out
 	double timed_out_fraction = 0.05;
-	double timed_out_delay = 5;
+	double timed_out_delay = 0.1;//5;
 	
 	//the fraction of ping that randomly refuse connection
 	double connection_refused_fraction = 0.5;
@@ -77,30 +77,43 @@ public class PingsClientSimulation extends Observable implements Runnable{
 	}
 	
 	/**
-	 * A function simulating a ping (we don't need the address of the 
-	 * target only the position)
+	 * A function simulating a ICMP ping (we don't need the address of the 
+	 * target only the position) 
 	 */
-	private double ping(GeoipInfo target) {
+	private String ping(GeoipInfo target) {
+		int nb_tries = 31;
+		String fake_header = "ICMP 255.0.255.0 ";
+		
+		double ping_estimation =
+			2 * (approximate_distance(client_geoip, target)/ approximate_speed)
+			+ (2 * average_random_time * prg.nextDouble());
+		
+		double total_time = 0;
+		int nb_succes = 0;
+
 		double x = prg.nextDouble();
+		
 		//Times out :
 		if (x <  timed_out_fraction){
-			wait_for_network(timed_out_delay);
-			return -2;
+			total_time = nb_tries * timed_out_delay;
+			nb_succes = 0;
 		}
-		else {
-			double ping_estimation =
-				2 * (approximate_distance(client_geoip, target)/ approximate_speed)
-				+ (2 * average_random_time * prg.nextDouble());
-			wait_for_network(ping_estimation);
-
-			//Connection refused :
-			if (x > 1 - connection_refused_fraction) {
-				return -1;
-			}
-			else{
-				return ping_estimation;
-			}
+		//Connection refused :
+		else if (x > 1 - connection_refused_fraction) {
+			total_time = ping_estimation;
+			nb_succes = 0 ;
 		}
+		//Success
+		else{
+			total_time = nb_tries * ping_estimation;
+			nb_succes = nb_tries;
+		}
+		
+		wait_for_network(total_time);
+		return fake_header
+			+ nb_tries + " "
+			+ nb_succes	+ " "
+			+(int) (total_time * 1000) + "ms;";
 	}
 	
 	/**
@@ -139,11 +152,11 @@ public class PingsClientSimulation extends Observable implements Runnable{
 				PingGlobe.PingGUI gui_effect = ping_globe.addPing(remote_geoip);
 				
 				//Do the actual ping and store the value
-				double value = ping(remote_geoip);
+				String value = ping(remote_geoip);
 				//some_storage[] = value;
 				
 				//Inform the GUI of the value(and repaint)
-				gui_effect.SetValue(value);
+				PingsApplet.updatePingGUIValue(gui_effect, value);
 				
 			}
 			

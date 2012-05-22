@@ -83,7 +83,7 @@ public class PingGlobe extends Globe {
 		super.setShowTissot(false);
 		super.setShowSea(true);
 		// The night could be added using
-		super.setShowNight(true);
+		super.setShowDay(true);
 		// although this method currently add a fixed black circle which wouldn't
 		// show much.
 		
@@ -171,14 +171,21 @@ public class PingGlobe extends Globe {
 				
 				projection.transform(target_geo,target_geo);
 				
-				String desrcription = target.city + ", " + target.country;
+				String desrcription;
+				if (target.city != null) {
+					desrcription = target.city + ", " + target.country;
+				}
+				else {
+					desrcription = target.country;
+				}
 				
 				text_render.setColor(peer_color);
 				text_render.drawString( desrcription , (int) target_geo.x,(int)- target_geo.y -8 );
 			}
 			
 			//Draw the arc
-			if (origin== null || value < 0) return;
+			//FIXME: changed just to see the arcs even with 'failed' pings
+			if (origin== null /* || value < 0*/) return;
 
 			g2.setStroke(link_stroke);
 			gc = new GeneralPath();
@@ -225,8 +232,7 @@ public class PingGlobe extends Globe {
 
 	public void centerView(GeoipInfo new_center) {
 		projection.setProjectionLatitude(Math.PI / 180 * new_center.latitude);
-		//FIXME
-		projection.setProjectionLongitude(Math.PI / 180 * new_center.longitude);//- 0.7);
+		projection.setProjectionLongitude(Math.PI / 180 * new_center.longitude - 0.7);
 		projection.initialize();
 		this.repaint();
 	}

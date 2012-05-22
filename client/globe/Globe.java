@@ -375,10 +375,22 @@ public class Globe extends JComponent {
 	
 	private void paintDay (int numPoints) {
 		
+		Calendar cal = Calendar.getInstance();
+		cal.setTimeZone(TimeZone.getTimeZone("UTC"));
 		
+		int current_day = cal.get(Calendar.DAY_OF_YEAR);
+		double current_time = cal.get(Calendar.HOUR_OF_DAY) + cal.get(Calendar.MINUTE)/60;
+
+		double fractional_year = 2 * Math.PI * (current_day + current_time/24) /365.25;
+		double sun_declination =
+			0.396372-22.91327*Math.cos(fractional_year)+ 4.02543*Math.sin(fractional_year)
+			-0.387205*Math.cos(2*fractional_year)+0.051967*Math.sin(2*fractional_year)
+			-0.154527*Math.cos(3*fractional_year) + 0.084798*Math.sin(3*fractional_year);
+		
+		double sun_longitude =  - (360/24)*(current_time -12); 
 		
 		GeneralPath gc = new GeneralPath();
-		ProjectionPainter.fractionnedCircle( 45, 5, 85, numPoints, gc, true );
+		ProjectionPainter.smallCircle((float) sun_longitude,(float)  sun_declination, 87, numPoints, gc, true );
 		gc.closePath();
 		ProjectionPainter pp = ProjectionPainter.getProjectionPainter( projection );
 		pp.drawPath( g2, gc, null, day_color );

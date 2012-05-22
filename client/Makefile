@@ -19,6 +19,8 @@ JAVADOC = javadoc
 JDOCFLAGS = -private -d $(JAVADOC_OUTPUT_DIR) -classpath .:$(EXTERNAL_LIBS) -sourcepath $(ADDITIONAL_SRC) -Xlint:unchecked
 
 JAR = jar
+JARSIGNER = jarsigner
+PINGS_KEYSTORE = ~/pings.keystore
 
 .SUFFIXES: .java .class
 
@@ -28,6 +30,10 @@ JAR = jar
 
 default: compile
 
+# Makefile's detection of dependencies does not work very well with javac's
+# habit of recompiling classes other than the one is was requested to compile.
+# Possible fixes: 1) force recompile of all classes all the time, or 2) move
+# to a Java build tool.
 compile: $(SRC:.java=.class)
 
 doc: $(SRC:.java=.class)
@@ -45,6 +51,9 @@ jar: compile
 	$(JAR) uf pings.jar -C globe world.shp -C globe world.dbf
         # Add Jar Index.
 	$(JAR) i pings.jar
+
+signedjar: jar
+	$(JARSIGNER) -keystore $(PINGS_KEYSTORE) pings.jar sign_jar
 
 clean:
 	$(RM) -vrf  $(ADDITIONAL_DIR_TO_CLEAN)

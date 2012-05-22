@@ -1,0 +1,15 @@
+How to Sign a Jar File
+======================
+
+1. Generate a key pair (valid for 2 years here):
+
+  keytool -genkey -alias sign_jar -keystore pings.keystore -dname "cn=Pings Project" -validity 730
+
+2. Sign Jar:
+
+  jarsigner -keystore pings.keystore pings.jar sign_jar
+
+You will be prompted for a keystore password when creating the key pair and
+again when signing the jar file. The second step is automated by the Makefile
+target "signedjar".
+

@@ -18,17 +18,15 @@ public class GeoipInfo {
         city = (String)json.get("city");
         country = (String)json.get("country_name");
         
-        /*FIXME : jsonobject get cast into doubles which are cast into floats 
-        and then cast back into double*/
-        longitude = ((Double)json.get("longitude")).floatValue();
-        latitude = ((Double)json.get("latitude")).floatValue();
+        longitude = ((Number)json.get("longitude")).doubleValue();
+        latitude = ((Number)json.get("latitude")).doubleValue();
     }
     
     /**
-     * An alternative constructor for testing purpose
+     * An alternative constructor for testing purposes.
      */
-    //TODO : remove it when useless
-    public GeoipInfo(String city,String country,double longitude,double latitude) {
+    public GeoipInfo(String city, String country,
+                     double longitude, double latitude) {
     	this.city = city;
     	this.country = country;
     	this.longitude = longitude;

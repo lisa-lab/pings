@@ -32,5 +32,13 @@ public class GeoipInfo {
     	this.longitude = longitude;
     	this.latitude = latitude;
     }
+    
+    public boolean equals(GeoipInfo o) {
+    	if (o == null) return false;
+    	return o.city.equals(this.city)
+    	 && o.country.equals(this.country)
+    	 && o.latitude == this.latitude
+    	 && o.longitude == this.longitude;	
+    }
 }
 

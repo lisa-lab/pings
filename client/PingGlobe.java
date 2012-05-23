@@ -39,7 +39,7 @@ public class PingGlobe extends Globe {
 	
 	private GeoipInfo origin;
 	private PingGUI[] stored_pings;
-	private static final int stored_pings_size = 20;
+	private static final int stored_pings_size = 25;
 	private static final float attenuation_offset_for_cities = 10f / 20f;
 	
 	//The last index of the array used to store a ping, as null case are handle
@@ -172,7 +172,7 @@ public class PingGlobe extends Globe {
 				projection.transform(target_geo,target_geo);
 				
 				String desrcription;
-				if (target.city != null) {
+				if (target.city != null && !target.city.equals("")) {
 					desrcription = target.city + ", " + target.country;
 				}
 				else {

@@ -24,7 +24,10 @@ public class PingsApplet extends JApplet implements ActionListener{
 	// PingsClient related variables
 	private final String SERVER_HOSTNAME = "ec2-184-72-202-57.compute-1.amazonaws.com";
 	private final int SERVER_PORT = 6543;
-	private PingsClient m_pings_client;
+	private final String initial_nickname = "no name";
+	private final int nb_client_threads = 5;
+	private Thread[] client_threads;
+	private PingsClient[] m_pings_clients;
 	
 	//GUI related variables, they holds the GUI components
 	private JButton pause_button, rename_button ;
@@ -36,7 +39,6 @@ public class PingsApplet extends JApplet implements ActionListener{
 	//State variables
 	private int pings_counter = 0;
 	private GeoipInfo client_geoip_info = null;
-	private Thread client_thread;
 	
 	/**
 	* The initialization of the applet, it creates the PingsClient and the GUI
@@ -45,17 +47,28 @@ public class PingsApplet extends JApplet implements ActionListener{
 	* @see  #initGUI()s
 	*/
 	public void init() {
-		m_pings_client = new PingsClient(SERVER_HOSTNAME, SERVER_PORT);	
-		m_pings_client.setNickname("Yoda");
-		client_thread = new Thread(m_pings_client);
-		client_thread.start();
+		
+		client_threads = new Thread[nb_client_threads];
+		m_pings_clients = new PingsClient[nb_client_threads];
+		
+		for (int i = 0; i < nb_client_threads; i++) {
+			m_pings_clients[i] = new PingsClient(SERVER_HOSTNAME, SERVER_PORT);	
+			m_pings_clients[i].setNickname(initial_nickname);
+			client_threads[i] = new Thread(m_pings_clients[i]);
+		}
 		
 		initGUI();
 		
 		//FIXME : Remove simulation
 		//new Thread((Runnable) new PingsClientSimulation(ping_globe)).start();
 		
-		this.repaint(1);
+		//Add an observer to the client to update the GUI.
+		for (int i = 0; i < nb_client_threads; i++) {
+			m_pings_clients[i].addObserver(new clientThreadObserver(i));
+			client_threads[i].start();
+		}
+		
+		this.repaint();
 	}
 	
 	public static void main(String [ ] args) {}
@@ -66,7 +79,9 @@ public class PingsApplet extends JApplet implements ActionListener{
 	
 	//FIXME
 	public void destroy() {
-		client_thread.interrupt();
+		for (int i = 0; i < nb_client_threads; i++) {
+			client_threads[i].interrupt();
+			}
 		}
 	
 	/**
@@ -118,6 +133,7 @@ public class PingsApplet extends JApplet implements ActionListener{
 		}
 	}
 	
+	//TODO: tweak me
 	static void updatePingGUIValue(PingGlobe.PingGUI ping_gui, String value) {
 		//final String regex = "\\S+\\s\\S+\\s(\\d+)\\s(\\d+)\\s(\\d+).+";
 		String[] groups = value.split(" |ms",6);
@@ -136,15 +152,16 @@ public class PingsApplet extends JApplet implements ActionListener{
 	
 	private void updateClientInfoDisplay(String ip_adress, GeoipInfo client_info) {
 		String info_str = ": " + ip_adress + " ";
-		if (client_info.city != null) info_str += client_info.city + ", ";
+		if (client_info.city != null && !client_info.city.equals("")) info_str += client_info.city + ", ";
 		info_str += client_info.country;
 		client_info_display.setText(info_str);
 		ping_globe.setOrigin(client_info);
 		setLayout();
+		this.repaint();
 	}
 	
 	public void check_enable_button() {
-		if (nickname_field.getText().equals(m_pings_client.getNickname())) {
+		if (nickname_field.getText().equals(m_pings_clients[0].getNickname())) {
 			rename_button.setEnabled(false);
 		}
 		else {
@@ -184,7 +201,7 @@ public class PingsApplet extends JApplet implements ActionListener{
 		
 		//Add the field to change the nickname
 		nickname_field = new JTextField(15);
-		nickname_field.setText(m_pings_client.getNickname());
+		nickname_field.setText(m_pings_clients[0].getNickname());
 		nickname_field.getDocument().addDocumentListener(
 			new DocumentListener() {
 				@Override
@@ -219,48 +236,65 @@ public class PingsApplet extends JApplet implements ActionListener{
 		
 		//Set the layout
 		setLayout();
+	}
+	
+	class clientThreadObserver implements Observer {
 		
-		//Add an observer to the client to update the GUI.
-		m_pings_client.addObserver(new Observer() {
-			private PingGlobe.PingGUI gui_effect = null;
+		private PingGlobe.PingGUI gui_effect = null;
+		private int private_n = -1;
+		private InetAddress last_address = null ;
+		
+		public clientThreadObserver(int i) {
+			super();
+			private_n = i;
+		}
+		
+		@Override
+		public void update(Observable o, Object arg) {
+			PingsClient client = (PingsClient)o;
 			
-			public void update(Observable o, Object arg) {
-				PingsClient client = (PingsClient)o;
-				
-				if (client_geoip_info != client.getSourceGeoip()) {
-					client_geoip_info = client.getSourceGeoip();
-					//FIXME: get ip from server
-					updateClientInfoDisplay("", client_geoip_info);
-					return;
-				}
-				
-				GeoipInfo current_ping_geoip = client.getCurrentDestGeoip();
-				
-				//If there is a new ping add it to the counter and register an 
-				//effect for the globe
-				if (gui_effect == null && current_ping_geoip != null) {
-					pings_counter++;
-					updatePingsCounterDisplay();
-					
-					gui_effect = ping_globe.addPing(current_ping_geoip);
-				}
-				//Else if it's the last ping update it
-				else if (gui_effect != null && current_ping_geoip == gui_effect.getGeoip()) {
-					updatePingGUIValue(gui_effect,client.getCurrentPingResult());
-					gui_effect = null;
-				}
-				//Else there are two case :
-				//_ either the destination geoip is the same (and with the 
-				//current implementation there is no way to know it ...)
-				//_ or we somehow missed the result of the previous ping, hence 
-				//we need to do some workaround for the old ping and declare a 
-				// new one.
-				else {
-					if (gui_effect != null) gui_effect.unknownError();
-					gui_effect = ping_globe.addPing(current_ping_geoip);
-				}
+			if (!client.getSourceGeoip().equals(client_geoip_info)) {
+				client_geoip_info = client.getSourceGeoip();
+				//FIXME: get ip from server
+				//TODO : SwingUtilities.invokeLater
+				updateClientInfoDisplay("", client_geoip_info);
+				return;
 			}
-		});
+			
+			GeoipInfo current_ping_geoip = client.getCurrentDestGeoip();
+			InetAddress current_ping_adress = client.getCurrentPingDest();
+			
+			//If there are several PingsClient threads then this might still be 
+			// a 
+			if (current_ping_adress == null) return;
+			
+			//If there is a new ping add it to the counter and register an 
+			//effect for the globe
+			if (gui_effect == null && last_address != current_ping_adress) {
+				last_address = current_ping_adress;
+				
+				pings_counter++;
+				updatePingsCounterDisplay();
+				
+				gui_effect = ping_globe.addPing(current_ping_geoip);
+			}
+			//Else if it's the last ping update it
+			else if (gui_effect != null && last_address == current_ping_adress) {
+				updatePingGUIValue(gui_effect,client.getCurrentPingResult());
+				gui_effect = null;
+			}
+			//Else there are two case :
+			//_ either the destination address is the same (and with the 
+			//current implementation there is no way to know it). This case has a
+			//very low probability.
+			//_ or we somehow missed the result of the previous ping, hence 
+			//we need to do some workaround for the old ping and declare a 
+			//new one.
+			else {
+				if (gui_effect != null) gui_effect.unknownError();
+				gui_effect = ping_globe.addPing(current_ping_geoip);
+			}
+		}
 	}
 	
 	//FIXME
@@ -273,7 +307,7 @@ public class PingsApplet extends JApplet implements ActionListener{
 	 * shows "Resume".
 	 */
 	private void refreshPauseButton() {
-			if (client_thread.isInterrupted()) {
+			if (client_threads[0].isInterrupted()) {
 				pause_button.setText("Resume");
 				pause_button.setActionCommand("resume");
 			}
@@ -298,13 +332,15 @@ public class PingsApplet extends JApplet implements ActionListener{
 			//Pause the client if it was running, do nothing otherwise
 			
 			//FIXME
-			boolean was_running = !client_thread.isInterrupted();
+			boolean was_running = !client_threads[0].isInterrupted();
 			//Issue a warning if the client was not running
 			if (!was_running) {				
 				//System.out.println ("Was already paused.");
 			}
 			else {
-				client_thread.suspend();
+				for (int i = 0; i < nb_client_threads; i++) {
+					client_threads[i].suspend();
+				}
 			}
 			//Then refresh the button
 			refreshPauseButton();
@@ -314,14 +350,15 @@ public class PingsApplet extends JApplet implements ActionListener{
 
 			//FIXME
 			//boolean was_running = !m_pings_client.m_is_running.compareAndSet(false, true);
-			boolean was_running = client_thread.isInterrupted();
+			boolean was_running = client_threads[0].isInterrupted();
 			//Issue a warning if the client was running
 			if (was_running) {
 				//System.out.println ("Was already running.");
 			}
 			else {
-
-				client_thread.resume();
+				for (int i = 0; i < nb_client_threads; i++) {
+					client_threads[i].resume();
+				}
 			}
 			//Then refresh the button
 			refreshPauseButton();
@@ -330,7 +367,9 @@ public class PingsApplet extends JApplet implements ActionListener{
 		//Handle the rename button
 		else if (command.equals("rename")) {
 			String new_name = nickname_field.getText();
-			m_pings_client.setNickname(new_name);
+			for (int i = 0; i < nb_client_threads; i++) {
+				m_pings_clients[i].setNickname(new_name);
+			}
 			rename_button.setEnabled(false);
 			System.out.println("Nick updated to " + new_name);
 		}

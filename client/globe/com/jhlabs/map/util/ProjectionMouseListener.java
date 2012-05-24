@@ -18,6 +18,8 @@ package com.jhlabs.map.util;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.geom.AffineTransform;
+
 import com.jhlabs.map.*;
 import com.jhlabs.map.proj.*;
 
@@ -28,12 +30,14 @@ public class ProjectionMouseListener implements MouseListener, MouseMotionListen
 
 	private Component component;
 	private Projection projection;
+	private AffineTransform transform;
 	private int lastX = 0;
 	private int lastY = 0;
 
-	public ProjectionMouseListener( Component component, Projection projection ) {
+	public ProjectionMouseListener( Component component, Projection projection, AffineTransform transform ) {
 		this.component = component;
 		this.projection = projection;
+		this.transform = transform;
 	}
 	
 	public void setProjection( Projection projection ) {
@@ -77,7 +81,7 @@ public class ProjectionMouseListener implements MouseListener, MouseMotionListen
 	public void mouseDragged( MouseEvent e ) {
 		int x = e.getX();
 		int y = e.getY();
-		double s = 0.01;
+		double s = 0.01 / transform.getScaleX() ;
 		projection.setProjectionLatitude( projection.getProjectionLatitude()+(y-lastY)*s );
 		if ( Math.cos( projection.getProjectionLatitude() ) < 0 )
 			s = -s;

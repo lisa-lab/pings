@@ -136,7 +136,7 @@ public class Globe extends JComponent {
 		}
 
 		// Add the virtual trackball
-		addMouseListener( mouseListener = new ProjectionMouseListener( this, projection ) );
+		addMouseListener( mouseListener = new ProjectionMouseListener( this, projection, transform ) );
 		addMouseListener( zoomListener = new PanZoomMouseListener( this, transform ) );
 		
 		//Add the mousewheel listener

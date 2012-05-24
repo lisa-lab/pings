@@ -33,13 +33,13 @@ import com.sun.image.codec.jpeg.JPEGImageEncoder;
  * stored_pings_size =  { @value stored_ping_size} pings can be stored and 
  * displayed.
  */
-public class PingGlobe extends Globe {
+public class PingsGlobe extends Globe {
 	
 	private static final long serialVersionUID = 1L;
 	
 	private GeoipInfo origin;
 	private PingGUI[] stored_pings;
-	private static final int stored_pings_size = 25;
+	private static final int stored_pings_size = 20;
 	private static final float attenuation_offset_for_cities = 10f / 20f;
 	
 	//The last index of the array used to store a ping, as null case are handle
@@ -75,7 +75,7 @@ public class PingGlobe extends Globe {
 	};
 	
 	
-	public PingGlobe() {
+	public PingsGlobe() {
 		super();
 		
 		//The globe currently shows only the landmasses
@@ -116,28 +116,28 @@ public class PingGlobe extends Globe {
 			return target;
 		}
 		
-		public void SetValue(double new_ping_value) {
+		public void setValue(double new_ping_value) {
 			this.value = new_ping_value;
 			UpdateColor();
-			PingGlobe.this.repaint();
+			PingsGlobe.this.repaint();
 		}
 
 		public void unknownError() {
 			this.value = -3;
 			UpdateColor();
-			PingGlobe.this.repaint();
+			PingsGlobe.this.repaint();
 		}
 		
 		public void timedOut() {
 			this.value = -2;
 			UpdateColor();
-			PingGlobe.this.repaint();
+			PingsGlobe.this.repaint();
 		}
 		
 		public void connectionRefused () {
 			this.value = -1;
 			UpdateColor();
-			PingGlobe.this.repaint();
+			PingsGlobe.this.repaint();
 		}
 		
 		/**
@@ -197,6 +197,29 @@ public class PingGlobe extends Globe {
 			pp = ProjectionPainter.getProjectionPainter(projection);
 			pp.drawPath(g2, gc,peer_color, null);
 		}
+
+		public void updatePingGUIValue(String value) {
+			//final String regex = "\\S+\\s\\S+\\s(\\d+)\\s(\\d+)\\s(\\d+).+";
+			
+			try {
+
+				String[] groups = value.split(" |ms",6);
+				int nb_try = Integer.parseInt(groups[2]);
+				int nb_worked = Integer.parseInt(groups[3]);
+				float totaltime = Float.parseFloat(groups[4]) /1000f;
+				if (nb_worked < nb_try -1 )
+				{
+					this.setValue(-1);
+				}
+				else 
+				{
+					this.setValue(totaltime /nb_try );
+				}
+			}
+			catch (Exception e) {
+				this.unknownError();
+			}
+		}
 		
 	}
 	
@@ -229,34 +252,45 @@ public class PingGlobe extends Globe {
 		return newping;
 	}
 
-
+	/**
+	 * Center the projection to have a good view on the given point.
+	 * <p>
+	 * This function doesn't actually center the view exactly on the point 
+	 * itself but on a point 0.7 rad W to it.
+	 * 
+	 * @param new_center the point to look at
+	 */
 	public void centerView(GeoipInfo new_center) {
-		projection.setProjectionLatitude(Math.PI / 180 * new_center.latitude);
-		projection.setProjectionLongitude(Math.PI / 180 * new_center.longitude - 0.7);
+		projection.setProjectionLatitude(MapMath.DTR * new_center.latitude);
+		projection.setProjectionLongitude(MapMath.DTR * new_center.longitude - 0.7);
 		projection.initialize();
 		this.repaint();
 	}
-
+	
+	/**
+	 * Paint the origin (that is the client geoip) as a circle on the globe
+	 * using the Graphics g2.
+	 * @param g2 the Graphics2D to draw on
+	 * @param origin the GeoipInfo of the origin
+	 */
 	private void paintOrigin(Graphics2D g2, GeoipInfo origin) {
 		if (origin == null ) return;
 		GeneralPath gc = new GeneralPath();
 		ProjectionPainter.smallCircle(
 				(float)origin.longitude, (float) origin.latitude,
-				2.5f,10, gc, true);
+				2.5f,20, gc, true);
 		gc.closePath();
 		ProjectionPainter pp = ProjectionPainter.getProjectionPainter(projection);
 		pp.drawPath(g2, gc, null, origin_color);
 	}
 	
 	/**
-	 * The methods that draw the component.
+	 * The methods that draw the globe.
 	 * <p>
 	 * @see Globe
 	 * @see #paintOrigin(Graphics2D, GeoipInfo)
 	 * @see #paintLink(Graphics2D, GeoipInfo, GeoipInfo)
 	 */
-	
-	
 	public void paint(Graphics g) {
 		
 		//Paint the globe
@@ -266,7 +300,6 @@ public class PingGlobe extends Globe {
 		
 		//Paint the origin (the client position)
 		paintOrigin(g2, origin);
-		
 		
 		//Paint the targets
 		

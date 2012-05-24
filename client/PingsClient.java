@@ -38,11 +38,12 @@ public class PingsClient extends Observable implements Runnable {
     // like the Java Atomic types or other to prevent fun multithreading
     // bugs!
     private AtomicReference<String> m_nick;
-    private AtomicReference<InetAddress> m_current_ping_dest;
-    private AtomicReference<GeoipInfo> m_current_dest_geoip;
-    private AtomicReference<String> m_current_ping_result;
-    private AtomicReference<GeoipInfo> m_source_geoip;
+    protected AtomicReference<InetAddress> m_current_ping_dest;
+    protected AtomicReference<GeoipInfo> m_current_dest_geoip;
+    protected AtomicReference<GeoipInfo> m_source_geoip;
+    protected AtomicReference<String> m_current_ping_result;
     private AtomicInteger m_total_error_count;
+    private AtomicBoolean m_is_running;
 
     public PingsClient(String server_hostname, int server_port) {
         m_client_info = new ClientInfo();
@@ -54,8 +55,8 @@ public class PingsClient extends Observable implements Runnable {
         m_current_dest_geoip = new AtomicReference<GeoipInfo>();
         m_source_geoip = new AtomicReference<GeoipInfo>();
         m_total_error_count = new AtomicInteger();
-        
         m_current_ping_result = new AtomicReference<String>("");
+        m_is_running = new AtomicBoolean(true);
 
         resetErrorCount();
     }
@@ -89,7 +90,7 @@ public class PingsClient extends Observable implements Runnable {
     }
 
     /** Combines java.util.Observable's setChanged() and notifyObservers(). */
-    private void notifyObserversOfChange() {
+    protected void notifyObserversOfChange() {
         setChanged();
         notifyObservers();
     }
@@ -99,10 +100,29 @@ public class PingsClient extends Observable implements Runnable {
         m_total_error_count.set(0);
     }
 
+   	public void pause() {
+   		synchronized(this) {
+   	    	m_is_running.set(false);
+   			}
+   		}
+    
+    public void resume() {
+   		synchronized(this) {
+	    	m_is_running.set(true);
+	    	notify();
+   		}
+    }
+
+	public boolean isRunning() {
+		return m_is_running.get();
+	}
+    
+    
     @Override
     public void run() {
         LOGGER.info("PingsClient worker thread starting.");
         resetErrorCount();
+        m_is_running.set(true);
 
         try {
             while (true) {
@@ -131,19 +151,30 @@ public class PingsClient extends Observable implements Runnable {
                         notifyObserversOfChange();
                         m_prober.probe(pings.addresses[i]);
                         
-                        // Save ping result.                      
-                        pings.results[i] = m_prober.getLastProbe();
-                        m_current_ping_result.set(pings.results[i]);
-                        notifyObserversOfChange();
-                        LOGGER.log(Level.INFO, "Ping result: {0}.",
-                                   pings.results[i]);
-
-                        m_current_ping_dest.set(null);
-                        m_current_dest_geoip.set(null);
-                        m_current_ping_result.set("");
-                        
-                        // Clear consecutive error count.
-                        m_consecutive_error_count = 0;
+                        //In case the thread is paused here
+                        if (!m_is_running.get()) {
+	                            while (!m_is_running.get()) {
+	                           		synchronized(this) {
+	                           			wait();
+	                           		}
+                        	}
+                            i--;
+                        }
+                        else {
+	                        // Save ping result.                      
+	                        pings.results[i] = m_prober.getLastProbe();
+	                        m_current_ping_result.set(pings.results[i]);
+	                        notifyObserversOfChange();
+	                        LOGGER.log(Level.INFO, "Ping result: {0}.",
+	                                   pings.results[i]);
+	
+	                        m_current_ping_dest.set(null);
+	                        m_current_dest_geoip.set(null);
+	                        m_current_ping_result.set("");
+	                        
+	                        // Clear consecutive error count.
+	                        m_consecutive_error_count = 0;
+                        }
                     }
 
                     // Make sure nick is up-to-date before returning the
@@ -226,4 +257,5 @@ public class PingsClient extends Observable implements Runnable {
         thread.start();
         thread.join();
     }
+
 }

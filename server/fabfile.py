@@ -1,10 +1,11 @@
 """Fabric file for deployment of Pings server to Ubuntu instances on Amazon
 Web Services. Tested with Fabric 1.4.1."""
 
-import os.path
+import os.path, time
 from StringIO import StringIO
 from fabric.api import *
 from fabric.contrib.files import exists
+from boto.ec2.connection import EC2Connection
 
 # Loads env.key_filename and env.roledefs settings.
 from fabconfig import *
@@ -14,6 +15,10 @@ here = os.path.dirname(__file__)
 
 # User under which the Pings servers run.
 PINGS_USER = 'pings'
+
+# XXX Use 64bit AMI for deployment!
+# AMI: ubuntu/images/ebs/ubuntu-oneiric-11.10-i386-server-20120222
+AMI = 'ami-a0ba68c9'
 
 @task
 def prepare_source():
@@ -35,10 +40,12 @@ def upload_source():
 def update_system_packages_repos():
     sudo('apt-get update')
 
-def install_system_packages(package_list):
+def install_system_packages(package_list, dont_install_recommends=False):
     """Helper function. Install system package (i.e. .debs)."""
     update_system_packages_repos()
-    sudo('apt-get install --assume-yes ' + ' '.join(package_list))
+    sudo('apt-get install --assume-yes ' +
+         ('--no-install-recommends ' if dont_install_recommends else '') +
+         ' '.join(package_list))
 
 @task
 def install_system_base_packages():
@@ -216,3 +223,57 @@ def ssh_test():
     """Opens an interactive ssh session to the test hosts. Saves remembering
     the long AWS hostname and manually supplying the correct host key."""
     open_shell()
+
+
+# XXX Change default instance type.
+@task
+def launch_new_instance(instance_type='t1.micro', use_raid=False):
+    """Launch a new EC2 instance. If use_raid is True, we will create a 2
+    GiB RAID10 array and mount it at /srv/pings."""
+    conn = EC2Connection()
+
+    reservation = conn.run_instances(AMI, instance_type=instance_type,
+                                     key_name='pings_keypair',
+                                     security_groups = ['quicklaunch-1'])
+
+    assert len(reservation.instances) == 1
+    instance = reservation.instances[0]
+    print('Waiting for instance to start...')
+
+    # Check up on its status every so often
+    status = instance.update()
+    while status == 'pending':
+        time.sleep(2)
+        status = instance.update()
+
+    if status != 'running':
+        raise RuntimeError('Instance %s failed to start! (Status: %s)' % (instance.id, status))
+
+    if use_raid:
+        # Create block devices.
+        component_devices = ['/dev/sd' + l for l in "hijk"]
+        for device in component_devices:
+            # Size of volume in GiB.
+            vol = conn.create_volume(1, instance.placement)
+            vol.attach(instance.id, device)
+
+        # Configure as RAID10 array. We need multiple connection attemps as
+        # the host may not initially be ready to accept ssh connections
+        # even though its status is "running".
+        raid_device = '/dev/md0'
+        with(settings(host_string=instance.public_dns_name,
+                      connection_attempts=5)):
+            run('uname -a')
+            # Using dont_install_recommends=True to avoid pulling in MTA.
+            install_system_packages(['mdadm'], dont_install_recommends=True)
+            sudo('mdadm --create %s --level 10 --raid-devices %d --run' %
+                 (raid_device, len(component_devices), ' '.join(component_devices)))
+
+        # XXX Mount on /srv/pings. (Use noatime for better performance.)
+
+    print instance.public_dns_name
+    return (instance.id, instance.public_dns_name)
+
+@task
+def uname():
+    run('uname -a')

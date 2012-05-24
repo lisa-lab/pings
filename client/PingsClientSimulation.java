@@ -1,5 +1,8 @@
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Observable;
 import java.util.Random;
+import java.util.logging.Level;
 
 
 /**
@@ -7,7 +10,7 @@ import java.util.Random;
  * 
  * @author RaphaelBonaque
  */
-public class PingsClientSimulation extends Observable implements Runnable{
+public class PingsClientSimulation extends PingsClient{
 	//Simulation parameters 
 	
 	//let's say the signal is 3 times slower than light speed
@@ -15,35 +18,27 @@ public class PingsClientSimulation extends Observable implements Runnable{
 	//Some random time due to any kind of factor (routers ...)
 	double average_random_time = 0.025;
 	//Some additional residual time (added on every network transmission)
-	double residual_time = 0.05;
+	double residual_time = 0.1;
 	
 	//the fraction of the ping that randomly time out
 	double timed_out_fraction = 0.05;
-	double timed_out_delay = 0.1;//5;
+	double timed_out_delay = 5;
 	
 	//the fraction of ping that randomly refuse connection
-	double connection_refused_fraction = 0.5;
+	double connection_refused_fraction = 0.3;
 	
-	// Normal information for PingsClient
-	private PingGlobe ping_globe ;
-	private GeoipInfo client_geoip;
+	private Random prg;
+	private static GeoipInfo server_location = new GeoipInfo("Montreal","Canada",-73.55f,45.5f);
+	private static GeoipInfo client_geoip = server_location;
 	
-	
-	//Additional information for examples
-	
-	GeoipInfo montreal = new GeoipInfo("Montreal","Canada",-73.55f,45.5f);
-	GeoipInfo newyork = new GeoipInfo("New-York","United States",-70.93f, 40.65f);
-	GeoipInfo paris = new GeoipInfo("Paris","France",2.35f, 48.85f);
-	GeoipInfo tokyo = new GeoipInfo("Tokyo","Japan",139.68f, 35.68f);
-	GeoipInfo zerozero = new GeoipInfo("Zero","Zero",0f, 0f);
-	
-	Random prg;
-	
-	public PingsClientSimulation(PingGlobe ping_globe) {
-		this.ping_globe = ping_globe;
+	public PingsClientSimulation() {
+		super("simulation",0);
 		prg = new Random();
+		if (client_geoip == server_location) {
+			client_geoip = take_next_geoip_from_list();
+		}
 	}
-
+	
 	/**
 	 * A function simulating a wait from the network
 	 * 
@@ -121,43 +116,59 @@ public class PingsClientSimulation extends Observable implements Runnable{
 	 * 
 	 * @return a  random GeoipInfo 
 	 */
-	private GeoipInfo take_next_adress_from_list() {
+	private GeoipInfo take_next_geoip_from_list() {
 		int index = prg.nextInt(worldCapital.length);
 		return worldCapital[index];
 	}
 	
+	private InetAddress take_next_address_from_list() {
+		byte[] bytes = new byte[4];
+		prg.nextBytes(bytes);
+		try{
+			return InetAddress.getByAddress(bytes );
+		}
+		catch (Exception _) {
+			return null;
+		}
+	}
+	
 	private void talk_with_server() {
-		ping(montreal);
+		ping(server_location);
 	}
 	
 	/**
 	 * Simulate the PingClient run thread
 	 */
 	public void run () {
-		//Receive the client localization from the server
-		this.client_geoip = paris;
-		//talk with server is before setting the geoip but don't mind this ...
-		talk_with_server();
-		ping_globe.setOrigin(client_geoip);
-					
+		
 		while (true) {
-			//Receive some addresses from the server
+			//Receive the client localization and addresses to ping from the server
 			talk_with_server();
+			m_source_geoip.set(client_geoip);
+			notifyObserversOfChange();
 			
-			for (int i = 0 ; i < 100; i++) {
+			for (int i = 0 ; i < 15; i++) {
 				//Take the next address in the list received from the server
-				GeoipInfo remote_geoip = take_next_adress_from_list();
+				GeoipInfo remote_geoip = take_next_geoip_from_list();
+				InetAddress remote_address = take_next_address_from_list();
 				
-				//Add it to the GUI (and repaint)
-				PingGlobe.PingGUI gui_effect = ping_globe.addPing(remote_geoip);
+				//Inform the GUI
+				m_current_ping_dest.set(remote_address);
+				m_current_dest_geoip.set(remote_geoip);
+				notifyObserversOfChange();
 				
 				//Do the actual ping and store the value
 				String value = ping(remote_geoip);
 				//some_storage[] = value;
 				
-				//Inform the GUI of the value(and repaint)
-				PingsApplet.updatePingGUIValue(gui_effect, value);
+				//Inform the GUI of the value
+				m_current_ping_result.set(value);
+				notifyObserversOfChange();
 				
+				m_current_ping_dest.set(null);
+				m_current_dest_geoip.set(null);
+				m_current_ping_result.set("");
+
 			}
 			
 			//Send the results to the server

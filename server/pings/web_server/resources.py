@@ -173,7 +173,7 @@ def update_leaderboards(userid, results):
     sends a request to the leaderboards server to add that number to
     the leaderboards for the given userid."""
     # Compute how many points the given results are worth.
-    points = len(results) * 100
+    points = len(results)
 
     # Send them to server.
     logger.debug('Adding %d to score of user "%s"', points, userid)

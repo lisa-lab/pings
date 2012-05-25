@@ -1,7 +1,7 @@
 SRC = Prober.java PingsClient.java PingsApplet.java TestPingers.java \
       ClientInfo.java ServerProxy.java Launcher.java IcmpPinger.java \
-      TcpPinger.java TraceRouter.java GeoipInfo.java PingGlobe.java \
-      CompositeProber.java
+      TcpPinger.java TraceRouter.java GeoipInfo.java PingsGlobe.java \
+      CompositeProber.java PingsGUI.java
 
 
 # Join multiple libraries together with ":" (e.g. foo.jar:bar.jar)

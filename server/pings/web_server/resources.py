@@ -123,7 +123,9 @@ def get_pings(num_addresses=15):
     ip_addresses = []
     num_tries = 0
 
-    while len(ip_addresses) < num_addresses and num_tries < 100:
+    # The num_tries < x part of the loop is to garantee that this function
+    # executes in a bounded time.
+    while len(ip_addresses) < num_addresses and num_tries < num_addresses*6:
         num_tries += 1
         # Create a random IPv4 address. Exclude 0.0.0.0 and 255.255.255.255.
         ip = ipaddr.IPv4Address(random.randint(1, 2**32-2))

@@ -1,13 +1,16 @@
 Installation Guide
 ==================
 
-This document will guide you in installing a local copy of the Pings server
-for development, etc.
+This document will guide you in installing a local copy of the Pings
+server. These instructions are geared towards setting up an environment for
+development, so they use virtualenv to create an isolated environment for
+your local Pings install. If you just want to run a copy of the server as
+simply as possible, you could skip these steps if desired.
 
-You will need virtualenv and virtualenvwrapper (2.9 or greater) to follow
-this guide. On top of Python (obviously), you will need memcached and redis
-installed. And finally you will also require the development packages for
-libevent and zeromq.
+To follow this guide, you will need virtualenv and virtualenvwrapper (2.9
+or greater). On top of Python (obviously), you will need memcached and
+redis installed. And finally you will also require the development packages
+for libevent and zeromq.
 
 On Ubuntu or Debian, you can install all the above by running first:
 

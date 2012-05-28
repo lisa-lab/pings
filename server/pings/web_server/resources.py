@@ -128,8 +128,12 @@ def get_pings(num_addresses=15):
         # Create a random IPv4 address. Exclude 0.0.0.0 and 255.255.255.255.
         ip = ipaddr.IPv4Address(random.randint(1, 2**32-2))
 
+        # Add address if it is a valid global IP address. (Addresses that
+        # start with a leading first byte of 0 are also not valid
+        # destination addresses, so filter them out too.)
         if not (ip.is_link_local or ip.is_loopback or ip.is_multicast or
-                ip.is_private or ip.is_reserved or ip.is_unspecified):
+                ip.is_private or ip.is_reserved or ip.is_unspecified
+                or ip.packed[0] == '\x00'):
             ip_addresses.append(str(ip))
 
     return ip_addresses

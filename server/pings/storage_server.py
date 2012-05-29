@@ -55,7 +55,7 @@ class OnDemandFile:
             force_new_file = True
 
         if force_new_file or time_period != self.current_time_period:
-            filename = '%dh-%02d-UTC.data' % (dt.hour, int(dt.minute / 10) * 10)
+            filename = '%02dh%02d-UTC.data' % (dt.hour, int(dt.minute / 10) * 10)
 
             if self.f is not None:
                 self.f.close()

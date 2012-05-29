@@ -1,10 +1,11 @@
 """Fabric file for deployment of Pings server to Ubuntu instances on Amazon
 Web Services. Tested with Fabric 1.4.1."""
 
+from __future__ import print_function
 import os.path, time
 from StringIO import StringIO
 from fabric.api import *
-from fabric.contrib.files import exists
+from fabric.contrib import files
 from boto.ec2.connection import EC2Connection
 
 # Loads env.key_filename and env.roledefs settings.
@@ -15,10 +16,6 @@ here = os.path.dirname(__file__)
 
 # User under which the Pings servers run.
 PINGS_USER = 'pings'
-
-# XXX Use 64bit AMI for deployment!
-# AMI: ubuntu/images/ebs/ubuntu-oneiric-11.10-i386-server-20120222
-AMI = 'ami-a0ba68c9'
 
 @task
 def prepare_source():
@@ -43,9 +40,29 @@ def update_system_packages_repos():
 def install_system_packages(package_list, dont_install_recommends=False):
     """Helper function. Install system package (i.e. .debs)."""
     update_system_packages_repos()
-    sudo('apt-get install --assume-yes ' +
-         ('--no-install-recommends ' if dont_install_recommends else '') +
-         ' '.join(package_list))
+
+    # Sometimes the "apt-get install" call below fails to see the updated
+    # package list from update_system_packages_repos() above. Retry both a
+    # couple times as a hack to fix this. Test again when upgrading from
+    # Ubuntu 11.10 and remove this hack if it isn't needed anymore.
+    MAX_TRIES = 3
+    sudo_command = ('apt-get install --assume-yes ' +
+                    ('--no-install-recommends ' if dont_install_recommends else '') +
+                    ' '.join(package_list))
+
+    with settings(warn_only=True):
+        for i in range(MAX_TRIES-1):
+            result = sudo(sudo_command)
+            if result.succeeded:
+                return
+
+            # Force repeat of "apt-get update".
+            sudo('apt-get update')
+
+    # Last try, but with warn_only with its default value of False, so we
+    # get an error if we fail here.
+    sudo(sudo_command)
+
 
 @task
 def install_system_base_packages():
@@ -99,7 +116,7 @@ def setup_virtualenv(rootdir):
     # Running virtualenv when said virtualenv already exists and a process
     # is using it fails with a "text file busy" error on the python
     # executable. So check beforehand.
-    if not exists(os.path.join(rootdir), 'lib'):
+    if not files.exists(os.path.join(rootdir), 'lib'):
         sudo('virtualenv --distribute ' + rootdir)
 
 @task
@@ -199,7 +216,7 @@ def deploy_test():
         # Copy over Geoip db if needed.
         with cd('/srv/pings_test/local/lib/python%s/site-packages' % get_python_version()):
             geoip_filename = 'GeoLiteCity.dat'
-            if not exists(geoip_filename):
+            if not files.exists(geoip_filename):
                 put(geoip_filename, '.', use_sudo=True)
 
         # Install all requirements.
@@ -225,54 +242,93 @@ def ssh_test():
     open_shell()
 
 
-# XXX Change default instance type.
 @task
-def launch_new_instance(instance_type='t1.micro', use_raid=False):
-    """Launch a new EC2 instance. If use_raid is True, we will create a 2
-    GiB RAID10 array and mount it at /srv/pings."""
+def launch_new_instance(instance_type='m1.small', use_raid=False, use_32bits=False,
+                        security_groups=['quicklaunch-1'], rootdir='/srv/pings'):
+    """Launch a new EC2 instance, with EBS backing store. If use_raid is
+    True, we will create a 2 GiB RAID10 array and mount it at rootdir,
+    which defaults to /srv/pings. The default instance type is m1.small.
+    Returns a tuple with the instance id"""
+
+
+    # To have things survive after a reboot, the code below assumes that
+    # the AMI uses an EBS backing store. These AMI's are in the us-east1
+    # zone.
+    if use_32bits:
+        # AMI: ubuntu/images/ebs/ubuntu-oneiric-11.10-i386-server-20120222
+        AMI = 'ami-a0ba68c9'
+    else:
+        # AMI: ubuntu/images/ebs/ubuntu-oneiric-11.10-amd64-server-20120222
+        AMI = 'ami-baba68d3'
+
     conn = EC2Connection()
 
+    # Launch a new EC2 instance. The rest of the code below assumes that
+    # we're working on a new, "pristine" instance. Don't reuse said code if
+    # that assumption changes!
     reservation = conn.run_instances(AMI, instance_type=instance_type,
                                      key_name='pings_keypair',
-                                     security_groups = ['quicklaunch-1'])
+                                     security_groups=security_groups)
 
     assert len(reservation.instances) == 1
     instance = reservation.instances[0]
-    print('Waiting for instance to start...')
 
     # Check up on its status every so often
+    print('Waiting for instance to start...', end='')
     status = instance.update()
     while status == 'pending':
         time.sleep(2)
+        print('.', end='')
         status = instance.update()
+    print()
 
     if status != 'running':
         raise RuntimeError('Instance %s failed to start! (Status: %s)' % (instance.id, status))
 
-    if use_raid:
-        # Create block devices.
-        component_devices = ['/dev/sd' + l for l in "hijk"]
-        for device in component_devices:
-            # Size of volume in GiB.
-            vol = conn.create_volume(1, instance.placement)
-            vol.attach(instance.id, device)
+    # We need multiple connection attemps as the EC2 host is not ready to
+    # accept ssh connections as soon as its status changes to "running".
+    with(settings(host_string=instance.public_dns_name,
+                  connection_attempts=5)):
+        sudo('mkdir -p %s' % rootdir)
+        if use_raid:
+            # Create block devices.
+            component_devices = ['/dev/sd' + l for l in "hijk"]
+            for device in component_devices:
+                # Size of volume (first argument) is in GiB. Size of the RAID10
+                # array will be two times that size.
+                vol = conn.create_volume(1, instance.placement)
+                vol.attach(instance.id, device)
 
-        # Configure as RAID10 array. We need multiple connection attemps as
-        # the host may not initially be ready to accept ssh connections
-        # even though its status is "running".
-        raid_device = '/dev/md0'
-        with(settings(host_string=instance.public_dns_name,
-                      connection_attempts=5)):
-            run('uname -a')
-            # Using dont_install_recommends=True to avoid pulling in MTA.
-            install_system_packages(['mdadm'], dont_install_recommends=True)
-            sudo('mdadm --create %s --level 10 --raid-devices %d --run' %
-                 (raid_device, len(component_devices), ' '.join(component_devices)))
+            # Install required packages. Using dont_install_recommends=True
+            # to avoid pulling in Mail Transfer Agent together with mdadm
+            # install.
+            install_system_packages(['mdadm', 'xfsprogs'],
+                                    dont_install_recommends=True)
 
-        # XXX Mount on /srv/pings. (Use noatime for better performance.)
+            # Configure as RAID10 array.
+            raid_device = '/dev/md0'
+            sudo('mdadm --create %s --level 10 --raid-devices %d %s' %
+                 (raid_device, len(component_devices),
+                  ' '.join(d.replace('sd', 'xvd') for d in component_devices)))
 
-    print instance.public_dns_name
-    return (instance.id, instance.public_dns_name)
+            # Make sure RAID array persists after reboot. Linux's RAID
+            # array autodetection will not work as we're not partitioning
+            # the devices.
+            sudo('/usr/share/mdadm/mkconf > /etc/mdadm/mdadm.conf')
+            # Also make sure the new mdadn.conf is included in the initramfs.
+            sudo('update-initramfs -u')
+
+            # Format and mount on rootdir. Use noatime for better
+            # performance. Use xfs for its ability to freeze the filesystem
+            # (which can be used to take a consistent EBS snapshot).
+            sudo('mkfs -t xfs %s' % raid_device)
+            files.append('/etc/fstab', '%s     %s    xfs   defaults,relatime    0 0\n'
+                         % (raid_device, rootdir), use_sudo=True)
+            sudo('mount %s' % rootdir)
+
+    print()
+    print('Instance started. Id: %s, DNS name: %s' % (instance.id, instance.public_dns_name))
+    return instance
 
 @task
 def uname():

@@ -173,7 +173,7 @@ def generate_upstart_conf(rootdir, program, args, description):
     as a StringIO object."""
     name = os.path.basename(program)
     user = PINGS_USER
-    return StringIO('''description "%(description)s"
+    return StringIO('''description "{description}"
 
 start on runlevel [2345]
 stop on runlevel [!2345]
@@ -186,8 +186,8 @@ respawn
 # We need to specify an absolute path for the program even though
 # we use --chdir to work around the following bug:
 # http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=669047
-exec start-stop-daemon --start --chdir %(rootdir)s --chuid %(user)s --name %(name)s --startas %(rootdir)s/%(program)s -- %(args)s
-''' % locals())
+exec start-stop-daemon --start --chdir {rootdir} --chuid {user} --name {name} --startas {rootdir}/{program} -- {args}
+'''.format(**locals()))
 
 def start_upstart_service(name, rootdir, program, args, description):
     """Create an Upstart service .conf file, uploads it and starts the service."""
@@ -252,7 +252,7 @@ def deploy_test():
     setup_virtualenv(rootdir)
     with cd(rootdir):
         put('development.ini', '.', use_sudo=True)
-        upload_geoip_db_if_needed()
+        upload_geoip_db_if_needed(rootdir)
         install_pings_server(pings_src_dir, rootdir)
 
     # Install and start all the services
@@ -277,8 +277,8 @@ def deploy_prod_web():
     rootdir = '/srv/pings'
 
     with cd(rootdir):
-        put(generate_production_ini_file(), '.', use_sudo=True)
-        upload_geoip_db_if_needed()
+        put(generate_production_ini_file(), 'production.ini', use_sudo=True)
+        upload_geoip_db_if_needed(rootdir)
         install_pings_server(pings_src_dir, rootdir)
 
     start_http_server(rootdir)
@@ -293,6 +293,7 @@ def deploy_prod_leaderboards():
     rootdir = '/srv/pings'
 
     with cd(rootdir):
+        put(generate_production_ini_file(), 'production.ini', use_sudo=True)
         install_pings_server(pings_src_dir, rootdir)
 
     start_leaderboards_server(rootdir)
@@ -307,6 +308,7 @@ def deploy_prod_storage():
     rootdir = '/srv/pings'
 
     with cd(rootdir):
+        put(generate_production_ini_file(), 'production.ini', use_sudo=True)
         install_pings_server(pings_src_dir, rootdir)
 
     start_storage_server(rootdir)

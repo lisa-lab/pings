@@ -156,7 +156,7 @@ def setup_virtualenv(rootdir):
     # Running virtualenv when said virtualenv already exists and a process
     # is using it fails with a "text file busy" error on the python
     # executable. So check beforehand.
-    if not files.exists(os.path.join(rootdir), 'lib'):
+    if not files.exists(os.path.join(rootdir, 'lib')):
         sudo('virtualenv --distribute ' + rootdir)
 
 @task

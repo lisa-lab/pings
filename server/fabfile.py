@@ -3,6 +3,7 @@ Web Services. Tested with Fabric 1.4.1."""
 
 from __future__ import print_function
 import os.path, time
+from pprint import pprint
 from StringIO import StringIO
 from fabric.api import *
 from fabric.contrib import files
@@ -250,7 +251,6 @@ def launch_new_instance(instance_type='m1.small', use_raid=False, use_32bits=Fal
     which defaults to /srv/pings. The default instance type is m1.small.
     Returns a tuple with the instance id"""
 
-
     # To have things survive after a reboot, the code below assumes that
     # the AMI uses an EBS backing store. These AMI's are in the us-east1
     # zone.
@@ -305,11 +305,29 @@ def launch_new_instance(instance_type='m1.small', use_raid=False, use_32bits=Fal
             install_system_packages(['mdadm', 'xfsprogs'],
                                     dont_install_recommends=True)
 
-            # Configure as RAID10 array.
+            # Configure new block devices as RAID10 array.
             raid_device = '/dev/md0'
-            sudo('mdadm --create %s --level 10 --raid-devices %d %s' %
-                 (raid_device, len(component_devices),
-                  ' '.join(d.replace('sd', 'xvd') for d in component_devices)))
+            xen_component_devices = [d.replace('sd', 'xvd') for d in component_devices]
+            with settings(warn_only=True):
+                result = sudo('mdadm --create %s --level 10 --raid-devices %d %s' %
+                              (raid_device, len(component_devices),
+                               ' '.join(xen_component_devices)))
+
+                while result.failed:
+                    # Sometimes bogus, inactive RAID arrays are created with the
+                    # existing devices when the mdadm package is installed on an
+                    # EC2 instance. This prevents the "mdadm --create" call below
+                    # from starting the array, although the array metadata block
+                    # are set correctly. There are also other intermittent
+                    # issues with RAID array creation. As a workaround,
+                    # delete and recreate everything until success.
+                    sudo('mdadm --stop /dev/md0')
+                    sudo('mdadm --stop /dev/md127')
+                    for dev in xen_component_devices:
+                        sudo('mdadm --zero-superblock %s' % dev)
+                    result = sudo('mdadm --create %s --level 10 --raid-devices %d %s' %
+                                  (raid_device, len(component_devices),
+                                   ' '.join(d.replace('sd', 'xvd') for d in component_devices)))
 
             # Make sure RAID array persists after reboot. Linux's RAID
             # array autodetection will not work as we're not partitioning
@@ -329,6 +347,59 @@ def launch_new_instance(instance_type='m1.small', use_raid=False, use_32bits=Fal
     print()
     print('Instance started. Id: %s, DNS name: %s' % (instance.id, instance.public_dns_name))
     return instance
+
+
+def launch_multiple_instances(count, *args, **kwargs):
+    """Helper for launch_new_instance(). Launches multiple instances with
+    the same config. Returns the hostnames in a list."""
+    hostnames = []
+    for i in range(count):
+        instance = launch_new_instance(*args, **kwargs)
+        hostnames.append(instance.public_dns_name)
+    return hostnames
+
+
+@task
+def launch_prod_instances():
+    """Launches a new set of production instances. Simply prints the stanza
+    that should be put in the Fabric env.rolesdef variable, stored for us
+    in the fabconfig.py file. The installation of the necessary software
+    should be done by calling other Fabric tasks afterwards yourself. You
+    are also responsible for terminating whatever old instances are
+    replaced by these."""
+
+    roles = {}
+
+    # Needs good disk bandwitdh, but nothing special for memory needs.
+    roles['storage'] = launch_multiple_instances(3, instance_type='m1.large',
+                                                 use_raid=True,
+                                                 security_groups=['Pings-storage-sg',
+                                                                  'Pings-ssh-sg'])
+
+    # No need for lots of memory or high disk bandwith.
+    roles['web'] = launch_multiple_instances(3, instance_type='m1.small',
+                                             use_32bits=True,
+                                             security_groups=['Pings-web-sg',
+                                                              'Pings-ssh-sg'])
+
+    # Needs memory, but nothing special for disk bandwidth.
+    roles['memcached'] = launch_multiple_instances(2, instance_type='m1.medium',
+                                                   security_groups=['Pings-memcached-sg',
+                                                                    'Pings-ssh-sg'])
+
+    # Needs memory and decent disk bandwidth. The leaderboards role can't
+    # be spread over multiple computers, so just launching one here.
+    roles['leaderboards'] = launch_multiple_instances(1, instance_type='m1.medium',
+                                                      use_raid=True,
+                                                      security_groups=['Pings-leaderboards-sg',
+                                                                       'Pings-ssh-sg'])
+
+    print()
+    print('-' * 20)
+    print('All instances created.')
+    print('Please put the following manually in the Fabric env.rolesdef variable.')
+    pprint(roles)
+
 
 @task
 def uname():

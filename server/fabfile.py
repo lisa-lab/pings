@@ -199,14 +199,14 @@ def start_upstart_service(name, rootdir, program, args, description):
     sudo('start %s' % name)
 
 @task
-def start_http_server(rootdir):
+def start_http_server(rootdir, config_filename='production.ini'):
     """Starts the Pings http server."""
     start_upstart_service('pings-http-server', rootdir, program='bin/paster',
-                          args='serve development.ini',
+                          args='serve ' + config_filename,
                           description='Pings http server')
 
 @task
-def start_storage_server(rootdir):
+def start_storage_server(rootdir, config_filename='production.ini'):
     """Starts the Pings storage server."""
     data_dir = '%s/data' % rootdir
     sudo('mkdir -p ' + data_dir)
@@ -217,14 +217,14 @@ def start_storage_server(rootdir):
     sudo('chown -R %s. %s' % (PINGS_USER, data_dir))
     start_upstart_service('pings-storage-server', rootdir,
                           program='bin/storage_server',
-                          args='development.ini %s' % data_dir,
+                          args='%s %s' % (config_filename, data_dir),
                           description='Pings storage server')
 
 @task
-def start_leaderboards_server(rootdir):
+def start_leaderboards_server(rootdir, config_filename='production.ini'):
     """Starts the Pings leaderboards server."""
     start_upstart_service('pings-leaderboards-server', rootdir,
-                          program='bin/leaderboards_server', args='development.ini',
+                          program='bin/leaderboards_server', args=config_filename,
                           description='Pings leaderboards server')
 
 def get_python_version():
@@ -255,9 +255,9 @@ def deploy_test():
         upload_geoip_db_if_needed(rootdir)
 
     # Install and start all the services
-    start_leaderboards_server(rootdir)
-    start_storage_server(rootdir)
-    start_http_server(rootdir)
+    start_leaderboards_server(rootdir, 'development.ini')
+    start_storage_server(rootdir, 'development.ini')
+    start_http_server(rootdir, 'development.ini')
 
 @task
 @roles('test')

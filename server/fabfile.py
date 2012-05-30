@@ -221,11 +221,8 @@ def start_storage_server(rootdir):
                           description='Pings storage server')
 
 @task
-def start_leaderboards_server(rootdir, wipe_data=False):
+def start_leaderboards_server(rootdir):
     """Starts the Pings leaderboards server."""
-    if not wipe_data:
-        # TODO Save data before stopping the service.
-        raise NotImplementedError
     start_upstart_service('pings-leaderboards-server', rootdir,
                           program='bin/leaderboards_server', args='development.ini',
                           description='Pings leaderboards server')
@@ -252,11 +249,13 @@ def deploy_test():
     setup_virtualenv(rootdir)
     with cd(rootdir):
         put('development.ini', '.', use_sudo=True)
-        upload_geoip_db_if_needed(rootdir)
         install_pings_server(pings_src_dir, rootdir)
+        # Must be after install_pings_server, otherwise the destination
+        # directory may not exist.
+        upload_geoip_db_if_needed(rootdir)
 
     # Install and start all the services
-    start_leaderboards_server(rootdir, wipe_data=True)
+    start_leaderboards_server(rootdir)
     start_storage_server(rootdir)
     start_http_server(rootdir)
 
@@ -278,8 +277,10 @@ def deploy_prod_web():
 
     with cd(rootdir):
         put(generate_production_ini_file(), 'production.ini', use_sudo=True)
-        upload_geoip_db_if_needed(rootdir)
         install_pings_server(pings_src_dir, rootdir)
+        # Must be after install_pings_server, otherwise the destination
+        # directory may not exist.
+        upload_geoip_db_if_needed(rootdir)
 
     start_http_server(rootdir)
 

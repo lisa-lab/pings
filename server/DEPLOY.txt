@@ -1,0 +1,20 @@
+Deployment
+==========
+
+Deployment of the Pings server is automated using Fabric. All deployment
+tasks are defined in the fabfile.py file. You can then run a particular
+task on multiple computers through the ``fab`` command. You can also get a
+list of the available tasks by running ``fab --list``.
+
+Here are the relevant, top-level Fabric tasks for deployment to production:
+
+launch_prod_instances
+  Launches a new set of AWS EC2 instances for the production setup.
+
+prepare_prod_hosts
+  Prepares production hosts: install required .deb packages, creates
+  "pings" user, etc.
+
+deploy_prod
+  Deploys the current Pings server source to all production hosts.
+

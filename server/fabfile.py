@@ -3,6 +3,7 @@ Web Services. Tested with Fabric 1.4.1."""
 
 from __future__ import print_function
 import os.path, time
+from socket import gethostbyname
 from pprint import pprint
 from StringIO import StringIO
 from fabric.api import *
@@ -19,6 +20,7 @@ here = os.path.dirname(__file__)
 PINGS_USER = 'pings'
 
 @task
+@runs_once
 def prepare_source():
     """Runs tests and packages the source."""
     local('py.test')
@@ -33,6 +35,31 @@ def upload_source():
     with cd('/tmp'):
         run('tar xavf /tmp/pings-server.tar.gz')
     return '/tmp/pings-%s' % pings_version
+
+@task
+def upload_geoip_db_if_needed(rootdir):
+    """Uploads the GeoIP db file if it not already present on the remote end."""
+    with cd(os.path.join(rootdir, 'local/lib/python%s/site-packages' % get_python_version())):
+        geoip_filename = 'GeoLiteCity.dat'
+        if not files.exists(geoip_filename):
+            put(geoip_filename, '.', use_sudo=True)
+
+@task
+def generate_production_ini_file():
+    with open('production.ini') as f:
+        template = f.read()
+
+    assert len(env.roledefs['leaderboards']) == 1
+    leaderboard_server_address = env.roledefs['leaderboards'][0]
+
+    # If you change the port number here, you will also need to change them
+    # in the template.
+    memcached_servers = '\n'.join('server_address.%d = %s:11211' % (i, gethostbyname(s))
+                                  for i, s in enumerate(env.roledefs['memcached']))
+    zmq_storage_servers = '\n'.join('server_url.%d = tcp://%s:5000' % (i, gethostbyname(s))
+                                  for i, s in enumerate(env.roledefs['storage']))
+
+    return StringIO(template.format(**locals()))
 
 @runs_once
 def update_system_packages_repos():
@@ -64,6 +91,18 @@ def install_system_packages(package_list, dont_install_recommends=False):
     # get an error if we fail here.
     sudo(sudo_command)
 
+def install_pings_server(pings_src_dir, rootdir):
+    setup_virtualenv(rootdir)
+    with cd(rootdir):
+        # Install all requirements.
+        sudo('bin/pip install -r %s' % os.path.join(pings_src_dir, 'requirements.txt'))
+
+        # Ignore dependencies. They are all in the requirements.pip file
+        # anyways, and we don't want the --force-reinstall option to
+        # reinstall all dependencies. Said --force-reinstall option is
+        # there so the version we have now is installed even if the version
+        # number wasn't bumped up (kinda handy during development).
+        sudo('bin/pip install --no-deps --ignore-installed %s' % pings_src_dir)
 
 @task
 def install_system_base_packages():
@@ -104,7 +143,7 @@ def create_users():
     sudo('adduser --system %s --home /srv --no-create-home --disabled-password' % PINGS_USER)
 
 @task
-def prepare_host():
+def prepare_host_common():
     """Install all system base packages, basic Python environment,
     creates users, etc."""
     install_system_base_packages()
@@ -125,7 +164,7 @@ def setup_virtualenv(rootdir):
 def prepare_test_host():
     """Installs all required packages for all roles, to prepare a host for
     being used as a test host."""
-    prepare_host()
+    prepare_host_common()
     prepare_memcache_role()
     prepare_leaderboard_role()
 
@@ -213,22 +252,8 @@ def deploy_test():
     setup_virtualenv(rootdir)
     with cd(rootdir):
         put('development.ini', '.', use_sudo=True)
-
-        # Copy over Geoip db if needed.
-        with cd('/srv/pings_test/local/lib/python%s/site-packages' % get_python_version()):
-            geoip_filename = 'GeoLiteCity.dat'
-            if not files.exists(geoip_filename):
-                put(geoip_filename, '.', use_sudo=True)
-
-        # Install all requirements.
-        sudo('bin/pip install -r %s' % os.path.join(pings_src_dir, 'requirements.txt'))
-
-        # Ignore dependencies. They are all in the requirements.pip file
-        # anyways, and we don't want the --force-reinstall option to
-        # reinstall all dependencies. Said --force-reinstall option is
-        # there so the version we have now is installed even if the version
-        # number wasn't bumped up (kinda handy during development).
-        sudo('bin/pip install --no-deps --ignore-installed %s' % pings_src_dir)
+        upload_geoip_db_if_needed()
+        install_pings_server(pings_src_dir, rootdir)
 
     # Install and start all the services
     start_leaderboards_server(rootdir, wipe_data=True)
@@ -241,6 +266,91 @@ def ssh_test():
     """Opens an interactive ssh session to the test hosts. Saves remembering
     the long AWS hostname and manually supplying the correct host key."""
     open_shell()
+
+
+@task
+@roles('web')
+def deploy_prod_web():
+    """Deploy task for the production web servers."""
+    prepare_source()
+    pings_src_dir = upload_source()
+    rootdir = '/srv/pings'
+
+    with cd(rootdir):
+        put(generate_production_ini_file(), '.', use_sudo=True)
+        upload_geoip_db_if_needed()
+        install_pings_server(pings_src_dir, rootdir)
+
+    start_http_server(rootdir)
+
+
+@task
+@roles('leaderboards')
+def deploy_prod_leaderboards():
+    """Deploy task for the production leaderboards server."""
+    prepare_source()
+    pings_src_dir = upload_source()
+    rootdir = '/srv/pings'
+
+    with cd(rootdir):
+        install_pings_server(pings_src_dir, rootdir)
+
+    start_leaderboards_server(rootdir)
+
+
+@task
+@roles('storage')
+def deploy_prod_storage():
+    """Deploy task for the production storage servers."""
+    prepare_source()
+    pings_src_dir = upload_source()
+    rootdir = '/srv/pings'
+
+    with cd(rootdir):
+        install_pings_server(pings_src_dir, rootdir)
+
+    start_storage_server(rootdir)
+
+@task
+@roles('web')
+def prepare_prod_host_web():
+    """Prepares a host for being used as a production web server host."""
+    prepare_host_common()
+
+@task
+@roles('storage')
+def prepare_prod_host_storage():
+    """Prepares a host for being used as a production storage server host."""
+    prepare_host_common()
+
+@task
+@roles('memcached')
+def prepare_prod_host_memcached():
+    """Prepares a host for being used as a production memcached host."""
+    prepare_host_common()
+    prepare_memcache_role()
+
+@task
+@roles('leaderboards')
+def prepare_prod_host_leaderboards():
+    """Prepares a host for being used as a production leaderboards server host."""
+    prepare_host_common()
+    prepare_leaderboard_role()
+
+@task
+def prepare_prod_hosts():
+    """Prepares all production hosts."""
+    execute(prepare_prod_host_storage)
+    execute(prepare_prod_host_web)
+    execute(prepare_prod_host_leaderboards)
+    execute(prepare_prod_host_memcached)
+
+@task
+def deploy_prod():
+    """Deploy new version of the Pings server software on all production hosts."""
+    execute(deploy_prod_web)
+    execute(deploy_prod_leaderboards)
+    execute(deploy_prod_storage)
 
 
 @task
@@ -274,11 +384,11 @@ def launch_new_instance(instance_type='m1.small', use_raid=False, use_32bits=Fal
     instance = reservation.instances[0]
 
     # Check up on its status every so often
-    print('Waiting for instance to start...', end='')
+    fastprint('Waiting for instance to start...', end='')
     status = instance.update()
     while status == 'pending':
         time.sleep(2)
-        print('.', end='')
+        fastprint('.', end='')
         status = instance.update()
     print()
 
@@ -397,7 +507,7 @@ def launch_prod_instances():
     print()
     print('-' * 20)
     print('All instances created.')
-    print('Please put the following manually in the Fabric env.rolesdef variable.')
+    print('Please put the following manually in the Fabric env.roledef variable.')
     pprint(roles)
 
 

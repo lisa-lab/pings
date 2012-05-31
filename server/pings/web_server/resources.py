@@ -93,6 +93,12 @@ class Root(object):
 # Functions that implement the low-level, core actions of the pings server.
 #
 
+_num_addresses = 15
+
+def init_web_service(num_addresses):
+    global _num_addresses
+    _num_addresses = num_addresses
+
 def get_token():
     """Gets a security token. (A random base64 ascii string.)"""
     token = os.urandom(16).encode("base64")[:22]
@@ -117,7 +123,7 @@ def check_token(token):
     return token_mc.get(token.encode('ascii')) is not None
 
 
-def get_pings(num_addresses=15):
+def get_pings():
     """Returns a list (of length 'num_addresses') of IP addresses to be
     pinged."""
     ip_addresses = []
@@ -125,7 +131,7 @@ def get_pings(num_addresses=15):
 
     # The num_tries < x part of the loop is to garantee that this function
     # executes in a bounded time.
-    while len(ip_addresses) < num_addresses and num_tries < num_addresses*6:
+    while len(ip_addresses) < _num_addresses and num_tries < _num_addresses*6:
         num_tries += 1
         # Create a random IPv4 address. Exclude 0.0.0.0 and 255.255.255.255.
         ip = ipaddr.IPv4Address(random.randint(1, 2**32-2))

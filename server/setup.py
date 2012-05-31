@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.txt')).read()
 
-version = '0.1'
+version = '1.0'
 # Use requirements.txt for all requirements, at least for now.
 requires = []
 

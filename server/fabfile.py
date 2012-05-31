@@ -585,5 +585,6 @@ def get_private_ip_address(public_dns_name):
     return get_instance_info()[public_dns_name].private_ip_address
 
 @task
-def uname():
-    run('uname -a')
+@roles('storage')
+def ls_data(rootdir='/srv/pings'):
+    run('ls -lR %s' % (rootdir + '/data'))

@@ -44,7 +44,6 @@ def upload_geoip_db_if_needed(rootdir):
         if not files.exists(geoip_filename):
             put(geoip_filename, '.', use_sudo=True)
 
-@task
 def generate_production_ini_file():
     with open('production.ini') as f:
         template = f.read()
@@ -60,6 +59,28 @@ def generate_production_ini_file():
                                   for i, s in enumerate(env.roledefs['storage']))
 
     return StringIO(template.format(**locals()))
+
+def generate_memcached_conf(production=True):
+    if not production:
+        # The default config is okay for the test server, so we don't need
+        # to handle this case... at least not onw.
+        raise NotImplementedError
+
+    return StringIO('''# Memcache config
+
+# Daemonize
+-d
+# Log stuff
+logfile /var/log/memcached.log
+# Allocate this many GB for memcached cache.
+-m 3000
+# Don't run as root!
+-u memcache
+# Try to use large pages
+-L
+
+# Listen on all addresses! We rely on the AWS security group for security.
+''')
 
 @runs_once
 def update_system_packages_repos():
@@ -332,6 +353,20 @@ def prepare_prod_host_memcached():
     """Prepares a host for being used as a production memcached host."""
     prepare_host_common()
     prepare_memcache_role()
+    # We put this in the "prepare" task instead of a "deploy" one as
+    # changing the config for memcached means losing all the contents
+    # stored in it! So this is not something that should be done during a
+    # new production deployement.
+    put(generate_memcached_conf(production=True), '/etc/memcached.conf',
+        use_sudo=True)
+    sudo('service memcached restart')
+    # Very ugly hack. The above line does not start memcached when invoked
+    # from Fabric (it works when logged in via a ssh connection). Tried
+    # many other variations, all of which also didn't work from a Fabric
+    # script. This next line is the sledgehammer way of making sure
+    # memcached is started, but it works. Find the root cause of the
+    # problem, or at least a better workaround, when there is more time.
+    reboot()
 
 @task
 @roles('leaderboards')
@@ -501,7 +536,8 @@ def launch_prod_instances():
                                                                     'Pings-ssh-sg'])
 
     # Needs memory and decent disk bandwidth. The leaderboards role can't
-    # be spread over multiple computers, so just launching one here.
+    # be scaled over multiple computers like the others, so just launching
+    # one here.
     roles['leaderboards'] = launch_multiple_instances(1, instance_type='m1.medium',
                                                       use_raid=True,
                                                       security_groups=['Pings-leaderboards-sg',

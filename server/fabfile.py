@@ -3,7 +3,6 @@ Web Services. Tested with Fabric 1.4.1."""
 
 from __future__ import print_function
 import os.path, time
-from socket import gethostbyname
 from pprint import pprint
 from StringIO import StringIO
 from fabric.api import *
@@ -49,13 +48,13 @@ def generate_production_ini_file():
         template = f.read()
 
     assert len(env.roledefs['leaderboards']) == 1
-    leaderboard_server_address = env.roledefs['leaderboards'][0]
+    leaderboard_server_address = get_private_dns_name(env.roledefs['leaderboards'][0])
 
     # If you change the port number here, you will also need to change them
     # in the template.
-    memcached_servers = '\n'.join('server_address.%d = %s:11211' % (i, gethostbyname(s))
+    memcached_servers = '\n'.join('server_address.%d = %s:11211' % (i, get_private_ip_address(s))
                                   for i, s in enumerate(env.roledefs['memcached']))
-    zmq_storage_servers = '\n'.join('server_url.%d = tcp://%s:5000' % (i, gethostbyname(s))
+    zmq_storage_servers = '\n'.join('server_url.%d = tcp://%s:5000' % (i, get_private_ip_address(s))
                                   for i, s in enumerate(env.roledefs['storage']))
 
     return StringIO(template.format(**locals()))
@@ -549,6 +548,41 @@ def launch_prod_instances():
     print('Please put the following manually in the Fabric env.roledef variable.')
     pprint(roles)
 
+
+def memoize(f):
+    """Quick and dirty memoization decorator. From an ActiveState recipe."""
+    cache = {}
+    def memf(*x):
+        if x not in cache:
+            cache[x] = f(*x)
+        return cache[x]
+    return memf
+
+@memoize
+def get_instance_info():
+    """Returns a map from public DNS name (which is used in env.roledefs)
+    to the instance object for all AWS instances. Useful for retrieving the
+    private DNS name, IP address, etc. Memoized, so subsequent calls don't
+    need to contact AWS."""
+    instances = {}
+
+    conn = EC2Connection()
+    reservations = conn.get_all_instances()
+    for r in reservations:
+        for i in r.instances:
+            instances[i.public_dns_name] = i
+
+    return instances
+
+def get_private_dns_name(public_dns_name):
+    """Returns the private DNS name for an AWS instance given its public
+    one."""
+    return get_instance_info()[public_dns_name].private_dns_name
+
+def get_private_ip_address(public_dns_name):
+    """Returns the private IP address for an AWS instance given its public
+    DNS name."""
+    return get_instance_info()[public_dns_name].private_ip_address
 
 @task
 def uname():

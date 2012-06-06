@@ -1,8 +1,6 @@
 import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Observable;
 import java.util.Random;
-import java.util.logging.Level;
+
 
 
 /**
@@ -32,10 +30,19 @@ public class PingsClientSimulation extends PingsClient{
 	private static GeoipInfo client_geoip = server_location;
 	
 	public PingsClientSimulation() {
-		super("simulation",0);
+		super();
+		
 		prg = new Random();
 		if (client_geoip == server_location) {
 			client_geoip = take_next_geoip_from_list();
+		}
+		
+		subClients_pool = new subClient[subClient_number];
+		subClients_threads_pool = new Thread[subClient_number];
+		for (int i = 0; i < subClient_number; i++) {
+			subClients_pool[i] = new subClientSimulation();
+			subClients_threads_pool[i] = new Thread(subClients_pool[i]);
+			subClients_threads_pool[i].setName("SubClient "+ i);
 		}
 	}
 	
@@ -136,46 +143,46 @@ public class PingsClientSimulation extends PingsClient{
 		ping(server_location);
 	}
 	
-	/**
-	 * Simulate the PingClient run thread
-	 */
 	public void run () {
 		
-		while (true) {
-			//Receive the client localization and addresses to ping from the server
-			talk_with_server();
-			m_source_geoip.set(client_geoip);
-			notifyObserversOfChange();
-			
-			for (int i = 0 ; i < 15; i++) {
-				//Take the next address in the list received from the server
-				GeoipInfo remote_geoip = take_next_geoip_from_list();
-				InetAddress remote_address = take_next_address_from_list();
-				
-				//Inform the GUI
-				m_current_ping_dest.set(remote_address);
-				m_current_dest_geoip.set(remote_geoip);
-				notifyObserversOfChange();
-				
-				//Do the actual ping and store the value
-				String value = ping(remote_geoip);
-				//some_storage[] = value;
-				
-				//Inform the GUI of the value
-				m_current_ping_result.set(value);
-				notifyObserversOfChange();
-				
-				m_current_ping_dest.set(null);
-				m_current_dest_geoip.set(null);
-				m_current_ping_result.set("");
-
-			}
-			
-			//Send the results to the server
-			talk_with_server();
-			
-		}
+		m_source_geoip.set(client_geoip);
 		
+		for (int pings_index = 0; pings_index < subClient_number; pings_index++) {
+			subClients_threads_pool[pings_index].start();
+		}
+	}
+	
+	/**
+	 * Simulate the subClient run thread
+	 */
+	public class subClientSimulation extends subClient {
+		public void run () {
+			while (true) {
+				//Take the next address in the list received from the server
+				current_ping_dest =  take_next_address_from_list();
+				current_dest_geoip =  take_next_geoip_from_list();
+				current_ping_result = null;
+				
+				//After all the addresses are submitted send the result to the 
+				//server
+				if (prg.nextInt(15) == 0) talk_with_server();
+				
+				notifyObserversOfChange();
+				
+				//Ping this address
+				current_ping_result = ping(current_dest_geoip);
+				notifyObserversOfChange();
+				
+				//In case the thread is paused here
+				if (!m_is_running.get()) {
+					while (!m_is_running.get()) {
+						synchronized(this) {
+							try {wait();} catch (InterruptedException e) {}
+						}
+					}
+				}
+			}
+		}
 	}
 	
 	public GeoipInfo[] worldCapital = {

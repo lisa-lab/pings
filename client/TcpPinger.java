@@ -70,10 +70,14 @@ public class TcpPinger implements Prober {
         for (int p = 0; p < m_info.getNumberOfPings(); p++) {
             String prefix = " ";
 
-            if (p != 0) {
+            if (p != 0 && fails < p) {
                 // Sleep half a second
                 Thread.sleep(500);
+            } else if (fails == p && fails == 3) {
+            	fails = m_info.getNumberOfPings();
+            	break;
             }
+            
 
             boolean timed_out = false;
             long start = System.nanoTime();

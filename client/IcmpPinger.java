@@ -20,7 +20,7 @@ public class IcmpPinger implements Prober {
         // The number of pings parameter must be LAST because it is
         // appended at run-time using ClientInfo.getNumberOfPings()
         //
-        // Linux        
+        // Linux
         {"ping", "-w", "30", "-W", "2", "-c"},
         // BSD, OSX ?
         {"ping", "-c"},

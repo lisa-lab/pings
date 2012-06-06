@@ -111,8 +111,9 @@ public class TraceRouter implements Prober {
         for (String s : specific_command)
             command.add(s); // copy the params
 
-        if (m_info.getOS() != ClientInfo.OSType.WinXP)
-            // except for windows xp?
+        if ((m_info.getOS() != ClientInfo.OSType.WinXP) &&
+        		(m_info.getOS() != ClientInfo.OSType.Win7)  &&
+        		(m_info.getOS() != ClientInfo.OSType.WinOther))
             // FIXME: other Windows version?
             command.add(Integer.toString(m_info.getNumberOfTraces()));
 

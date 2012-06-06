@@ -1,30 +1,15 @@
 import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Rectangle;
-import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Point2D;
-import java.awt.geom.Point2D.Double;
-import java.awt.image.BufferedImage;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
-import com.jhlabs.map.proj.Projection;
-import com.jhlabs.map.util.PanZoomMouseListener;
-import com.jhlabs.map.util.ProjectionMouseListener;
 import com.jhlabs.map.MapMath;
 import com.jhlabs.map.ProjectionPainter;
-import com.jhlabs.map.layer.MapGraphics;
-import com.sun.image.codec.jpeg.JPEGImageEncoder;
 
 /**
  * The globe component modified to show pings
@@ -40,22 +25,23 @@ public class PingsGlobe extends Globe {
 	private GeoipInfo origin;
 	private PingGUI[] stored_pings;
 	private static final int stored_pings_size = 20;
-	private static final float attenuation_offset_for_cities = 10f / 20f;
+	private static final float attenuation_offset_for_cities = 2f / 20f;
 	
 	//The last index of the array used to store a ping, as null case are handle
 	//its value as no impact as long as it's in the bounds of the array
 	private int last_ping = 0 ;
 	
-	private static final Color origin_color = new Color(32f / 255f, 207f / 255f, 14f / 255f,	0.9f);
-	
-	private static final float[] waiting_color = { 69, 178, 110};	
+	private static final Color origin_color = new Color(44f / 255f, 63f / 255f, 201f / 255f,	0.9f);
+	private static final float[] waiting_color = {195,208,226};//{ 69, 178, 110};	
 	private static final float[] timed_out_color = {131, 13, 44};	
 	private static final float[] connection_refused_color = {20, 20, 20};
 	private static final float[] unknown_error_color = {255, 255, 255};
-	
+	private float prefered_font_size = 13.5f;
 	private BasicStroke link_stroke = new BasicStroke(2.5f);
 
 	private Graphics2D text_render;
+
+	
 	
 	private static final float [][] color_scale = {
 		{0,255,0,			0.025f },
@@ -101,9 +87,10 @@ public class PingsGlobe extends Globe {
 		}
 		
 		private void UpdateColor() {
-			if (value == -1) {color = connection_refused_color;}
+			if (value == -1) {color = waiting_color;}
 			else if (value == -2) {color = timed_out_color;}
 			else if (value == -3) {color = unknown_error_color;}
+			else if (value == -4) {color = connection_refused_color;}
 			else {
 				int i = 0;
 				while ((color_scale[i][3] < value) && (i < color_scale.length-1))
@@ -121,7 +108,13 @@ public class PingsGlobe extends Globe {
 			UpdateColor();
 			PingsGlobe.this.repaint();
 		}
-
+		
+		public void connectionRefused () {
+			this.value = -4;
+			UpdateColor();
+			PingsGlobe.this.repaint();
+		}
+		
 		public void unknownError() {
 			this.value = -3;
 			UpdateColor();
@@ -134,16 +127,76 @@ public class PingsGlobe extends Globe {
 			PingsGlobe.this.repaint();
 		}
 		
-		public void connectionRefused () {
+		public void noResultsYet () {
 			this.value = -1;
 			UpdateColor();
 			PingsGlobe.this.repaint();
 		}
 		
+		private void add_target_circle(GeneralPath gc, float circle_radius) {
+			ProjectionPainter.smallCircle(
+					(float) target.longitude,(float) target.latitude,
+					circle_radius, 15, gc, true);
+			gc.closePath();
+		}
+		
+		private void add_arc(GeneralPath gc) {
+			//FIXME: changed just to see the arcs even with 'failed' pings
+			if (origin== null /* || value < 0*/) return;
+	
+			g2.setStroke(link_stroke);
+			ProjectionPainter.basicArc(
+					(float) origin.longitude,(float) origin.latitude,
+					(float) target.longitude,(float) target.latitude,
+					gc);
+		}
+		
+		private void paint_description_text(Color peer_color, float circle_radius) {
+			Point2D.Double target_geo = new Point2D.Double(target.longitude, target.latitude);
+			
+			projection.transform(target_geo,target_geo);
+			
+			String description;
+			if (target.city != null && !target.city.equals("")) {
+				description = target.city + ", " + target.country;
+			}
+			else if (target.country != null) {
+				description = target.country;
+			}
+			else {
+				description = "Unknow";
+			}
+			
+			if (value > 0) {
+				if (value < 10) {
+					long ms_value = Math.round(1000 * value);
+					description+= " : " + ms_value + " ms";
+				}
+				else {
+					long s_value = Math.round(value);
+					description+= " : " + s_value + " s";
+				}
+			}
+			else if (value > 0 ) {
+				description+= " : " + ((int) (value)) + " s";
+			}
+			else if (value == -1) {
+				description+= " : Pinging";
+			}
+			else if (value < 0) {
+				description+= " : Error";
+			}
+			
+			text_render.setColor(peer_color);
+			text_render.drawString( description , (int) target_geo.x + circle_radius,(int)- target_geo.y - (3 * circle_radius) );
+		}
+		
+		
+		
 		/**
 		 * Draw a circle at the end point and an arc joining it with the origin.
 		 */
-		private void paint(Graphics2D g2, float color_attenuation) {
+		private void paint(Graphics2D g2, float color_attenuation, float circle_radius) {
 			if (target == null) return;
 			
 			//Set the parameter for this drawing
@@ -151,51 +204,26 @@ public class PingsGlobe extends Globe {
 					color[0]/255f,
 					color[1]/255f,
 					color[2]/255f,
-					color_attenuation);	
+					color_attenuation);
 			
 			//Draw the circle around the target
 			GeneralPath gc = new GeneralPath();
-			ProjectionPainter.smallCircle(
-					(float) target.longitude,(float) target.latitude,
-					1.5f, 20, gc, true);
-			gc.closePath();
-			ProjectionPainter  pp = ProjectionPainter.getProjectionPainter(projection);
-			pp.drawPath(g2, gc, null, peer_color);
+			ProjectionPainter pp = ProjectionPainter.getProjectionPainter(projection);
+			
+			add_target_circle(gc, circle_radius);
+			pp.drawPath(g2, gc, null,peer_color);
+			
+			gc = new GeneralPath();
+			add_arc(gc);
+			pp.drawPath(g2, gc, peer_color,null);
+			
 			
 			//Draw the description above the target
 			if ((color_attenuation > attenuation_offset_for_cities) &&
 					(isVisible(target.longitude,target.latitude))) {
-			//if (isVisible(target.longitude,target.latitude)) {
-			
-				Point2D.Double target_geo = new Point2D.Double(target.longitude, target.latitude);
-				
-				projection.transform(target_geo,target_geo);
-				
-				String desrcription;
-				if (target.city != null && !target.city.equals("")) {
-					desrcription = target.city + ", " + target.country;
-				}
-				else {
-					desrcription = target.country;
-				}
-				
-				text_render.setColor(peer_color);
-				text_render.drawString( desrcription , (int) target_geo.x,(int)- target_geo.y -8 );
+				paint_description_text(peer_color, circle_radius);
 			}
 			
-			//Draw the arc
-			//FIXME: changed just to see the arcs even with 'failed' pings
-			if (origin== null /* || value < 0*/) return;
-
-			g2.setStroke(link_stroke);
-			gc = new GeneralPath();
-			ProjectionPainter.basicArc(
-					(float) origin.longitude,(float) origin.latitude,
-					(float) target.longitude,(float) target.latitude,
-					gc);
-			//gc.closePath();
-			pp = ProjectionPainter.getProjectionPainter(projection);
-			pp.drawPath(g2, gc,peer_color, null);
 		}
 
 		public void updatePingGUIValue(String value) {
@@ -207,9 +235,13 @@ public class PingsGlobe extends Globe {
 				int nb_try = Integer.parseInt(groups[2]);
 				int nb_worked = Integer.parseInt(groups[3]);
 				float totaltime = Float.parseFloat(groups[4]) /1000f;
+				if (nb_worked == 0) {
+					this.connectionRefused();
+				}
+				else
 				if (nb_worked < nb_try -1 )
 				{
-					this.setValue(-1);
+					this.unknownError();
 				}
 				else 
 				{
@@ -273,12 +305,12 @@ public class PingsGlobe extends Globe {
 	 * @param g2 the Graphics2D to draw on
 	 * @param origin the GeoipInfo of the origin
 	 */
-	private void paintOrigin(Graphics2D g2, GeoipInfo origin) {
+	private void paintOrigin(Graphics2D g2, GeoipInfo origin, float circle_radius) {
 		if (origin == null ) return;
 		GeneralPath gc = new GeneralPath();
 		ProjectionPainter.smallCircle(
 				(float)origin.longitude, (float) origin.latitude,
-				2.5f,20, gc, true);
+				circle_radius,20, gc, true);
 		gc.closePath();
 		ProjectionPainter pp = ProjectionPainter.getProjectionPainter(projection);
 		pp.drawPath(g2, gc, null, origin_color);
@@ -298,9 +330,6 @@ public class PingsGlobe extends Globe {
 		
 		//set_fast_graphics(g2);
 		
-		//Paint the origin (the client position)
-		paintOrigin(g2, origin);
-		
 		//Paint the targets
 		
 		//Set up the text rendering
@@ -314,11 +343,15 @@ public class PingsGlobe extends Globe {
 		uptransform.concatenate(transform);
 		text_render.setTransform(uptransform);
 		
-		//We calculate a new font according to the current zoom
+		//Calculate a new font according to the current zoom
 		int screenRes = Toolkit.getDefaultToolkit().getScreenResolution();
-	    int fontSize = (int)Math.round(12.0 * screenRes / 72.0 / uptransform.getScaleX());
+	    int fontSize = (int)Math.round(prefered_font_size  * screenRes / 72.0 / uptransform.getScaleX());
 		Font font = new Font("Arial", Font.PLAIN, fontSize);
 		text_render.setFont(font);
+		
+		//Calculate a new circle radius according to the current zoom
+		float circle_radius = (float) (2 / uptransform.getScaleX());
+		link_stroke = new BasicStroke(2 * circle_radius );
 		
 		//We paint the currently stored pings
 		int actual_index = last_ping;
@@ -329,11 +362,14 @@ public class PingsGlobe extends Globe {
 					((float) (stored_pings_size - i))
 					/
 					((float) stored_pings_size);
-				current_ping.paint(g2,color_attenuation);
+				current_ping.paint(g2,color_attenuation,circle_radius);
 			}
 			actual_index--;
 			if (actual_index == -1) actual_index = stored_pings_size -1;
 		}
+		
+		//Paint the origin (the client position)
+		paintOrigin(g2, origin, 1.75f * circle_radius);
 	
 	}
 }

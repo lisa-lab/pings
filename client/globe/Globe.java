@@ -17,12 +17,16 @@ limitations under the License.
 import java.util.*;
 import java.io.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.awt.geom.*;
 import java.awt.image.*;
 import java.awt.print.*;
 import javax.swing.*;
+import javax.swing.Timer;
+
 import com.jhlabs.map.*;
 import com.jhlabs.map.proj.*;
 import com.jhlabs.map.util.*;
@@ -33,11 +37,15 @@ import com.jhlabs.map.layer.*;
  */
 public class Globe extends JComponent {
 	
-	protected static long quality_paint_delay = 100;
+	protected static int quality_paint_delay = 100;
+	private Timer quality_paint_timer ;
+	protected static int force_repaint_delay = 10*60*1000;
+	private Timer force_repaint_timer ;
+	
 	private BufferedImage buffered_image;
 	private boolean quality_image_buffered = false;
 	private long last_time_update = 0;
-	private Color day_color = new Color(1f, 0, 0, 0.10f);
+	private Color day_color = new Color(1f, 0, 0, 0.10f);	
 	private double max_zoom = 20;
 	private double min_zoom = 0.6;
 	
@@ -64,6 +72,7 @@ public class Globe extends JComponent {
 	private Layer linkLayer;
 	private Layer selectedLayer;
 	private Style style = new Style( Color.black, Color.green );
+	
 //	private float hue = 0.3f;
 //	private Style[] styles = {
 //		new Style( Color.black, Color.getHSBColor( hue, 0.5f, 1.0f ) ),
@@ -148,7 +157,27 @@ public class Globe extends JComponent {
 				}
 		    }
 		);
-		//selectLayer( map );
+		
+		//Setting up the timer that forces a quality paint after a short idle time
+		//This one is used to transition from fast to quality draw
+		quality_paint_timer = new Timer(42,new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				Globe.this.repaint();
+			}
+		});
+		quality_paint_timer.setRepeats(false);
+		quality_paint_timer.setInitialDelay(quality_paint_delay);
+		
+		//Setting up the other timer that forces a repaint after a long idle time
+		//This one is essentially used to refresh the night 
+		force_repaint_timer = new Timer(42,new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				quality_image_buffered = false;
+				Globe.this.repaint();
+			}
+		});
+		force_repaint_timer.setRepeats(false);
+		force_repaint_timer.setInitialDelay(force_repaint_delay);
 	}
 	
 	public void mouseZoom(int steps) {
@@ -337,7 +366,7 @@ public class Globe extends JComponent {
 		return (time_passed > quality_paint_delay);
 	}
 	
-	protected void create_g2 (Graphics g) {
+	protected void createG2 (Graphics g) {
 		g2 = (Graphics2D)g;
 		// Put the origin at bottom left
 		g2.translate( 0, getHeight() );
@@ -396,8 +425,14 @@ public class Globe extends JComponent {
 		pp.drawPath( g2, gc, null, day_color );
 	}
 	
-	private void paint_fast( Graphics g ) {
-		create_g2(g);
+	public void forceRefresh () {
+		quality_image_buffered = false;
+		buffered_image = null;
+		this.repaint();
+	}
+	
+	private void paintFast( Graphics g ) {
+		createG2(g);
 		setFastGraphics(g2);
 		
 		MapGraphics mg = MapGraphics.getGraphics( g2, new Rectangle( getSize() ) );
@@ -410,8 +445,8 @@ public class Globe extends JComponent {
 		if ( showDay ) paintDay(10);
 	}
 	
-	private void paint_quality( Graphics g ) {
-		create_g2(g);
+	private void paintQuality( Graphics g ) {
+		createG2(g);
 		setQualityGraphics (g2);
 		
 		MapGraphics mg = MapGraphics.getGraphics( g2, new Rectangle( getSize() ) );
@@ -431,36 +466,34 @@ public class Globe extends JComponent {
 		if (!quality_image_buffered) {
 			if (buffered_image == null) {
 				//Initialize the bufferdImage
-				Dimension size = this.getSize();
-//				GraphicsConfiguration gc = GraphicsEnvironment
-//					.getLocalGraphicsEnvironment()
-//				 	.getDefaultScreenDevice()
-//				 	.getDefaultConfiguration();
-//				buffered_image = gc.createCompatibleImage(size.width, size.height,Transparency.TRANSLUCENT);
-				
+				Dimension size = this.getSize();				
 				buffered_image = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_RGB);
+				
 				//Paint the map fast and store it
 				Graphics2D ng = buffered_image.createGraphics();
-				paint_fast(ng);
+				paintFast(ng);
 				ng.dispose();
+				quality_paint_timer.restart();
 			}
 			else if (readyToQualityPaint()) {
 				//Initialize the bufferdImage
 				Dimension size = this.getSize();
 				buffered_image = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
-				//Paint the map fast and store it
+				
+				//Paint the quality map and store it
 				Graphics2D ng = buffered_image.createGraphics();
-				paint_quality(ng);
+				paintQuality(ng);
 				ng.dispose();
 				quality_image_buffered = true;
+				force_repaint_timer.restart();
 			}
 		}
 		g.drawImage(buffered_image, 0, 0, this);
-		create_g2(g);
+		createG2(g);
 	}
 	
 	public Dimension getPreferredSize() {
-		return new Dimension( 1000, 700 );
+		return new Dimension( 1000, 800 );
 	}
 
 }

@@ -390,7 +390,7 @@ public class ProjectionPainter {
 
 		angle = Math.toDegrees(angle);
 
-		int numPoints = Math.min(30,(int)(angle / distance));
+		int numPoints = Math.min(20,(int)(angle /(4* distance)));
 		if (numPoints > 0) {
 			double fraction = 1./ ((double) numPoints);
 			for (int i = 1; i < numPoints; i++) {
@@ -714,10 +714,10 @@ public class ProjectionPainter {
 		 * the usual cartesian representation. The system is described by 
 		 * equations denoted as (1), (2) and (3).
 		 * <p>
-		 * There can be zero, one, two or an infinity of crossing point :
-		 * there is either a single geodesic or an infinity of geodesics (the 
-		 * Intersection of a plane and the sphere that contain a shortest path
-		 * between the two end points) if the two end points are diametrically 
+		 * There can be zero, one, two or an infinity of crossing points :
+		 * there is either a single geodesic (the intersection of a plane and 
+		 * the sphere that contain a shortest path between the two end points)
+		 * or an infinity of geodesics if the two end points are diametrically 
 		 * opposite.
 		 * 
 		 * In the latest case the function raise Exception("Diametrically 
@@ -792,7 +792,7 @@ public class ProjectionPainter {
 				ps = -bs / as;
 				qs = -cs / as;
 				
-				//thus (2) yields : (ah ps + bh ) y =  -(ah qs + ch) z - dh
+				//thus (2) yields : '(ah ps + bh ) y =  -(ah qs + ch) z - dh'
 				
 				if ( ah*ps + bh != 0) {
 					//We can then rewrite (2) as :
@@ -869,18 +869,132 @@ public class ProjectionPainter {
 						}
 						else {
 							cartesianToLongLat(x2,y2,z2,out);
-						}					
+						}
+						
+						return;
 					}
 				}
-				else { //if ah ps + bh = 0
-					//TODO : implement case
-					throw new Exception("case not implemented yet");
+				else { //If ah ps + bh = 0
+					//Then (2) yields : '(ah qs + ch) z = - dh'
+					
+					if (ah*qs + ch != 0) {
+						//TODO : implement case
+						throw new Exception("case not implemented yet");
+					}
+					else { //If ah ps + bh = 0 and ah*qs + ch
+						//Then (1) and (2) represent the same system and the 
+						//crossing point is the full horizon
+						
+						throw new Exception("Full horizon");
+					}
 				}
 				
 			}
-			else { //if as = 0
-				//TODO : implement case
-				throw new Exception("case not implemented yet");
+			else { //If as = 0 
+				if (bs != 0) {
+					//TODO : implement case
+					throw new Exception("case not implemented yet");
+				}
+				else {//If as = bs = 0
+					if (cs!= 0) {
+						// Then we have 'cs z = 0' (1), i.e. 'z = 0' (1")
+						
+						double z = 0;
+						
+						//And (2) yields :'ah x = - bh y - dh'
+						
+						if (ah != 0 ) { // and  as = bs = 0, cs <> 0
+							//TODO : implement case
+							throw new Exception("case not implemented yet");							
+						}
+						else { //If as = bs = 0, cs <> 0, ah = 0
+							//Then (2) yields 'bh y = - dh'
+							
+							if (bh != 0) {
+								double y =  -dh / bh;
+								
+								//Then (3) rewrite as 'x² = a' (3")
+								
+								double a = 1 - (y * y);
+								
+								if (a < 0) {
+									//Then there is no real solution for the x-coordinate of
+									//the system.
+									//This means that the path between the two end points is
+									//invisible from the current perspective.
+									throw new Exception("No point");
+									
+								}
+								else if (a == 0) {
+									double x = 0;
+									//As there is a single point, we will return it and 
+									//throw the 'Tangent' exception
+									cartesianToLongLat(x,y,z,out);
+									
+									throw new Exception("Tangent");
+								}
+								else {//a > 0
+									double x1, x2;
+									
+									//From (3") :
+									x1 =  -Math.sqrt(a);
+									x2 =  +Math.sqrt(a);
+									
+									//We need to choose a point that allows for the 
+									//shortest path (they might be both suitable).
+									//We will consider the sum of principal angles between 
+									//the vectors defined by the end point and the crossings
+									//points.
+									
+									double angle1, angle2;
+									angle1 = getAngle(p_1[0],p_1[1],p_1[2],x1,y,z) +
+										getAngle(p_2[0],p_2[1],p_2[2],x1,y,z);
+									angle2 = getAngle(p_1[0],p_1[1],p_1[2],x2,y,z) +
+										getAngle(p_2[0],p_2[1],p_2[2],x2,y,z);
+									
+									if (angle1 <= angle2) {
+										cartesianToLongLat(x1,y,z,out);
+									}
+									else {
+										cartesianToLongLat(x2,y,z,out);
+									}
+									
+									return;
+								}
+							}
+							else { //If as = bs = 0, cs <> 0, ah = bh = 0
+								
+								if (ch != 0) {
+									//Then (1") yields 'z=0' while (2) states
+									// that 'z = -dh / ch'
+									
+									if (dh != 0) {
+										//Then (1) and (2) don't have an intersection
+										//and there is no crossing point
+										
+										throw new Exception("No point");
+									}
+									else {//If (2) rewrite as 'z = 0 ' = (1")
+										// Then the full horizon (which is in plane
+										// z = 0) is the intersection
+										
+										throw new Exception("Full horizon");
+										
+									}
+								}
+								else {//If as = bs = 0, cs <> 0, ah = bh = ch = 0
+									//Then (1) and (2) don't have an intersection
+									//and there is no crossing point
+									
+									throw new Exception("No point");
+								}
+							}
+						}
+					}
+					else {//if as = bs = cs = 0
+						throw new Exception("Diametrically opposite");
+					}
+				}
 			}
 		}
 		
@@ -960,8 +1074,7 @@ public class ProjectionPainter {
 						try {
 							findCrossingPoint(MapMath.RTD*lastX, MapMath.RTD*lastY, MapMath.RTD*rlon, MapMath.RTD*rlat, projection,points);
 						} catch (Exception e1) {
-							// TODO Auto-generated catch block
-							e1.printStackTrace();
+							// FIXME
 						}
 						if (isOutside) {
 							// We've just exited the visible hemisphere - draw to the horizon crossing point

@@ -3,7 +3,10 @@ import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.net.InetAddress;
 import java.util.Observable;
 import java.util.Observer;
@@ -14,6 +17,8 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+
+
 
 //TODO : change the System.out.println with appropriate log event
 
@@ -34,10 +39,13 @@ public class PingsGUI implements ActionListener {
 	private JTextField nickname_field;
 	private PingsGlobe ping_globe;
 	private Container button_container;
+	private Color text_color = new Color(70,70,70);
 	
 	//State variables
 	private int pings_counter = 0;
 	private GeoipInfo client_geoip_info = null;
+
+	private clientThreadObserver[][] clients_observers;
 	
 	/**
 	* Create and initialize the components of the GUI.
@@ -55,7 +63,7 @@ public class PingsGUI implements ActionListener {
 		button_container.setBackground (Color.BLACK);
 		
 		//Add the pause/resume button to the applet
-		pause_button = new JButton ("Pause");				
+		pause_button = new JButton ("Pause");
 		pause_button.setMnemonic(KeyEvent.VK_P);
 		pause_button.setToolTipText("Pause or resume the pings");
 		pause_button.setActionCommand("pause");
@@ -63,41 +71,50 @@ public class PingsGUI implements ActionListener {
 		button_container.add (pause_button);
 		
 		//Add the button to change the nickname
-		rename_button = new JButton ("Ok");
+		rename_button = new JButton ("Change");
 		rename_button.setMnemonic(KeyEvent.VK_U);
 		rename_button.setToolTipText("Update your name for the leaderboard");
 		rename_button.setActionCommand("rename");
 		rename_button.addActionListener(this);
 		rename_button.setEnabled(false);
+		button_container.add (rename_button);
 		
 		//Add the field to change the nickname
 		nickname_field = new JTextField(15);
 		nickname_field.setText(applet.pings_clients[0].getNickname());
 		nickname_field.getDocument().addDocumentListener(
 			new DocumentListener() {
-				@Override
 				public void changedUpdate(DocumentEvent e) {
 					check_enable_button();
-				}
-				@Override
+				}				
 				public void insertUpdate(DocumentEvent e) {
 					check_enable_button();
-				}
-				@Override
+				}				
 				public void removeUpdate(DocumentEvent e) {
 					check_enable_button();
 				}
 			});
-		button_container.add (nickname_field);		
+		nickname_field.addKeyListener(
+			new KeyListener() {
+				public void keyTyped(KeyEvent e) {}
+				public void keyReleased(KeyEvent e) {}
+				public void keyPressed(KeyEvent e) {
+					if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+						rename_button.doClick();
+					}
+				}
+			});
+		button_container.add (nickname_field);
 		
-		button_container.add (rename_button);
 		
 		//Add the display for the number of pings done
 		pings_counter_display = new JLabel("No pings sent yet");
+		pings_counter_display.setForeground(text_color);
 		button_container.add (pings_counter_display);
 		
 		//Add the display for the client info
 		client_info_display = new JLabel("");
+		client_info_display.setForeground(text_color);
 		button_container.add (client_info_display);
 		
 		//Add the globe
@@ -107,9 +124,18 @@ public class PingsGUI implements ActionListener {
 		//Set the layout
 		setLayout();
 		
+		//Add an observer to refresh globe on resize
+		applet.addComponentListener(new onResize());
+		
 		//Add an observer to the client to update the GUI.
-		for (int i = 0; i < applet.nb_client_threads; i++) {
-			applet.pings_clients[i].addObserver(new clientThreadObserver());
+		clients_observers = new clientThreadObserver[applet.nb_clients][];
+		for (int i = 0; i < applet.nb_clients; i++) {
+			PingsClient.subClient[] subClientsPool = applet.pings_clients[i].getSubClientsPoolCopy();
+			clients_observers[i] = new clientThreadObserver[subClientsPool.length];
+			for (int j = 0; j < subClientsPool.length; j++) {
+				clients_observers[i][j] = new clientThreadObserver();
+				subClientsPool[j].addObserver(clients_observers[i][j]);
+			}
 		}
 	}
 	
@@ -182,8 +208,6 @@ public class PingsGUI implements ActionListener {
 		}
 	}
 	
-
-	
 	class clientThreadObserver implements Observer {
 		
 		private PingsGlobe.PingGUI gui_effect = null;
@@ -195,7 +219,7 @@ public class PingsGUI implements ActionListener {
 		
 		@Override
 		public void update(Observable o, Object arg) {
-			PingsClient client = (PingsClient)o;
+			PingsClient.subClient client = (PingsClient.subClient)o;
 			
 			if (!client.getSourceGeoip().equals(client_geoip_info)) {
 				client_geoip_info = client.getSourceGeoip();
@@ -211,8 +235,8 @@ public class PingsGUI implements ActionListener {
 			GeoipInfo current_ping_geoip = client.getCurrentDestGeoip();
 			InetAddress current_ping_adress = client.getCurrentPingDest();
 			
-			//If there are several PingsClient threads then this might still be 
-			// a 
+			//If there are several subClient threads then this might still be 
+			// reachable as they try to set the same geoip several times
 			if (current_ping_adress == null) return;
 			
 			//If there is a new ping add it to the counter and register an 
@@ -245,7 +269,7 @@ public class PingsGUI implements ActionListener {
 				if (gui_effect != null) gui_effect.unknownError();
 				String value = client.getCurrentPingResult();
 				gui_effect = ping_globe.addPing(current_ping_geoip);
-				if (!value.equals("")) {
+				if (value!= null && !value.equals("")) {
 					gui_effect.updatePingGUIValue(client.getCurrentPingResult());
 					gui_effect = null;
 				}
@@ -288,7 +312,7 @@ public class PingsGUI implements ActionListener {
 			
 			boolean was_running = applet.pings_clients[0].isRunning();
 			//Issue a warning if the client was not running
-			if (!was_running) {				
+			if (!was_running) {
 				//System.out.println ("Was already paused.");
 			}
 			else {
@@ -300,11 +324,10 @@ public class PingsGUI implements ActionListener {
 					refreshPauseButton();
 				}
 			});
-				
 		}
 		else if (command.equals("resume")) {
 			//resume the client if it was paused, do nothing otherwise
-
+			
 			boolean was_running = applet.pings_clients[0].isRunning();
 			//Issue a warning if the client was running
 			if (was_running) {
@@ -324,7 +347,7 @@ public class PingsGUI implements ActionListener {
 		//Handle the rename button
 		else if (command.equals("rename")) {
 			String new_name = nickname_field.getText();
-			for (int i = 0; i < applet.nb_client_threads; i++) {
+			for (int i = 0; i < applet.nb_clients; i++) {
 				applet.pings_clients[i].setNickname(new_name);
 			}
 			SwingUtilities.invokeLater( new Runnable() {
@@ -340,5 +363,42 @@ public class PingsGUI implements ActionListener {
 			//FIXME
 			System.out.println ("Error in button interface.");
 		}
+	}
+	
+	class onResize implements ComponentListener{
+		
+		public void componentResized(ComponentEvent e) {
+			ping_globe.forceRefresh();
+			SwingUtilities.invokeLater( new Runnable() {
+				public void run() {
+					setLayout();
+				}
+			});
+		}
+		public void componentShown(ComponentEvent e) {}
+		public void componentHidden(ComponentEvent e) {}
+		public void componentMoved(ComponentEvent e) {}
+	}
+	
+	/**
+	 * Destroy as much of the GUI as possible.
+	 * <p>
+	 * It remove the components and unregister the observers of the clients,
+	 * for this reason it can fail is the client was destroyed before (hence the
+	 * 'try').
+	 */
+	public void destroy() {
+		try {
+			ping_globe.removeAll();
+			button_container.removeAll();
+			
+			for (int i = 0; i < applet.nb_clients; i++) {
+				PingsClient.subClient[] subClientsPool = applet.pings_clients[i].getSubClientsPoolCopy();
+				for (int j = 0; j < subClientsPool.length; j++) {
+					subClientsPool[j].deleteObserver(clients_observers[i][j]);
+				}
+			}
+		} catch (Exception _) {}
+		
 	}
 }

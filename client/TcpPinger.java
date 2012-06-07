@@ -77,7 +77,6 @@ public class TcpPinger implements Prober {
             	fails = m_info.getNumberOfPings();
             	break;
             }
-            
 
             boolean timed_out = false;
             long start = System.nanoTime();

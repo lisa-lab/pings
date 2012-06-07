@@ -386,6 +386,5 @@ public class PingsClientSimulation extends PingsClient{
 		new GeoipInfo("Belgrade", "Yugoslavia", 20.37f, 44.50f), //E
 		new GeoipInfo("Lusaka", "Zambia",-15.28f, 28.16f), //E
 		new GeoipInfo("Harare", "Zimbabwe",-17.43f, 31.02f), //E
-		};
-	
+	};
 }

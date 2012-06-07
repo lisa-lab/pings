@@ -67,6 +67,11 @@ public class PingsClient extends Observable implements Runnable {
 	//given to a subClient yet- and remaining addresses which might have been 
 	//given to a subClient but didn't return result yet
 	private int next_available_address[];
+
+	//Variables used to notify the applet that there was a connection problem with
+	//the server
+	public boolean connect_error;
+	public String error_reason;
 	
 	public PingsClient(String server_hostname, int server_port) {
 		m_client_info = new ClientInfo();
@@ -85,7 +90,6 @@ public class PingsClient extends Observable implements Runnable {
 			pings_queue[pings_index] = null;
 			next_available_address[pings_index] = -1;
 			remaining_addresses[pings_index] = 0;
-			sendResultsGetNewAdress(pings_index);
 		}
 		
 		//Initialize the subClients pool
@@ -116,6 +120,10 @@ public class PingsClient extends Observable implements Runnable {
 		LOGGER.info("PingsClient starting.");
 		resetErrorCount();
 		m_is_running.set(true);
+		
+		for (int pings_index = 0; pings_index < pings_queue_size; pings_index++) {
+			sendResultsGetNewAdress(pings_index);
+		}
 		
 		for (int pings_index = 0; pings_index < subClient_number; pings_index++) {
 			subClients_threads_pool[pings_index].start();
@@ -295,7 +303,9 @@ public class PingsClient extends Observable implements Runnable {
 			pings_index = (pings_index +1) % pings_queue_size;
 			if (pings_index == index_to_wait && next_available_address[index_to_wait] == -1 )
 				try {
-					wait();
+					synchronized(sub){
+						sub.wait();
+					}
 				} catch (InterruptedException e) {}
 		}
 	}
@@ -341,9 +351,9 @@ public class PingsClient extends Observable implements Runnable {
 					next_available_address[pings_index] = 0;
 					
 					//Wake up threads that might wait for new addresses
-					for (int i = 0; i < subClients_threads_pool.length; i++) {
-						synchronized(subClients_threads_pool[i]){
-							subClients_threads_pool[i].notify();
+					for (int i = 0; i < subClients_pool.length; i++) {
+						synchronized(subClients_pool[i]){
+							subClients_pool[i].notify();
 						}
 					}
 						
@@ -395,8 +405,8 @@ public class PingsClient extends Observable implements Runnable {
 	}
 	
 	public void errorConnectingToServer(String reason) {
-		//this.error = true;
-		//this.reason = reason;
+		this.connect_error = true;
+		this.error_reason = reason;
 		this.setChanged();
 		notifyObservers();
 	}
@@ -441,11 +451,16 @@ public class PingsClient extends Observable implements Runnable {
 			m_is_running.set(true);
 			notify();
 		}
+		for (int i = 0; i < subClient_number; i++) {
+			synchronized(subClients_pool[i]) {
+				subClients_pool[i].notify();
+			}
+		}
 	}
 
 	public void destroy() {
 		for (int i = 0; i < subClient_number; i++) {
-			subClients_threads_pool[i].interrupt();
+			subClients_threads_pool[i].stop();
 		}
 		this.m_is_running.set(false);
 	}

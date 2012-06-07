@@ -18,15 +18,12 @@ import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
-
-
 //TODO : change the System.out.println with appropriate log event
 
 /**
  * This class holds the GUI part of the applet. It creates the GUI objects :
  * button, fields, label and the ping globe and is responsible for their drawing
  * 
- * <p>
  * @author RaphaelBonaque
 */
 public class PingsGUI implements ActionListener {
@@ -41,12 +38,21 @@ public class PingsGUI implements ActionListener {
 	private Container button_container;
 	private Color text_color = new Color(70,70,70);
 	
+	//GUI component for the retry
+	private JLabel retry_message;
+	private JButton retry_button;
+	
 	//State variables
 	private int pings_counter = 0;
 	private GeoipInfo client_geoip_info = null;
 
+	//The observers of the subclients that add pings effect on the globe
+	// see ClientThreadObserver for more details
 	private clientThreadObserver[][] clients_observers;
 	
+	//Some strings
+	private String pause_tooltip = "Pause the application once the current pings are done.";
+	private String resume_tooltip = "Resume the application.";
 	/**
 	* Create and initialize the components of the GUI.
 	* <p>
@@ -65,7 +71,7 @@ public class PingsGUI implements ActionListener {
 		//Add the pause/resume button to the applet
 		pause_button = new JButton ("Pause");
 		pause_button.setMnemonic(KeyEvent.VK_P);
-		pause_button.setToolTipText("Pause or resume the pings");
+		pause_button.setToolTipText(pause_tooltip);
 		pause_button.setActionCommand("pause");
 		pause_button.addActionListener(this);
 		button_container.add (pause_button);
@@ -82,6 +88,8 @@ public class PingsGUI implements ActionListener {
 		//Add the field to change the nickname
 		nickname_field = new JTextField(15);
 		nickname_field.setText(applet.pings_clients[0].getNickname());
+		//Add a listener to able/disable the rename_button if the nickname is
+		//different from the one stored
 		nickname_field.getDocument().addDocumentListener(
 			new DocumentListener() {
 				public void changedUpdate(DocumentEvent e) {
@@ -94,6 +102,7 @@ public class PingsGUI implements ActionListener {
 					check_enable_button();
 				}
 			});
+		//Add a listener to update the name when 'ENTER' key is hit
 		nickname_field.addKeyListener(
 			new KeyListener() {
 				public void keyTyped(KeyEvent e) {}
@@ -213,12 +222,8 @@ public class PingsGUI implements ActionListener {
 		private PingsGlobe.PingGUI gui_effect = null;
 		private InetAddress last_address = null ;
 		
-		public clientThreadObserver() {
-			super();
-		}
-		
-		@Override
 		public void update(Observable o, Object arg) {
+			
 			PingsClient.subClient client = (PingsClient.subClient)o;
 			
 			if (!client.getSourceGeoip().equals(client_geoip_info)) {
@@ -229,7 +234,6 @@ public class PingsGUI implements ActionListener {
 						updateClientInfoDisplay("", client_geoip_info);
 					}
 				});
-				return;
 			}
 			
 			GeoipInfo current_ping_geoip = client.getCurrentDestGeoip();
@@ -288,10 +292,12 @@ public class PingsGUI implements ActionListener {
 	private void refreshPauseButton() {
 			if (!applet.pings_clients[0].isRunning()) {
 				pause_button.setText("Resume");
+				pause_button.setToolTipText(resume_tooltip);
 				pause_button.setActionCommand("resume");
 			}
 			else {
 				pause_button.setText("Pause");
+				pause_button.setToolTipText(pause_tooltip);
 				pause_button.setActionCommand("pause");
 			}
 			setLayout();
@@ -400,5 +406,43 @@ public class PingsGUI implements ActionListener {
 			}
 		} catch (Exception _) {}
 		
+	}
+
+	private class CreateRetryInterface implements Runnable, ActionListener{
+		
+		private String message;
+		
+		public CreateRetryInterface(String msg) {
+			this.message = msg;
+		}
+		
+		//Handle the retry button
+		public void actionPerformed(ActionEvent e) {
+			applet.restartApplet();
+		}
+		
+		public void run() {
+			button_container = applet.getContentPane();
+			
+			retry_button = new JButton ("Retry");
+			retry_button.setMnemonic(KeyEvent.VK_R);
+			retry_button.setToolTipText("Retry to launch the application");
+			retry_button.setActionCommand("retry_connect");
+			retry_button.addActionListener(this);
+			button_container.add (retry_button);
+			retry_button.setBounds((applet.getWidth()/2)-100, (applet.getHeight()/2)+50, 200, 50);
+			
+			
+			retry_message = new JLabel(message);
+			retry_message.setForeground(text_color);
+			button_container.add (retry_message);
+			retry_message.setBounds((applet.getWidth()/2)-200, (applet.getHeight()/2)-50, 400, 100);
+			
+			applet.repaint();
+		}
+	}
+	
+	public void createRetryInterface(String message) {
+		SwingUtilities.invokeLater( new CreateRetryInterface(message));
 	}
 }

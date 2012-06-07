@@ -10,6 +10,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.swing.SwingUtilities;
+
 /**
  * Pings client. Connects to the Pings server, retrieves addresses
  * to be pinged, pings them and submits the results back to the server.
@@ -151,17 +153,20 @@ public class PingsClient extends Observable implements Runnable {
 		
 		//The number of consecutive errors that occurred in this thread.
 		private int consecutive_error_count = 0;
+
+		private boolean sucide;
 		
 		public subClient () {
 			prober = new CompositeProber(m_client_info);
 		}
 		
 		public void run() {
-			while (true) {
+			while (!sucide) {
 				try {			
 					//Get a new Address (and send the result of the previous one)
 					setNewAddress (this, current_ping_result,
 							current_pings_index, current_adress_index);
+					if (sucide) break;
 					notifyObserversOfChange();
 					
 					//Ping this address				
@@ -180,6 +185,7 @@ public class PingsClient extends Observable implements Runnable {
 					// Clear consecutive error count.
 					consecutive_error_count = 0;
 				}
+				catch (InterruptedException _) {break;}
 				catch (Exception e) {
 					final int total_error_count = m_total_error_count.incrementAndGet();
 					consecutive_error_count++;
@@ -242,6 +248,10 @@ public class PingsClient extends Observable implements Runnable {
 		public GeoipInfo getSourceGeoip() {
 			return PingsClient.this.getSourceGeoip();
 		}
+
+		public void destroy() {
+			sucide = true;
+		}
 	
 	}
 	
@@ -255,58 +265,64 @@ public class PingsClient extends Observable implements Runnable {
 	 * the thread receiving new address.
 	 * 
 	 */
-	protected synchronized void setNewAddress (subClient sub, String last_result,
-			int current_pings_index, int current_adress_index) {
+	protected void setNewAddress (subClient sub, String last_result,
+		int current_pings_index, int current_adress_index) {
 		
-		//Store the result of the subClient in the corresponding Pings
-		if (last_result != null) {
-			ServerProxy.Pings pings = pings_queue[current_pings_index];
-			pings.results[current_adress_index] = last_result;
-			
-			remaining_addresses[current_pings_index] -= 1;
-			//If it was the last address to get result from on the current Pings then
-			//send the results an get a new address list
-			if (remaining_addresses[current_pings_index] == 0 ) {
-				sendResultsGetNewAdress(current_pings_index);
-			}
-		}		
+		synchronized(pings_queue) {
 		
-		//Get a new address to ping
-		int pings_index = next_pings_with_addresses;
-		
-		//Loop thought pings_queue to find a free address and give it to sub
-		// index_to_wait allow to decide if we have cycle or not
-		int index_to_wait = next_pings_with_addresses;
-		while (true) {
-			
-			ServerProxy.Pings local_pings = pings_queue[pings_index];
-			
-			if (next_available_address[pings_index] != -1 && local_pings != null) {
-				//If the Pings at address pings_index have some free address we
-				//take one
-				int address_index = next_available_address[pings_index];
-				next_available_address[pings_index]++;
+			//Store the result of the subClient in the corresponding Pings
+			if (last_result != null) {
+				ServerProxy.Pings pings = pings_queue[current_pings_index];
+				pings.results[current_adress_index] = last_result;
 				
-				if (next_available_address[pings_index] == local_pings.addresses.length) {
-					next_available_address[pings_index] = -1;
-					next_pings_with_addresses = (next_pings_with_addresses +1) % pings_queue_size;
+				remaining_addresses[current_pings_index] -= 1;
+				//If it was the last address to get result from on the current Pings then
+				//send the results an get a new address list
+				if (remaining_addresses[current_pings_index] == 0 ) {
+					sendResultsGetNewAdress(current_pings_index);
 				}
-				sub.setCurrentAdressProperty(local_pings.addresses[address_index],
-					local_pings.geoip_info[address_index],
-					pings_index,
-					address_index);
-				break;
-			}
-			//Otherwise we change next_pings_with_addresses and proceed to the 
-			//next ping if we didn't loop 
-			next_pings_with_addresses = (next_pings_with_addresses +1) % pings_queue_size;
-			pings_index = (pings_index +1) % pings_queue_size;
-			if (pings_index == index_to_wait && next_available_address[index_to_wait] == -1 )
-				try {
-					synchronized(sub){
-						sub.wait();
+			}		
+			
+			//Get a new address to ping
+			int pings_index = next_pings_with_addresses;
+			
+			//Loop thought pings_queue to find a free address and give it to sub
+			// index_to_wait allow to decide if we have cycle or not
+			int index_to_wait = next_pings_with_addresses;
+			while (true) {
+				
+				ServerProxy.Pings local_pings = pings_queue[pings_index];
+				
+				if (next_available_address[pings_index] != -1 && local_pings != null) {
+					//If the Pings at address pings_index have some free address we
+					//take one
+					int address_index = next_available_address[pings_index];
+					next_available_address[pings_index]++;
+					
+					if (next_available_address[pings_index] == local_pings.addresses.length) {
+						next_available_address[pings_index] = -1;
+						next_pings_with_addresses = (next_pings_with_addresses +1) % pings_queue_size;
 					}
-				} catch (InterruptedException e) {}
+					sub.setCurrentAdressProperty(local_pings.addresses[address_index],
+						local_pings.geoip_info[address_index],
+						pings_index,
+						address_index);
+					break;
+				}
+				
+				//Otherwise we change next_pings_with_addresses and proceed to the 
+				//next ping if we didn't loop 
+				next_pings_with_addresses = (next_pings_with_addresses +1) % pings_queue_size;
+				pings_index = (pings_index +1) % pings_queue_size;
+				if (pings_index == index_to_wait && next_available_address[index_to_wait] == -1 ) {
+					try {
+						pings_queue.wait();
+					} catch (InterruptedException e) {
+						sub.destroy();
+						break;
+					}
+				}
+			}
 		}
 	}
 	
@@ -351,12 +367,10 @@ public class PingsClient extends Observable implements Runnable {
 					next_available_address[pings_index] = 0;
 					
 					//Wake up threads that might wait for new addresses
-					for (int i = 0; i < subClients_pool.length; i++) {
-						synchronized(subClients_pool[i]){
-							subClients_pool[i].notify();
+					synchronized(pings_queue){
+							pings_queue.notify();
 						}
-					}
-						
+					
 					break;
 				}
 				catch (UnknownHostException _) {
@@ -407,8 +421,12 @@ public class PingsClient extends Observable implements Runnable {
 	public void errorConnectingToServer(String reason) {
 		this.connect_error = true;
 		this.error_reason = reason;
-		this.setChanged();
-		notifyObservers();
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+				PingsClient.this.setChanged();
+				notifyObservers();
+			}
+		});
 	}
 	
 	public subClient[] getSubClientsPoolCopy() {
@@ -447,20 +465,17 @@ public class PingsClient extends Observable implements Runnable {
    		}
 	
 	public void resume() {
-		synchronized(this) {
-			m_is_running.set(true);
-			notify();
-		}
+		m_is_running.set(true);
 		for (int i = 0; i < subClient_number; i++) {
-			synchronized(subClients_pool[i]) {
-				subClients_pool[i].notify();
+			synchronized(pings_queue) {
+				pings_queue.notify();
 			}
 		}
 	}
 
 	public void destroy() {
 		for (int i = 0; i < subClient_number; i++) {
-			subClients_threads_pool[i].stop();
+			subClients_threads_pool[i].interrupt();
 		}
 		this.m_is_running.set(false);
 	}

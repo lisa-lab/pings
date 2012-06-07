@@ -1,6 +1,5 @@
 import java.util.Observable;
 import java.util.Observer;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.JApplet;
 
@@ -8,22 +7,26 @@ import javax.swing.JApplet;
  * This class holds the web applet. It creates the threads for the clients and
  * the GUI. It also provide methods for nice stop, start and destroy
  * <p>
- * @author //FIXME
+ * @author RaphaelBonaque
 */
 public class PingsApplet extends JApplet {
 	
 	private static final long serialVersionUID = 2L;
 	
+	//All the variables related to the PingsClient
 	private final String SERVER_HOSTNAME = "pings-prod-lb-838066006.us-east-1.elb.amazonaws.com";
 	private final int SERVER_PORT = 80;
 	private final String initial_nickname = "No Name";
 	public final int nb_clients = 1;
 	public PingsClient[] pings_clients;
 	
+	//Store the GUI, essentially to be able to stop it
 	private PingsGUI pings_gui;
 	
+	//Is the applet running in simulation mode
 	private boolean simulation;
 	
+	//Specify if the applet is on the "retry" screen
 	private boolean on_retry_screen;
 	
 	/**
@@ -36,6 +39,7 @@ public class PingsApplet extends JApplet {
 		pings_clients = new PingsClient[nb_clients];
 		on_retry_screen = false;
 		
+		//Setup the simulation mode if the argument 'simulation' was set to true
 		try {
 			simulation = Boolean.parseBoolean(getParameter("simulation"));
 		}
@@ -84,6 +88,8 @@ public class PingsApplet extends JApplet {
 	public synchronized void errorConnectingServer(String message) {
 		if (!on_retry_screen) {
 			
+			System.out.println("Unable to join the server, aborting the client(s)");
+			
 			on_retry_screen = true;
 			
 			for (int i = 0; i < nb_clients; i++) {
@@ -115,7 +121,6 @@ public class PingsApplet extends JApplet {
 			if (client.connect_error) {
 				PingsApplet.this.errorConnectingServer(client.error_reason);
 			}
-			
 		}
 	}
 }

@@ -1,25 +1,80 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-	"http://www.w3.org/TR/html4/loose.dtd">
+ "http://www.w3.org/TR/html4/loose.dtd">
 
 <html lang="en">
 
-	<head>
-		<title>Pings Applet (jar test)</title>
-		<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
-		<style type="text/css">
-			html, body { height: 100%; width: 100%; margin: 0; background: black; }
-			div, applet { height: 100%; width: 100%; margin: 0; background: black; }
-		</style>
+ <head>
+  <title>Pings Applet (jar test)</title>
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+  <style type="text/css">
+   html,body { margin:auto 10px auto 10px; 
+               background: black;
+               color:white; }
+   a:link{color:gray};
+   a:visited{color:orange}; 
 
-	</head>
-	
-	<body>
-		<div>
-			<applet code="PingsApplet.class" archive="pings.jar"
-				height="100%" width="100%" >
-				Java failed to load
-			</applet>
-		</div>
-	</body>
-	
+  </style>
+ </head>
+ 
+ <body>
+   <center>
+     <div style="width:60%" align="left">
+   <font size="-2">
+     <h1 style="color:green">The Internet Connectome Project Test Page</h1>
+
+     <h2>Instructions</h2>
+
+     <ul>
+       <li><b>Fill the name box with a nick name</b>. The nickname is used
+         to collect the effort statistics. Use a common nickname if you want
+         to form teams (be careful, it's case-sensitive!).</li><br>
+
+       <li><b>Let it run for a while</b>. Let the applet run for a while so
+         that it can gather lots of information. The more we have, the
+         better!</li><br>
+
+       <li><h3><a href="http://pings-prod-lb-838066006.us-east-1.elb.amazonaws.com/"
+       target=_blank>Check the leaderboard</a>!</h3><br>
+
+       <li><b>A signed applet</b>. The applet is digitally signed by the
+       Université de Montréal so that Java can access the platform-specific
+       ping and traceroute commands.<br>
+         
+       <li><b>Help us debug!</b> This applet is still in its
+         prototypical stages, and bugs may occur. One way to trap Java's
+         debug output is to redirect both standard output and standard
+         error to a file, using, for example, a command-line such
+         as<br><br>
+
+         <pre>
+           firefox http://www.stevenpigeon.org/secret/applet_jar.html &> ping.debug.log
+         </pre>
+
+         You can send us (at <a href="mailto:pigeon@iro.umontreal.ca"
+         title="Internet Connectome Applet">pigeon@iro.umontreal.ca</a>)
+         the log if something goes wrong, or if you have suggestions,
+         questions, etc.</li><br>
+     </ul>
+     <br>
+     <br>
+
+
+     <h2>The Applet</h2>
+
+     <center>
+       <applet code="PingsApplet.class" archive="pings.jar" style="width:500px;height:500px">
+         Java failed to load
+       </applet>
+     </center>
+     <br>
+     <br>
+     <br>
+
+     </div>
+   </center>
+
+
+     </font>
+ </body>
+ 
 </html>

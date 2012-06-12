@@ -10,8 +10,9 @@
    html,body { margin:auto 10px auto 10px; 
                background: black;
                color:white; }
-   a:link{color:gray};
-   a:visited{color:orange}; 
+   applet { align:center; width:700px;height:500px }
+   a:link{color:gray}
+   a:visited{color:orange}
 
   </style>
  </head>
@@ -27,18 +28,18 @@
      <ul>
        <li><b>Fill the name box with a nick name</b>. The nickname is used
          to collect the effort statistics. Use a common nickname if you want
-         to form teams (be careful, it's case-sensitive!).</li><br>
+         to form teams (be careful, it's case-sensitive!).</li>
 
        <li><b>Let it run for a while</b>. Let the applet run for a while so
          that it can gather lots of information. The more we have, the
-         better!</li><br>
+         better!</li>
 
-       <li><h3><a href="http://pings-prod-lb-838066006.us-east-1.elb.amazonaws.com/"
-       target=_blank>Check the leaderboard</a>!</h3><br>
+       <li><b><a href="http://pings-prod-lb-838066006.us-east-1.elb.amazonaws.com/"
+       target=_blank>Check the leaderboard</a>!</b></li>
 
        <li><b>A signed applet</b>. The applet is digitally signed by the
        Université de Montréal so that Java can access the platform-specific
-       ping and traceroute commands.<br>
+       ping and traceroute commands.</li>
          
        <li><b>Help us debug!</b> This applet is still in its
          prototypical stages, and bugs may occur. One way to trap Java's
@@ -53,7 +54,7 @@
          You can send us (at <a href="mailto:pigeon@iro.umontreal.ca"
          title="Internet Connectome Applet">pigeon@iro.umontreal.ca</a>)
          the log if something goes wrong, or if you have suggestions,
-         questions, etc.</li><br>
+         questions, etc.</li>
      </ul>
      <br>
      <br>
@@ -61,20 +62,17 @@
 
      <h2>The Applet</h2>
 
-     <center>
-       <applet code="PingsApplet.class" archive="pings.jar" style="width:500px;height:500px">
+       <applet code="PingsApplet.class" archive="pings.jar">
          Java failed to load
        </applet>
-     </center>
+
      <br>
      <br>
      <br>
 
-     </div>
+   </font>
+   </div>
    </center>
-
-
-     </font>
  </body>
  
 </html>

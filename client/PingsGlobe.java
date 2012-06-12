@@ -31,12 +31,13 @@ public class PingsGlobe extends Globe {
     //its value as no impact as long as it's in the bounds of the array
     private int last_ping = 0 ;
     
-        private static final Color origin_color = new Color(44f / 255f, 63f / 255f, 201f / 255f, 0.9f);
-    private static final float[] waiting_color = {195,208,226};//{ 69, 178, 110};    
+    private static final Color origin_color = new Color(44f / 255f, 63f / 255f, 201f / 255f, 0.9f);
+    private static final float[] waiting_color = {0,255,0}; //{195,208,226};//{ 69, 178, 110};    
     private static final float[] timed_out_color = {131, 13, 44};    
     private static final float[] connection_refused_color = {20, 20, 20};
     private static final float[] unknown_error_color = {255, 255, 255};
-        private float prefered_font_size = 13.5f;
+    private float prefered_font_size = 7f; //13.5f;
+    private float circle_radius_scale=1.5f;
     private BasicStroke link_stroke = new BasicStroke(2.5f);
 
     private Graphics2D text_render;
@@ -44,20 +45,20 @@ public class PingsGlobe extends Globe {
     
     
     private static final float [][] color_scale = {
-        {0,255,0,            0.025f },
-        {73,255,67,            0.050f },
-        {106,255,97,        0.075f },
-        {134,243,97,        0.100f },
-        {246,242,35,        0.150f },
-        {246,215,35,        0.200f },
-        {222,161,62,        0.250f },
-        {192,111,60,        0.300f },
-        {168,21,42,            0.400f },
-        {137,18,28,            0.500f },
-        {92,32,40,            0.600f },
-        {78,57,58,            0.700f },
-        {76,76,76,            0.850f },
-        {31,29,29,            1.000f },
+        {0,255,0,     0.025f },
+        {73,255,67,   0.050f },
+        {106,255,97,  0.075f },
+        {134,243,97,  0.100f },
+        {246,242,35,  0.150f },
+        {246,215,35,  0.200f },
+        {222,161,62,  0.250f },
+        {192,111,60,  0.300f },
+        {168,21,42,   0.400f },
+        {137,18,28,   0.500f },
+        {92,32,40,    0.600f },
+        {78,57,58,    0.700f },
+        {76,76,76,    0.850f },
+        {31,29,29,    1.000f },
     };
     
     
@@ -350,8 +351,8 @@ public class PingsGlobe extends Globe {
         text_render.setFont(font);
         
         //Calculate a new circle radius according to the current zoom
-        float circle_radius = (float) (2 / uptransform.getScaleX());
-        link_stroke = new BasicStroke(2 * circle_radius );
+        float circle_radius = (float) (circle_radius_scale / uptransform.getScaleX());
+        link_stroke = new BasicStroke(1.25f * circle_radius );
         
         //We paint the currently stored pings
         int actual_index = last_ping;

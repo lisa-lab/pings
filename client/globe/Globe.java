@@ -45,7 +45,7 @@ public class Globe extends JComponent {
     private BufferedImage buffered_image;
     private boolean quality_image_buffered = false;
     private long last_time_update = 0;
-    private Color day_color = new Color(1f, 0, 0, 0.10f);    
+    private Color day_color = new Color(0, 0, 1f, 0.1f);    
     private double max_zoom = 20;
     private double min_zoom = 0.6;
     
@@ -86,12 +86,21 @@ public class Globe extends JComponent {
 //            new Style( null, Color.getHSBColor( hue+0.6f, 0.5f, 1.0f ) ),
 //            new Style( null, Color.getHSBColor( hue+0.9f, 0.5f, 1.0f ) )
 //    };
+/*
     private Style[] styles = {
-            new Style( Color.white,new Color( 105f/255f, 143f/255f, 183f/255f, 1.0f ) ),
+     new Style( Color.white, new Color( 105f/255f, 143f/255f, 183f/255f, 1.0f ) ),
             new Style( Color.white,new Color( 161f/255f, 193f/255f, 226f/255f, 1.0f ) ),
             new Style( Color.white,new Color( 27f/255f, 84f/255f, 143f/255f, 1.0f ) ),
             new Style( Color.white,new Color( 36f/255f, 56f/255f, 91f/255f, 1.0f ) ),
             };
+*/
+    private Style[] styles = {
+     new Style( Color.white, new Color( 105f/1020f, 143f/1020f, 183f/1020f, 1f ) ),
+            new Style( Color.white,new Color( 161f/1020f, 193f/1020f, 226f/1020f, 1f ) ),
+            new Style( Color.white,new Color( 27f/1020f, 84f/1020f, 143f/1020f, 1f ) ),
+            new Style( Color.white,new Color( 36f/1020f, 56f/1020f, 91f/1020f, 1f ) ),
+            };
+
     private Projection last_projection;
     private AffineTransform last_transform;
 

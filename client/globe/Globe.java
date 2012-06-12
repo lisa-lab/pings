@@ -46,8 +46,13 @@ public class Globe extends JComponent {
     private boolean quality_image_buffered = false;
     private long last_time_update = 0;
     private Color day_color = new Color(1f, 0, 0, 0.10f);    
+<<<<<<< HEAD
     private double max_zoom_factor = 20;
     private double min_zoom_factor = 0.6;
+=======
+    private double max_zoom = 20;
+    private double min_zoom = 0.6;
+>>>>>>> 58f3cb0b624ed066e561521f277027861d24e1bd
     
     protected Graphics2D g2;
     private float globeRadius = 275;
@@ -94,7 +99,10 @@ public class Globe extends JComponent {
             };
     private Projection last_projection;
     private AffineTransform last_transform;
+<<<<<<< HEAD
 	private double original_zoom = 1;
+=======
+>>>>>>> 58f3cb0b624ed066e561521f277027861d24e1bd
 
     public Globe() {
         // Create the map projection
@@ -183,8 +191,13 @@ public class Globe extends JComponent {
     
     public void mouseZoom(int steps) {
         double zoom_factor = Math.pow(1.05, steps);
+<<<<<<< HEAD
         zoom_factor = Math.min(original_zoom * max_zoom_factor / transform.getScaleX(), zoom_factor);
         zoom_factor = Math.max(original_zoom * min_zoom_factor/  transform.getScaleX(), zoom_factor);
+=======
+        zoom_factor = Math.min(max_zoom / transform.getScaleX(), zoom_factor);
+        zoom_factor = Math.max(min_zoom/  transform.getScaleX(), zoom_factor);
+>>>>>>> 58f3cb0b624ed066e561521f277027861d24e1bd
         transform.scale(zoom_factor,zoom_factor);
         this.repaint();
     }
@@ -328,6 +341,7 @@ public class Globe extends JComponent {
     }
     
     /**
+<<<<<<< HEAD
      * Resize the globe to fit in the given space
      */
     public void resizeGlobe(double max_dimension) {
@@ -336,6 +350,8 @@ public class Globe extends JComponent {
     }
     
     /**
+=======
+>>>>>>> 58f3cb0b624ed066e561521f277027861d24e1bd
      * Tell if the specified point (given by longitude, latitude coordinates) is
      * visible or not.(Does not consider the scale factor that can make a visible
      * point render out of the screen.

@@ -31,12 +31,12 @@ public class PingsGlobe extends Globe {
     //its value as no impact as long as it's in the bounds of the array
     private int last_ping = 0 ;
     
-        private static final Color origin_color = new Color(44f / 255f, 63f / 255f, 201f / 255f, 0.9f);
+    private static final Color origin_color = new Color(44f / 255f, 63f / 255f, 201f / 255f, 0.9f);
     private static final float[] waiting_color = {195,208,226};//{ 69, 178, 110};    
     private static final float[] timed_out_color = {131, 13, 44};    
     private static final float[] connection_refused_color = {20, 20, 20};
     private static final float[] unknown_error_color = {255, 255, 255};
-        private float prefered_font_size = 13.5f;
+    private float prefered_font_size = 12.5f;
     private BasicStroke link_stroke = new BasicStroke(2.5f);
 
     private Graphics2D text_render;

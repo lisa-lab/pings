@@ -128,7 +128,9 @@ public class PingsGUI implements ActionListener {
 		
 		//Add the globe
 		ping_globe = new PingsGlobe();
+		ping_globe.resizeGlobe(Math.min(applet.getWidth(),applet.getHeight()));
 		applet.getContentPane().add(ping_globe);
+		
 		
 		//Set the layout
 		setLayout();

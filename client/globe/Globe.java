@@ -47,8 +47,8 @@ public class Globe extends JComponent {
     private long last_time_update = 0;
     
     private Color day_color = new Color(0, 0, 1f, 0.1f);
-    private double max_zoom = 20;
-    private double min_zoom = 0.6;
+    private double max_zoom_factor = 20;
+    private double min_zoom_factor = 0.6;
     
     protected Graphics2D g2;
     private float globeRadius = 275;
@@ -62,7 +62,6 @@ public class Globe extends JComponent {
     private ProjectionMouseListener mouseListener;
     private PanZoomMouseListener zoomListener;
     protected AffineTransform transform = new AffineTransform();
-    private BufferedImage image;
 
     private Layer map;
     private Layer mapLayer;

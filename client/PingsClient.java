@@ -3,6 +3,7 @@ import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetAddress;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.logging.Logger;
 import java.util.logging.Level;
@@ -127,7 +128,7 @@ public class PingsClient extends Observable implements Runnable {
         m_is_running.set(true);
         
         for (int pings_index = 0; pings_index < pings_queue_size; pings_index++) {
-            sendResultsGetNewAdress(pings_index);
+            sendResultsGetNewAddress(pings_index);
         }
         
         for (int pings_index = 0; pings_index < subClient_number; pings_index++) {
@@ -164,7 +165,7 @@ public class PingsClient extends Observable implements Runnable {
         
         //The position of the current address/geoip in the pings_queue
         private int current_pings_index;
-        private int current_adress_index;
+        private int current_address_index;
         
         //The number of consecutive errors that occurred in this thread.
         private int consecutive_error_count = 0;
@@ -180,7 +181,7 @@ public class PingsClient extends Observable implements Runnable {
                 try {            
                     //Get a new Address (and send the result of the previous one)
                     setNewAddress (this, current_ping_result,
-                            current_pings_index, current_adress_index);
+                            current_pings_index, current_address_index);
                     if (sucide) break;
                     notifyObserversOfChange();
                     
@@ -228,15 +229,15 @@ public class PingsClient extends Observable implements Runnable {
          * @param add the address of the new target to ping
          * @param geo the geoip of the new target to ping
          * @param pings_index the index of the current Pings in the pings_queue
-         * @param adress_index the index of the address in the current Pings
+         * @param address_index the index of the address in the current Pings
          */
-        public void setCurrentAdressProperty (InetAddress add, GeoipInfo geo,
-                int pings_index, int adress_index) {
+        public void setCurrentAddressProperty (InetAddress add, GeoipInfo geo,
+                int pings_index, int address_index) {
             current_ping_dest = add;
             current_dest_geoip = geo;
             current_ping_result = null;
             current_pings_index = pings_index;
-            current_adress_index = adress_index;
+            current_address_index = address_index;
         }
 
         /**
@@ -275,26 +276,26 @@ public class PingsClient extends Observable implements Runnable {
      * new address to ping.
      * <p>
      * If there are no more addresses available on the current Pings it calls 
-     * sendResultGetNewAdress to get new ones and proceed to the next Pings in 
+     * sendResultGetNewAddress to get new ones and proceed to the next Pings in 
      * the queue. If there are no more address anywhere it waits to be wake up by
      * the thread receiving new address.
      * 
      */
     protected void setNewAddress (subClient sub, String last_result,
-        int current_pings_index, int current_adress_index) {
+        int current_pings_index, int current_address_index) {
         
         synchronized(pings_queue) {
         
             //Store the result of the subClient in the corresponding Pings
             if (last_result != null) {
                 ServerProxy.Pings pings = pings_queue[current_pings_index];
-                pings.results[current_adress_index] = last_result;
+                pings.results[current_address_index] = last_result;
                 
                 remaining_addresses[current_pings_index] -= 1;
                 //If it was the last address to get result from on the current Pings then
                 //send the results an get a new address list
                 if (remaining_addresses[current_pings_index] == 0 ) {
-                    sendResultsGetNewAdress(current_pings_index);
+                    sendResultsGetNewAddress(current_pings_index);
                 }
             }        
             
@@ -318,7 +319,7 @@ public class PingsClient extends Observable implements Runnable {
                         next_available_address[pings_index] = -1;
                         next_pings_with_addresses = (next_pings_with_addresses +1) % pings_queue_size;
                     }
-                    sub.setCurrentAdressProperty(local_pings.addresses[address_index],
+                    sub.setCurrentAddressProperty(local_pings.addresses[address_index],
                         local_pings.geoip_info[address_index],
                         pings_index,
                         address_index);
@@ -389,11 +390,26 @@ public class PingsClient extends Observable implements Runnable {
                     break;
                 }
                 catch (UnknownHostException _) {
-                    PingsClient.this.errorConnectingToServer("DNS problem or server Down");
+                    PingsClient.this.errorConnectingToServer(
+                        "A problem happened while trying to connect to the server. The most probable causes are :\n" +
+                    		"_you are not connected to the internet\n" +
+                    		"_you have a DNS problem\n" +
+                    		"_the server you are trying to join is not correctly configured");
                     break;
                 }
                 catch (ConnectException e) {
-                    PingsClient.this.errorConnectingToServer("Firewall problem or server refuse connection");
+                    PingsClient.this.errorConnectingToServer(
+                    	"A problem happened while trying to connect to the server. The most probable causes are :\n" +
+                    		"_a firewall is blocking the connection" +
+                    		"_the server you are trying to join reject the connection");
+                    break;
+                }
+                catch(SocketTimeoutException e) {
+                	PingsClient.this.errorConnectingToServer(
+                    	"A problem happened while trying to connect to the server . The most probable causes are :\n" +
+                    		"_a firewall is blocking the connection" +
+                    		"_the server is overloaded\n" +
+                    		"_the connection is taking too long");
                     break;
                 }
                 catch (IOException e) {
@@ -426,10 +442,10 @@ public class PingsClient extends Observable implements Runnable {
     }
     
     /**
-     * A function that launch the thread class sendResultsGetNewAdress
+     * A function that launch the thread class sendResultsGetNewAddress
      * @see SendResultsGetNewAddress
      */
-    private void sendResultsGetNewAdress(int pings_index) {
+    private void sendResultsGetNewAddress(int pings_index) {
         new SendResultsGetNewAddress(pings_index).start();
     }
     

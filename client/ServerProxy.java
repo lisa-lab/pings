@@ -19,6 +19,10 @@ import org.json.simple.JSONArray;
  *  @author Christian Hudon <chrish@pianocktail.org>
  */
 public class ServerProxy {
+	
+	/** Timeouts in milliseconds*/
+	private int connection_timeout = 10000;
+	private int socket_operation_timeout = 1000;
 
     /** Container class for the Pings data. Obtained from getPings().
         To use, fill in the results array with the corresponding Prober
@@ -110,7 +114,7 @@ public class ServerProxy {
         String nick = client_info.getNickname();
         if (nick != null && nick.length() != 0)
             json_request.put("userid", nick);
-
+        
         // Send request to server. Returns a constant (at least for now).
         Object json_result = doJsonRequest("/submit_ping_results", json_request);
     }
@@ -136,6 +140,8 @@ public class ServerProxy {
         connection.setRequestMethod("POST");
         connection.setRequestProperty("Accept-Charset", CHARSET);
         connection.setRequestProperty("Content-Type", "application/json;charset=" + CHARSET);
+        connection.setConnectTimeout(connection_timeout);
+        connection.setReadTimeout(socket_operation_timeout);
 
         // Write request.
         OutputStream output = connection.getOutputStream();

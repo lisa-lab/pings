@@ -13,6 +13,7 @@ import java.util.Observer;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
@@ -37,15 +38,16 @@ public class PingsGUI implements ActionListener {
     private PingsGlobe ping_globe;
     private Container button_container;
     private Color text_color = new Color(70,70,70);
+    private Color background_color = new Color(0,0,0);
     
     //GUI component for the retry
-    private JLabel retry_message;
+    private JTextArea retry_message;
     private JButton retry_button;
     
     //State variables
     private int pings_counter = 0;
     private GeoipInfo client_geoip_info = null;
-
+    
     //The observers of the subclients that add pings effect on the globe
     // see ClientThreadObserver for more details
     private clientThreadObserver[][] clients_observers;
@@ -63,10 +65,12 @@ public class PingsGUI implements ActionListener {
     */
     PingsGUI (PingsApplet parent) {
         applet = parent;
+        applet.setBackground(background_color);
         
         //Recover the content and background of the applet to add components
         button_container = applet.getContentPane();
-        button_container.setBackground (Color.BLACK);
+        button_container.setBackground (background_color);
+        button_container.setLayout(null);
         
         //Add the pause/resume button to the applet
         pause_button = new JButton ("Pause");
@@ -117,7 +121,7 @@ public class PingsGUI implements ActionListener {
         
         
         //Add the display for the number of pings done
-        pings_counter_display = new JLabel("No pings sent yet");
+        pings_counter_display = new JLabel("No ping sent yet");
         pings_counter_display.setForeground(text_color);
         button_container.add (pings_counter_display);
         
@@ -131,6 +135,9 @@ public class PingsGUI implements ActionListener {
         ping_globe.resizeGlobe(Math.min(applet.getWidth(),applet.getHeight()));
         applet.getContentPane().add(ping_globe);
         
+        //Create the component for the "retry view" but don't hook them to the applet
+        retry_message = new JTextArea("");
+        retry_button = new JButton();
         
         //Set the layout
         setLayout();
@@ -185,6 +192,10 @@ public class PingsGUI implements ActionListener {
         
         pause_button.setBounds(8 + counter_size.width,8 + row_height,
                 pause_size.width, row_height);
+        
+        retry_message.setBounds((applet.getWidth()/2)-200, (applet.getHeight()/2)-50, 400, 100);
+        retry_button.setBounds((applet.getWidth()/2)-100, (applet.getHeight()/2)+50, 200, 50);
+        
     }
     
     /**
@@ -192,7 +203,7 @@ public class PingsGUI implements ActionListener {
      */    
     private void updatePingsCounterDisplay() {
         if (pings_counter == 0) {
-            pings_counter_display.setText("No pings sent yet");
+            pings_counter_display.setText("No ping sent yet");
         }
         else {
             pings_counter_display.setText(pings_counter + " pings sent");
@@ -409,7 +420,7 @@ public class PingsGUI implements ActionListener {
         } catch (Exception _) {}
         
     }
-
+    
     private class CreateRetryInterface implements Runnable, ActionListener{
         
         private String message;
@@ -422,7 +433,7 @@ public class PingsGUI implements ActionListener {
         public void actionPerformed(ActionEvent e) {
             SwingUtilities.invokeLater( new Runnable() {
                 public void run() {
-                	button_container.removeAll();
+                    button_container.removeAll();
                     applet.restartApplet();
                 }
             });
@@ -430,22 +441,27 @@ public class PingsGUI implements ActionListener {
         
         public void run() {
             button_container = applet.getContentPane();
+            button_container.setBackground (background_color);
+            button_container.setLayout(null);
             
-            retry_button = new JButton ("Retry");
+            retry_message.setText(message);
+            retry_message.setForeground(text_color);
+            retry_message.setBackground(background_color);
+            retry_message.setLineWrap(true);
+            retry_message.setEditable(false);
+            button_container.add (retry_message);
+            
+            retry_button.setText("Retry");
             retry_button.setMnemonic(KeyEvent.VK_R);
-            retry_button.setToolTipText("Retry to launch the application");
+            retry_button.setToolTipText("Try to relaunch the application");
             retry_button.setActionCommand("retry_connect");
             retry_button.addActionListener(this);
             button_container.add (retry_button);
-            retry_button.setBounds((applet.getWidth()/2)-100, (applet.getHeight()/2)+50, 200, 50);
             
-            
-            retry_message = new JLabel(message);
-            retry_message.setForeground(text_color);
-            button_container.add (retry_message);
-            retry_message.setBounds((applet.getWidth()/2)-200, (applet.getHeight()/2)-50, 400, 100);
+            setLayout();
             
             applet.repaint();
+            
         }
     }
     

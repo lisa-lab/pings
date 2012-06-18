@@ -1,5 +1,3 @@
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetAddress;
@@ -14,7 +12,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.swing.SwingUtilities;
-import javax.swing.Timer;
 
 /**
  * Pings client. Connects to the Pings server, retrieves addresses
@@ -25,7 +22,7 @@ import javax.swing.Timer;
  * can register yourself with addNotifier().
  *
  * We give up (and stop the thread) after a total of MAX_ERROR_COUNT errors
- * has occured. We also do exponential backoff on consecutive errors,
+ * has occurred. We also do exponential backoff on consecutive errors,
  * to avoid overloading the servers if they have a problem.
  *
  * @author Christian Hudon <chrish@pianocktail.org>
@@ -119,9 +116,9 @@ public class PingsClient extends Observable implements Runnable {
         m_source_geoip = new AtomicReference<GeoipInfo>();
         m_total_error_count = new AtomicInteger();
         m_is_running = new AtomicBoolean(false);
+        pings_queue = new ServerProxy.Pings[pings_queue_size];
     }
     
-    @Override
     public void run() {
         LOGGER.info("PingsClient starting.");
         resetErrorCount();
@@ -134,18 +131,6 @@ public class PingsClient extends Observable implements Runnable {
         for (int pings_index = 0; pings_index < subClient_number; pings_index++) {
             subClients_threads_pool[pings_index].start();
         }
-        
-        Timer client_waker = new Timer(100, new ActionListener() {
-                public void actionPerformed(ActionEvent _) {
-                    if (PingsClient.this.isRunning()) {
-                        synchronized(PingsClient.this.pings_queue){
-                        	PingsClient.this.pings_queue.notify();
-                        }
-                    }
-                }
-            });
-        
-        client_waker.start();
     }
     
     /**
@@ -169,7 +154,7 @@ public class PingsClient extends Observable implements Runnable {
         
         //The number of consecutive errors that occurred in this thread.
         private int consecutive_error_count = 0;
-
+        
         private boolean sucide;
         
         public subClient () {
@@ -239,7 +224,7 @@ public class PingsClient extends Observable implements Runnable {
             current_pings_index = pings_index;
             current_address_index = address_index;
         }
-
+        
         /**
          *  Combines java.util.Observable's setChanged() and notifyObservers()
          *  to notify the GUI
@@ -248,11 +233,11 @@ public class PingsClient extends Observable implements Runnable {
             setChanged();
             notifyObservers();
         }
-
+        
         public InetAddress getCurrentPingDest() {
             return current_ping_dest;
         }
-
+        
         public GeoipInfo getCurrentDestGeoip() {
             return current_dest_geoip;
         }
@@ -264,7 +249,7 @@ public class PingsClient extends Observable implements Runnable {
         public GeoipInfo getSourceGeoip() {
             return PingsClient.this.getSourceGeoip();
         }
-
+        
         public void destroy() {
             sucide = true;
         }
@@ -332,7 +317,7 @@ public class PingsClient extends Observable implements Runnable {
                 pings_index = (pings_index +1) % pings_queue_size;
                 if (pings_index == index_to_wait && next_available_address[index_to_wait] == -1 ) {
                     try {
-                        pings_queue.wait();
+                        pings_queue.wait(100);
                     } catch (InterruptedException e) {
                         sub.destroy();
                         break;
@@ -392,24 +377,25 @@ public class PingsClient extends Observable implements Runnable {
                 catch (UnknownHostException _) {
                     PingsClient.this.errorConnectingToServer(
                         "A problem happened while trying to connect to the server. The most probable causes are :\n" +
-                    		"_you are not connected to the internet\n" +
-                    		"_you have a DNS problem\n" +
-                    		"_the server you are trying to join is not correctly configured");
+                            "_ you are not connected to the internet\n" +
+                            "_ you have a DNS problem\n" +
+                            "_ the server you are trying to join is not correctly configured");
                     break;
                 }
                 catch (ConnectException e) {
                     PingsClient.this.errorConnectingToServer(
-                    	"A problem happened while trying to connect to the server. The most probable causes are :\n" +
-                    		"_a firewall is blocking the connection" +
-                    		"_the server you are trying to join reject the connection");
+                        "A problem happened while trying to connect to the server. The most probable causes are :\n" +
+                            "_ a firewall is blocking the connection\n" +
+                            "_ you lost your connection to inernet\n"+
+                            "_ the server you are trying to join reject the connection");
                     break;
                 }
                 catch(SocketTimeoutException e) {
-                	PingsClient.this.errorConnectingToServer(
-                    	"A problem happened while trying to connect to the server . The most probable causes are :\n" +
-                    		"_a firewall is blocking the connection" +
-                    		"_the server is overloaded\n" +
-                    		"_the connection is taking too long");
+                    PingsClient.this.errorConnectingToServer(
+                        "A problem happened while trying to connect to the server . The most probable causes are :\n" +
+                            "_ a firewall is blocking the connection\n" +
+                            "_ the server is overloaded\n" +
+                            "_ the connection is taking too long");
                     break;
                 }
                 catch (IOException e) {
@@ -420,8 +406,6 @@ public class PingsClient extends Observable implements Runnable {
                     
                     if (total_error_count > MAX_ERROR_COUNT) {
                         LOGGER.log(Level.SEVERE, "Too many errors; stopping PingsClient thread.");
-                        //TODO : do something more beautiful
-                        //Break without notifying the Threads
                         break;
                     }
                     else {
@@ -431,8 +415,6 @@ public class PingsClient extends Observable implements Runnable {
                         try {
                             Thread.sleep(1000 * (int)Math.pow(2, consecutive_error_count));
                         } catch (InterruptedException e1) {
-                            //TODO : do something more beautiful
-                            //Break without notifying the Threads
                             break;
                         }
                     }
@@ -489,11 +471,11 @@ public class PingsClient extends Observable implements Runnable {
         m_total_error_count.set(0);
     }
     
-       public void pause() {
-           synchronized(this) {
-               m_is_running.set(false);
-               }
-           }
+    public void pause() {
+        synchronized(this) {
+           m_is_running.set(false);
+        }
+    }
     
     public void resume() {
         m_is_running.set(true);
@@ -503,7 +485,7 @@ public class PingsClient extends Observable implements Runnable {
             }
         }
     }
-
+    
     public void destroy() {
         for (int i = 0; i < subClient_number; i++) {
             subClients_threads_pool[i].interrupt();
@@ -520,9 +502,9 @@ public class PingsClient extends Observable implements Runnable {
             System.err.println("Usage: PingsClient [hostname [port]]");
             System.exit(1);
         }
-
+        
         String hostname = (args.length >= 1) ? args[0] : "ec2-184-72-202-57.compute-1.amazonaws.com";
-
+        
         int port = 6543;
         if (args.length >= 2) {
             try {

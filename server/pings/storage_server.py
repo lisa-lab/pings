@@ -14,7 +14,7 @@ from daylight saving time.
 To use more than one storage server on a single computer, pass them
 different root directories."""
 
-import sys, os, time, datetime, errno, json, zmq, ConfigParser, logging
+import sys, os, socket, time, datetime, errno, json, zmq, ConfigParser, logging
 from logging.config import fileConfig
 
 logger = logging.getLogger(__name__)
@@ -112,7 +112,9 @@ def main():
     while True:
         try:
             msg = zmq_socket.recv_json()
-            f.write_msg(json.dumps(msg))
+            low_level_socket = socket.fromfd( zmq_socket.getsockopt(zmq.FD), socket.AF_INET, socket.IPPROTO_TCP )
+            remote_address = low_level_socket.getpeername() # may include port
+            f.write_msg(remote_address+" "+json.dumps(msg))
             logger.debug('Stored message: %s', msg)
         except Exception, e:
             logging.exception('Exception while processing message: %s', msg)

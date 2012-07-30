@@ -1,48 +1,65 @@
 Installation Guide
 ==================
 
-This document will guide you in installing a local copy of the Pings
-server. These instructions are geared towards setting up an environment for
-development, so they use virtualenv to create an isolated environment for
-your local Pings install. If you just want to run a copy of the server as
-simply as possible, you could skip these steps if desired.
+This document will guide you in installing a local copy of the Pings server.
+These instructions are geared towards setting up an environment for
+development, so they use virtualenv to create an isolated environment for your
+local Pings install. If you just want to run a copy of the server as simply as
+possible, you could skip these steps if desired.
 
-To follow this guide, you will need virtualenv and virtualenvwrapper (2.9
-or greater). On top of Python (obviously), you will need memcached and
-redis installed. And finally you will also require the development packages
-for libevent and zeromq.
+To follow this guide, you will need virtualenv and virtualenvwrapper (2.9 or
+greater). On top of Python (obviously), you will need memcached and redis
+installed. And finally you will also require the development packages for 
+libevent and zeromq.
 
 On Ubuntu or Debian, you can install all the above by running first:
 
-sudo apt-get install $(< ubuntu-requirements.txt)
+``sudo apt-get install $(< ubuntu-requirements.txt)``
 
 and second either ``sudo apt-get install virtualenvwrapper`` (if running
 Ubuntu 12.04, Debian wheezy or more recent) or ``sudo pip install
 virtualenvwrapper`` (if running an earlier version of Ubuntu or Debian).
 
-Once you have all the requirements above installed (remember to source
-virtualenvwrapper to activate it), the rest is pretty simple.
+You need to source virtualenvwrapper : a simple way to do that is to add to
+the end of your ~/.bashrc :
+``
+export WORKON_HOME=$HOME/.virtualenvs
+export WORKON_HOME=$HOME/Devel
+source /usr/local/bin/virtualenvwrapper.sh
+``
+Then close and reopen your terminal.
+
+If the directories speficied by WORKON_HOME and WORKON_HOME don't exist, create
+them with ``mkdir $WORKON_HOME $PROJECT_HOME``.
+
+If for some reason you can't locate virtualenvwrapper.sh it should be available
+within the sources of virtualenvwrapper which you can download from:
+http://pypi.python.org/pypi/virtualenvwrapper/
+
+Once you have all the requirements above installed , the rest is pretty simple.
 
 1. Create and activate a virtualenv project directory (an isolated Python
    installation) by running `mkproject pings`. You can check that the
    virtualenv was activated by running ``showvirtualenv``, which should ouput
    "pings". After executing the ``mkproject`` command, your current directory
    will be the project directory, and all Python packages installed through
-   ``pip`` will be kept in a separate location from your system Python packages.
+   ``pip`` will be kept in a separate location from your system Python 
+   packages.
 
 2. Get a copy of the source code into the current directory by running
-   ``git clone git://github.com/lisa-lab/pings.git .``
+   ``git clone git://github.com/lisa-lab/pings.git .``.
 
-3. Go to the "server" subdirectory of the Pings source code: ``cd pings/server``.
+3. Go to the "server" subdirectory of the Pings source code:
+   ``cd pings/server``.
 
 4. To install all the Python dependencies for the Pings, run ``pip install
 -r requirements.txt``. This takes a little while.
 
 5. Then run ``python setup.py develop`` to install (in-place) the Pings
-server code itself.
+   server code itself.
 
 6. Run the script ``./download_geoip_db`` to download a copy of the free
-GeoIP database from MaxMind.
+   GeoIP database from MaxMind.
 
 7. Start the Pings servers. In separate windows, run:
    * ``./storage_server development.ini``

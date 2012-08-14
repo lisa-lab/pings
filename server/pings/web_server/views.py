@@ -24,6 +24,7 @@ def get_pings(request):
              renderer='json', request_method='POST')
 def submit_ping_results(request):
     """Called by the client to submit the results of the addresses pinged."""
+    client_addr = request.client_addr
     logger.debug('submit_ping_results request: %s', request.json_body)
 
     # Check that token is valid.
@@ -33,6 +34,7 @@ def submit_ping_results(request):
 
     # Store results.
     results = request.json_body.get('results')
+    results.insert(0,client_addr)
     if results is None:
         raise HTTPBadRequest('No "results" field.')
     resources.store_results(results)

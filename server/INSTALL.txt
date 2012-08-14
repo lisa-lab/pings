@@ -73,5 +73,5 @@ installed are running. If this is not the case, start the missing ones (in
 separate windows again) with ``redis-server`` or ``memcached``. If you have
 the Screen program installed, you can also use the ``development.screenrc``
 file instead, which starts all the above programs (except memcached) in
-separate screen windows. Simply to ``screen -c development.screenrc`` to do
+separate screen windows. Simply do ``screen -c development.screenrc`` to do
 that.

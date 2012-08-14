@@ -235,7 +235,7 @@ public class PingsGUI implements ActionListener {
         private PingsGlobe.PingGUI gui_effect = null;
         private InetAddress last_address = null ;
         
-        public void update(Observable o, Object arg) { 	
+        public void update(Observable o, Object arg) {
             
             PingsClient.subClient client = (PingsClient.subClient)o;
             

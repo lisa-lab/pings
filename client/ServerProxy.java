@@ -2,8 +2,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.InetAddress;
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 import org.json.simple.JSONValue;
 import org.json.simple.JSONObject;
@@ -110,7 +112,11 @@ public class ServerProxy {
         // over using a HashMap<String, Object> here anyways.
         HashMap<String, Object> json_request = new HashMap<String, Object>();
         json_request.put("token", pings.token);
-        json_request.put("results", Arrays.asList(pings.results));
+        List<String> results = new ArrayList<String>();
+        results.add(client_info.getAddress().getHostAddress());
+        results.add(client_info.getInterface());
+        results.addAll(Arrays.asList(pings.results));
+        json_request.put("results", results);
         String nick = client_info.getNickname();
         if (nick != null && nick.length() != 0)
             json_request.put("userid", nick);

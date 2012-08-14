@@ -14,8 +14,8 @@ public class PingsApplet extends JApplet {
 	private static final long serialVersionUID = 2L;
 	
 	//All the variables related to the PingsClient
-	private final String SERVER_HOSTNAME = "pings-prod-lb-838066006.us-east-1.elb.amazonaws.com";
-	private final int SERVER_PORT = 80;
+	private final String SERVER_HOSTNAME = "bart2";//"pings-prod-lb-838066006.us-east-1.elb.amazonaws.com";
+	private final int SERVER_PORT = 6543;
 	private final String initial_nickname = "No Name";
 	public final int nb_clients = 1;
 	public PingsClient[] pings_clients;

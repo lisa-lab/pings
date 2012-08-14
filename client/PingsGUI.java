@@ -235,18 +235,20 @@ public class PingsGUI implements ActionListener {
         private PingsGlobe.PingGUI gui_effect = null;
         private InetAddress last_address = null ;
         
-        public void update(Observable o, Object arg) {
+        public void update(Observable o, Object arg) { 	
             
             PingsClient.subClient client = (PingsClient.subClient)o;
             
-            if (!client.getSourceGeoip().equals(client_geoip_info)) {
-                client_geoip_info = client.getSourceGeoip();
-                //FIXME: get ip from server
-                SwingUtilities.invokeLater( new Runnable() {
-                    public void run() {
-                        updateClientInfoDisplay("", client_geoip_info);
-                    }
-                });
+            if (client.getSourceGeoip() != null) {
+	            if (!client.getSourceGeoip().equals(client_geoip_info)) {
+	                client_geoip_info = client.getSourceGeoip();
+	                //FIXME: get ip from server
+	                SwingUtilities.invokeLater( new Runnable() {
+	                    public void run() {
+	                        updateClientInfoDisplay("", client_geoip_info);
+	                    }
+	                });
+	            }
             }
             
             GeoipInfo current_ping_geoip = client.getCurrentDestGeoip();

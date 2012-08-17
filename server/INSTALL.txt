@@ -17,19 +17,20 @@ On Ubuntu or Debian, you can install all the above by running first:
 ``sudo apt-get install $(< ubuntu-requirements.txt)``
 
 and second either ``sudo apt-get install virtualenvwrapper`` (if running
-Ubuntu 12.04, Debian wheezy or more recent) or ``sudo pip install
-virtualenvwrapper`` (if running an earlier version of Ubuntu or Debian).
+Ubuntu 12.04, Debian wheezy or more recent) or 
+``sudo pip install virtualenvwrapper`` (if running an earlier version of Ubuntu
+or Debian).
 
 You need to source virtualenvwrapper : a simple way to do that is to add to
 the end of your ~/.bashrc :
 ``
 export WORKON_HOME=$HOME/.virtualenvs
-export WORKON_HOME=$HOME/Devel
+export PROJECT_HOME=$HOME/Devel
 source /usr/local/bin/virtualenvwrapper.sh
 ``
 Then close and reopen your terminal.
 
-If the directories speficied by WORKON_HOME and WORKON_HOME don't exist, create
+If the directories speficied by WORKON_HOME and PROJECT_HOME don't exist, create
 them with ``mkdir $WORKON_HOME $PROJECT_HOME``.
 
 If for some reason you can't locate virtualenvwrapper.sh it should be available
@@ -50,10 +51,10 @@ Once you have all the requirements above installed , the rest is pretty simple.
    ``git clone git://github.com/lisa-lab/pings.git .``.
 
 3. Go to the "server" subdirectory of the Pings source code:
-   ``cd pings/server``.
+   ``cd server``.
 
-4. To install all the Python dependencies for the Pings, run ``pip install
--r requirements.txt``. This takes a little while.
+4. To install all the Python dependencies for the Pings, run
+   ``pip install -r requirements.txt``. This takes a little while.
 
 5. Then run ``python setup.py develop`` to install (in-place) the Pings
    server code itself.

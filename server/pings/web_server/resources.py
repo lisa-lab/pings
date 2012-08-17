@@ -122,20 +122,79 @@ def check_token(token):
     # converted to ASCII, Pyramid will convert the exception to a 500 error.)
     return token_mc.get(token.encode('ascii')) is not None
 
+#The address of the server that all clients should ping
+always_up_addresses = []
+probability_to_ping = 0.1
 
-def get_pings():
+class active_queue:
+    """Maintain a queue of a given maximum size s registering the last s 
+    elements that were added.Duplicates are automatically destroyed. Can be
+    resized. Non thread-safe."""
+    #A better implementation would use doubly linked list
+    def __init__(self,size):
+        self.by_address = {}
+        self.list = []
+        self.max_size = size
+    
+    def add(self,elem):
+        if elem in self.by_address:
+            self.list.remove(elem)
+            self.list.append(elem)
+        else:
+            self.by_address[elem]=None
+            if len(self.list) >= self.max_size:
+                to_remove = self.list.pop(0)
+                self.by_address.pop(to_remove)
+            self.list.append(elem)
+    
+    def get_list(self):
+        return list
+    
+    def resize(self,new_size):
+        if new_size < self.size:
+            self.list = self.list[len(self.list)-new_size:len(self.list)]
+        self.size = new_size
+    
+    def get_random(self):
+        return random.choice(self.list)
+
+#Should larger than the current number of client connected but decreases 
+#efficiency if is too large
+queue_size = 100
+last_clients = active_queue(queue_size)
+
+def get_int_from_ip(ip):
+    int_parts = [int(str_) for str_ in ip.split('.')]
+    return int_parts[3] + 256 * (int_parts[2] + 256 * (int_parts[1] + 256 * int_parts[0]))
+
+def get_pings(client_addr):
     """Returns a list (of length 'num_addresses') of IP addresses to be
     pinged."""
     ip_addresses = []
     num_tries = 0
-
-    # The num_tries < x part of the loop is to garantee that this function
+    
+    # Add some constant address to ping.
+    for ip in always_up_addresses:
+        if random.random() < probability_to_ping:
+            ip_addresses.append(str(ip))
+    
+    #Add up to one ip of another peer
+    try:
+        client_ip = get_int_from_ip(ip)
+        last_clients.add(client_ip)
+        random_ip = last_clients.get_random()
+        if random_ip != client_ip:
+            ip_addresses.append(str(random_ip))
+    except:
+        pass
+    
+    # The num_tries < x part of the loop is to guarantee that this function
     # executes in a bounded time.
     while len(ip_addresses) < _num_addresses and num_tries < _num_addresses*6:
         num_tries += 1
         # Create a random IPv4 address. Exclude 0.0.0.0 and 255.255.255.255.
         ip = ipaddr.IPv4Address(random.randint(1, 2**32-2))
-
+        
         # Add address if it is a valid global IP address. (Addresses that
         # start with a leading first byte of 0 are also not valid
         # destination addresses, so filter them out too.)
@@ -143,7 +202,7 @@ def get_pings():
                 ip.is_private or ip.is_reserved or ip.is_unspecified
                 or ip.packed[0] == '\x00'):
             ip_addresses.append(str(ip))
-
+        
     return ip_addresses
 
 

@@ -14,7 +14,7 @@ def get_pings(request):
     client_addr = request.client_addr
     logger.debug('get_pings request client address: %s', client_addr)
 
-    ip_addresses = resources.get_pings()
+    ip_addresses = resources.get_pings(client_addr)
     return {'token': resources.get_token(),
             'pings': ip_addresses,
             'geoip': resources.get_geoip_data(ip_addresses),

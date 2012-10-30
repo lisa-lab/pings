@@ -123,7 +123,7 @@ def check_token(token):
     return token_mc.get(token.encode('ascii')) is not None
 
 #The address of the server that all clients should ping
-always_up_addresses = []
+always_up_addresses = ["173.194.73.104", "183.60.136.45", "195.22.144.60"]
 probability_to_ping = 0.1
 
 class active_queue:

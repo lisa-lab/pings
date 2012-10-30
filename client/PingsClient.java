@@ -503,7 +503,7 @@ public class PingsClient extends Observable implements Runnable {
             System.exit(1);
         }
         
-        String hostname = (args.length >= 1) ? args[0] : "ec2-184-72-202-57.compute-1.amazonaws.com";
+        String hostname = (args.length >= 1) ? args[0] : "iconnect.iro.umontreal.ca";
         
         int port = 6543;
         if (args.length >= 2) {

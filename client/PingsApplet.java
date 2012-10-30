@@ -14,8 +14,8 @@ public class PingsApplet extends JApplet {
 	private static final long serialVersionUID = 2L;
 	
 	//All the variables related to the PingsClient
-	private final String SERVER_HOSTNAME = "iconnect.iro.umontreal.ca";
-	private final int SERVER_PORT = 6543;
+	private String SERVER_HOSTNAME = "iconnect.iro.umontreal.ca";
+	private int SERVER_PORT = 6543;
 	private final String initial_nickname = "No Name";
 	public final int nb_clients = 1;
 	public PingsClient[] pings_clients;
@@ -38,7 +38,15 @@ public class PingsApplet extends JApplet {
 	public void init() {
 		pings_clients = new PingsClient[nb_clients];
 		on_retry_screen = false;
-		
+
+		/* Get hostname and port from the html file.*/
+		String s = getParameter("ping_hostname");
+		if (s != null)
+		    SERVER_HOSTNAME = s;
+		s = getParameter("ping_port");
+		if (s != null)
+		    SERVER_PORT = Integer.parseInt(s);
+
 		//Setup the simulation mode if the argument 'simulation' was set to true
 		try {
 			simulation = Boolean.parseBoolean(getParameter("simulation"));

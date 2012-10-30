@@ -386,7 +386,7 @@ public class PingsClient extends Observable implements Runnable {
                     PingsClient.this.errorConnectingToServer(
                         "A problem happened while trying to connect to the server. The most probable causes are :\n" +
                             "_ a firewall is blocking the connection\n" +
-                            "_ you lost your connection to inernet\n"+
+                            "_ you lost your connection to internet\n"+
                             "_ the server you are trying to join reject the connection");
                     break;
                 }

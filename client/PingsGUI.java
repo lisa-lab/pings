@@ -206,7 +206,7 @@ public class PingsGUI implements ActionListener {
             pings_counter_display.setText("No ping sent yet");
         }
         else {
-            pings_counter_display.setText(pings_counter + " pings sent");
+            pings_counter_display.setText(pings_counter + " ip tested");
         }
         setLayout();
     }

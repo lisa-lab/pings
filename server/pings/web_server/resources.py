@@ -1,4 +1,9 @@
-import os, logging, memcache, ipaddr, random, pygeoip
+import os
+import logging
+import memcache
+import ipaddr
+import random
+import pygeoip
 from gevent_zeromq import zmq
 from . import leaderboards
 
@@ -23,6 +28,7 @@ token_mc = None
 # received.
 token_exptime = None
 
+
 def init_token_memcache(memcache_addresses, exptime):
     global token_mc, token_exptime
     token_mc = memcache.Client(memcache_addresses)
@@ -31,8 +37,10 @@ def init_token_memcache(memcache_addresses, exptime):
 #
 # Zeromq resources
 #
-    
+
 _zmq_context = None
+
+
 def get_zmq_context():
     """Use this to retrieve the Zeromq context. It is created on demand if
     needed."""
@@ -45,6 +53,7 @@ def get_zmq_context():
 # connection to the storage_server.
 zmq_send_results_socket = None
 
+
 def init_storage_zmq(zmq_urls):
     global zmq_send_results_socket
     zmq_send_results_socket = get_zmq_context().socket(zmq.PUSH)
@@ -55,6 +64,7 @@ def init_storage_zmq(zmq_urls):
 
 # Zeromq sockets for leaderboards server
 zmq_incr_score_socket = None
+
 
 def init_rankings_zmq(incr_scores_url, publish_leaderboards_url):
     global zmq_incr_score_socket, leaderboards_proxy
@@ -67,9 +77,10 @@ def init_rankings_zmq(incr_scores_url, publish_leaderboards_url):
 #
 # GeoIP database
 #
-    
+
 # GeoIP object
 geoip = None
+
 
 def init_geoip():
     """Initialize the GeoIP component. We expect the GeoLiteCity.dat file
@@ -88,16 +99,18 @@ class Root(object):
     def __init__(self, request):
         self.request = request
 
-        
+
 #
 # Functions that implement the low-level, core actions of the pings server.
 #
 
 _num_addresses = 15
 
+
 def init_web_service(num_addresses):
     global _num_addresses
     _num_addresses = num_addresses
+
 
 def get_token():
     """Gets a security token. (A random base64 ascii string.)"""
@@ -126,58 +139,61 @@ def check_token(token):
 always_up_addresses = ["173.194.73.104", "183.60.136.45", "195.22.144.60"]
 probability_to_ping = 0.1
 
+
 class active_queue:
-    """Maintain a queue of a given maximum size s registering the last s 
+    """Maintain a queue of a given maximum size s registering the last s
     elements that were added.Duplicates are automatically destroyed. Can be
     resized. Non thread-safe."""
     #A better implementation would use doubly linked list
-    def __init__(self,size):
+    def __init__(self, size):
         self.by_address = {}
         self.list = []
         self.max_size = size
-    
-    def add(self,elem):
+
+    def add(self, elem):
         if elem in self.by_address:
             self.list.remove(elem)
             self.list.append(elem)
         else:
-            self.by_address[elem]=None
+            self.by_address[elem] = None
             if len(self.list) >= self.max_size:
                 to_remove = self.list.pop(0)
                 self.by_address.pop(to_remove)
             self.list.append(elem)
-    
+
     def get_list(self):
         return list
-    
-    def resize(self,new_size):
+
+    def resize(self, new_size):
         if new_size < self.size:
-            self.list = self.list[len(self.list)-new_size:len(self.list)]
+            self.list = self.list[len(self.list) - new_size:len(self.list)]
         self.size = new_size
-    
+
     def get_random(self):
         return random.choice(self.list)
 
-#Should larger than the current number of client connected but decreases 
+#Should larger than the current number of client connected but decreases
 #efficiency if is too large
 queue_size = 100
 last_clients = active_queue(queue_size)
 
+
 def get_int_from_ip(ip):
     int_parts = [int(str_) for str_ in ip.split('.')]
     return int_parts[3] + 256 * (int_parts[2] + 256 * (int_parts[1] + 256 * int_parts[0]))
+
 
 def get_pings(client_addr):
     """Returns a list (of length 'num_addresses') of IP addresses to be
     pinged."""
     ip_addresses = []
     num_tries = 0
-    
+
     # Add some constant address to ping.
     for ip in always_up_addresses:
         if random.random() < probability_to_ping:
             ip_addresses.append(str(ip))
-    
+
     #Add up to one ip of another peer
     try:
         client_ip = get_int_from_ip(ip)
@@ -187,14 +203,14 @@ def get_pings(client_addr):
             ip_addresses.append(str(random_ip))
     except:
         pass
-    
+
     # The num_tries < x part of the loop is to guarantee that this function
     # executes in a bounded time.
-    while len(ip_addresses) < _num_addresses and num_tries < _num_addresses*6:
+    while len(ip_addresses) < _num_addresses and num_tries < _num_addresses * 6:
         num_tries += 1
         # Create a random IPv4 address. Exclude 0.0.0.0 and 255.255.255.255.
-        ip = ipaddr.IPv4Address(random.randint(1, 2**32-2))
-        
+        ip = ipaddr.IPv4Address(random.randint(1, 2 ** 32 - 2))
+
         # Add address if it is a valid global IP address. (Addresses that
         # start with a leading first byte of 0 are also not valid
         # destination addresses, so filter them out too.)
@@ -202,7 +218,7 @@ def get_pings(client_addr):
                 ip.is_private or ip.is_reserved or ip.is_unspecified
                 or ip.packed[0] == '\x00'):
             ip_addresses.append(str(ip))
-        
+
     return ip_addresses
 
 
@@ -219,7 +235,7 @@ def get_geoip_data(ip_addresses):
                 # and returns raw Latin-1 instead (at least for the free
                 # GeoLiteCity.dat data). This makes other module (like json)
                 # that expect Unicode to be used for non-ASCII characters
-                # extremely unhappy. The relevant bug report is here: 
+                # extremely unhappy. The relevant bug report is here:
                 # https://github.com/appliedsec/pygeoip/issues/1
                 #
                 # As a workaround, convert all string values in returned
@@ -250,6 +266,7 @@ def update_leaderboards(userid, results):
     logger.debug('Adding %d to score of user "%s"', points, userid)
     zmq_incr_score_socket.send_json({'userid': userid,
                                      'score_increment': points})
+
 
 def get_leaderboards():
     """Retrieves the latest leaderboards top scores."""

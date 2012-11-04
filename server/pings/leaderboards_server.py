@@ -160,6 +160,9 @@ def main():
     # Instantiate the backend.
     leaderboard = globals()[backend_type.capitalize() + 'Leaderboard']()
 
+    top_scores = leaderboard.get_top_scores(15)
+    zmq_publish_leaderboards_socket.send_json(top_scores)
+    logger.info('Leaderboard: %s', top_scores)
     # Process events.
     while True:
         if zmq_incr_score_socket.poll(1000) != 0:
@@ -169,6 +172,9 @@ def main():
                     logger.debug('Received message: %s', msg)
                     leaderboard.incr_score(msg['userid'],
                                            msg['score_increment'])
+                    top_scores = leaderboard.get_top_scores(15)
+                    zmq_publish_leaderboards_socket.send_json(top_scores)
+                    logger.info('Leaderboard: %s', top_scores)
                 except zmq.ZMQError, e:
                     if e.errno == errno.EAGAIN:
                         break
@@ -177,7 +183,4 @@ def main():
                 except Exception, e:
                     logging.exception('Exception while processing message: %s',
                                       msg)
-
-        top_scores = leaderboard.get_top_scores(15)
-        zmq_publish_leaderboards_socket.send_json(top_scores)
-        logger.debug('Leaderboard: %s', top_scores)
+        #logger.debug('Leaderboard: No new stats during the last seconds')

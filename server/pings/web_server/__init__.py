@@ -1,8 +1,11 @@
 import ConfigParser
 import gevent.monkey
 from pyramid.config import Configurator
-from pings.web_server.resources import (Root, init_storage_zmq, init_token_memcache,
-                                        init_geoip, init_rankings_zmq, init_web_service)
+from pings.web_server.resources import (Root, init_storage_zmq,
+                                        init_token_memcache,
+                                        init_geoip, init_rankings_zmq,
+                                        init_web_service)
+
 
 def _get_config_list(config_parser, section, item_prefix):
     """Supports storing a list of items in a .ini file. Expects a
@@ -28,6 +31,7 @@ def _get_config_list(config_parser, section, item_prefix):
             for name in config_parser.options(section)
             if name == item_prefix or name.startswith(item_prefix + '.')]
 
+
 def main(global_config, **settings):
     """ This function returns the Pings WSGI application."""
     gevent.monkey.patch_all()
@@ -37,13 +41,17 @@ def main(global_config, **settings):
     config_parser.read(global_config['__file__'])
     init_geoip()
     init_web_service(config_parser.getint('web_service', 'num_addresses'))
-    init_token_memcache(_get_config_list(config_parser, 'token_memcache', 'server_address'),
-                        config_parser.getint('token_memcache', 'token_expiration_sec'))
-    init_storage_zmq(_get_config_list(config_parser, 'storage_client', 'server_url'))
-    init_rankings_zmq(config_parser.get('leaderboards_client', 'incr_scores_url'),
-                      config_parser.get('leaderboards_client', 'publish_leaderboards_url'))
+    init_token_memcache(_get_config_list(config_parser,
+                                         'token_memcache', 'server_address'),
+                        config_parser.getint('token_memcache',
+                                             'token_expiration_sec'))
+    init_storage_zmq(_get_config_list(config_parser,
+                                      'storage_client', 'server_url'))
+    init_rankings_zmq(config_parser.get('leaderboards_client',
+                                        'incr_scores_url'),
+                      config_parser.get('leaderboards_client',
+                                        'publish_leaderboards_url'))
 
-    
     # Configure Pyramid app.
     config = Configurator(root_factory=Root, settings=settings)
     config.include('pyramid_jinja2')

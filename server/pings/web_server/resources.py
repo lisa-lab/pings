@@ -115,7 +115,7 @@ def init_web_service(num_addresses):
 def get_token():
     """Gets a security token. (A random base64 ascii string.)"""
     token = os.urandom(16).encode("base64")[:22]
-    token_mc.set(token, True, token_exptime)
+    assert token_mc.set(token, True, token_exptime)
     return token
 
 

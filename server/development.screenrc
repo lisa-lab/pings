@@ -9,7 +9,8 @@ screen -t Redis redis-server
 screen -t Memcache memcached -v -p 11211
 screen -t Storage ./storage_server development.ini
 screen -t Leaderboards ./leaderboards_server development.ini
-screen -t Web paster serve development.ini
+screen -t Web1 paster serve development.ini http_port=6543
+screen -t Web2 paster serve development.ini http_port=6544
 
 # Make sure we have some kind of status line, even if the user
 # doesn't have one set up. Otherwise it's not really obvious

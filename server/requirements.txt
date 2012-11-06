@@ -41,4 +41,4 @@ zope.deprecation==3.5.0
 zope.event==3.5.1
 zope.interface==3.8.0
 umemcache==1.5
-python-ultramemcache==0.0.2
+python-ultramemcached==0.0.2

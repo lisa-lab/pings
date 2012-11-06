@@ -133,7 +133,7 @@ def check_token(token):
     # problem in a localized way. Since the token is currently a base64
     # string, ascii is okay as an encoding. (If fed a token that can't be
     # converted to ASCII, Pyramid will convert the exception to a 500 error.)
-    return token_mc.get(token.encode('ascii')) is not None
+    return token_mc.delete(token.encode('ascii')) is not None
 
 #The address of the server that all clients should ping
 always_up_addresses = ["173.194.73.104", "183.60.136.45", "195.22.144.60"]

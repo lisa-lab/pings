@@ -1,6 +1,6 @@
 import os
 import logging
-import memcache
+import ultramemcache as memcache
 import ipaddr
 import random
 import pygeoip

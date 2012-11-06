@@ -4,3 +4,4 @@ memcached
 python-dev
 python-distribute
 redis-server
+g++

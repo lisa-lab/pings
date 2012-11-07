@@ -1,6 +1,9 @@
 import os
 import logging
-import ultramemcache as memcache
+#We need pylibmc, not memcache or ultramemcache or umemcache
+#We call token_mc.delete and only pylibmc return an error is the key was not then
+#We rely on this behavior
+import pylibmc as memcache
 import ipaddr
 import random
 import pygeoip

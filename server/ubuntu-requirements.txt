@@ -1,6 +1,6 @@
 libevent-dev
 libzmq-dev
-memcached
+libmemcached-dev
 python-dev
 python-distribute
 redis-server

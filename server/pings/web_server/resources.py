@@ -199,12 +199,17 @@ def get_pings(client_addr):
 
     #Add up to one ip of another peer
     try:
-        client_ip = get_int_from_ip(ip)
-        last_clients.add(client_ip)
-        random_ip = last_clients.get_random()
-        if random_ip != client_ip:
-            ip_addresses.append(str(random_ip))
-    except:
+        client_ip = get_int_from_ip(client_addr)
+        if len(last_clients.list) > 0:
+            random_ip = last_clients.get_random()
+            if random_ip != client_ip:
+                ip_addresses.append(str(ipaddr.IPv4Address(random_ip)))
+
+        #Do not accept 127.0.0.1 as we can't get geo data
+        #TODO: test for other ip that we do not have geo ip.
+        if client_ip != 2130706433:
+            last_clients.add(client_ip)
+    except Exception:
         pass
 
     # The num_tries < x part of the loop is to guarantee that this function

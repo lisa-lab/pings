@@ -12,7 +12,14 @@ server allows us to decouple these two parts and have the main server
 continue working at serving pings requests and results even if the
 leaderboards server has trouble keeping up under load."""
 
-import sys, json, zmq, datetime, ConfigParser, logging, errno, redis
+import sys
+import json
+import zmq
+import datetime
+import ConfigParser
+import logging
+import errno
+import redis
 from logging.config import fileConfig
 
 
@@ -41,11 +48,11 @@ class SimpleLeaderboard:
                             key=lambda items: items[1])
         num_entries_to_return = min(num_top_entries, len(all_scores))
         return list(reversed(all_scores[-num_entries_to_return:]))
-    
+
 
 class RedisLeaderboard:
     """Leaderboard that uses Redis as a backend."""
-    def __init__(self, leaderboard_name = 'leaderboard',
+    def __init__(self, leaderboard_name='leaderboard',
                  hostname='localhost', port=6379):
         self.leaderboard_name = leaderboard_name
         self.redis_server = redis.StrictRedis(hostname, port)
@@ -54,15 +61,17 @@ class RedisLeaderboard:
         self.redis_server.delete(self.leaderboard_name)
 
     def incr_score(self, userid, score_increment):
-        self.redis_server.zincrby(self.leaderboard_name, userid, score_increment)
+        self.redis_server.zincrby(self.leaderboard_name, userid,
+             score_increment)
 
     def get_top_scores(self, num_top_entries):
         if num_top_entries == 0:
             return []
         else:
             return self.redis_server.zrevrange(self.leaderboard_name,
-                                               0, num_top_entries-1,
+                                               0, num_top_entries - 1,
                                                withscores=True, score_cast_func = int)
+
 
 class MultiLeaderboard:
     names = ('global', 'weekly', 'daily')
@@ -110,7 +119,8 @@ class MultiLeaderboard:
         self._reset_if_needed()
         results = {}
         for name in self.names:
-            results[name] = self.leaderboards[name].get_top_scores(num_top_entries)
+            results[name] = self.leaderboards[name].get_top_scores(
+                num_top_entries)
         return results
 
 
@@ -135,7 +145,8 @@ def main():
 
     backend_type = config_parser.get(config_section, 'backend')
     incr_scores_port = config_parser.getint(config_section, 'incr_scores_port')
-    publish_leaderboards_port = config_parser.getint(config_section, 'publish_leaderboards_port')
+    publish_leaderboards_port = config_parser.getint(config_section,
+         'publish_leaderboards_port')
     localhost_only = config_parser.getboolean(config_section, 'localhost_only')
     if incr_scores_port == publish_leaderboards_port:
         print >>sys.stderr, ("Error: the 'incr_scores_port and publish_leaderboards_port " +
@@ -144,7 +155,7 @@ def main():
 
     # Create Zeromq sockets.
     zmq_context = zmq.Context()
-    
+
     zmq_incr_score_socket = zmq_context.socket(zmq.PULL)
     if localhost_only:
         zmq_incr_score_socket.bind('tcp://127.0.0.1:%d' % incr_scores_port)
@@ -153,9 +164,11 @@ def main():
 
     zmq_publish_leaderboards_socket = zmq_context.socket(zmq.PUB)
     if localhost_only:
-        zmq_publish_leaderboards_socket.bind('tcp://127.0.0.1:%d' % publish_leaderboards_port)
+        zmq_publish_leaderboards_socket.bind('tcp://127.0.0.1:%d' %
+             publish_leaderboards_port)
     else:
-        zmq_publish_leaderboards_socket.bind('tcp://*:%d' % publish_leaderboards_port)
+        zmq_publish_leaderboards_socket.bind('tcp://*:%d' %
+             publish_leaderboards_port)
 
     # Instantiate the backend.
     leaderboard = globals()[backend_type.capitalize() + 'Leaderboard']()

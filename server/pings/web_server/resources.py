@@ -107,6 +107,10 @@ class Root(object):
 # Functions that implement the low-level, core actions of the pings server.
 #
 
+# This is the total number of ip we try to pings
+# The number of other clients is at max half that
+#  none if less then 9 clients
+#  and less then len(last_clients.list) * probability_to_ping
 _num_addresses = 15
 
 
@@ -138,8 +142,10 @@ def check_token(token):
     # converted to ASCII, Pyramid will convert the exception to a 500 error.)
     return token_mc.delete(token.encode('ascii')) is not None
 
-#The address of the server that all clients should ping
+# The address of the server that all clients should ping
 always_up_addresses = ["173.194.73.104", "183.60.136.45", "195.22.144.60"]
+# The probability that we ping an reference ip and used for the prob to
+# ping past client ip.
 probability_to_ping = 0.1
 
 
@@ -190,31 +196,46 @@ def get_pings(client_addr):
     """Returns a list (of length 'num_addresses') of IP addresses to be
     pinged."""
     ip_addresses = []
-    num_tries = 0
 
-    # Add some constant address to ping.
+    # Add some reference address to ping.
     for ip in always_up_addresses:
         if random.random() < probability_to_ping:
             ip_addresses.append(str(ip))
 
-    #Add up to one ip of another peer
-    try:
-        client_ip = get_int_from_ip(client_addr)
-        if len(last_clients.list) > 0:
-            random_ip = last_clients.get_random()
-            if random_ip != client_ip:
-                ip_addresses.append(str(ipaddr.IPv4Address(random_ip)))
+    # Pings other clients
+    client_ip = get_int_from_ip(client_addr)
+    # Do not ping clients when the cache is too low
+    # Otherwise, this could cause a DDoS attack.
+    if len(last_clients.list) > 9:
+        # Add up to half of _num_addresses from other peers
+        nb_cli_ip = _num_addresses / 2
+        num_tries = 0
+        # If too few past clients, lower the prob to ping them.
+        max_tries = min(_num_addresses,
+                        len(last_clients.list) * probability_to_ping)
+        while len(ip_addresses) < nb_cli_ip and num_tries < max_tries:
+            num_tries += 1
+            try:
+                random_ip = last_clients.get_random()
+                # Don't ping ourself and don't ping twice the same ip
+                if random_ip != client_ip and random_ip not in ip_addresses:
+                    ip_addresses.append(random_ip)
+            except Exception:
+                pass
+    ip_addresses = [str(ipaddr.IPv4Address(ip)) for ip in ip_addresses]
 
-        #Do not accept 127.0.0.1 as we can't get geo data
-        #TODO: test for other ip that we do not have geo ip.
-        if client_ip != 2130706433:
-            last_clients.add(client_ip)
-    except Exception:
-        pass
+    # Add current client to the list of pingable clients.
+    # Do not accept 127.0.0.1 as we can't get geo data
+    # TODO: test for other ip that we do not have geo ip.
+    #       and this cause a crash.
+    if client_ip != 2130706433:
+        last_clients.add(client_ip)
 
-    # The num_tries < x part of the loop is to guarantee that this function
-    # executes in a bounded time.
-    while len(ip_addresses) < _num_addresses and num_tries < _num_addresses * 6:
+    # The num_tries < max_tries part of the loop is to guarantee that
+    # this function executes in a bounded time.
+    num_tries = 0
+    max_tries = _num_addresses * 6
+    while len(ip_addresses) < _num_addresses and num_tries < max_tries:
         num_tries += 1
         # Create a random IPv4 address. Exclude 0.0.0.0 and 255.255.255.255.
         ip = ipaddr.IPv4Address(random.randint(1, 2 ** 32 - 2))

@@ -8,7 +8,7 @@ import ipaddr
 import random
 import pygeoip
 from gevent_zeromq import zmq
-from . import leaderboards
+from pings.web_server import leaderboards
 
 logger = logging.getLogger(__name__)
 

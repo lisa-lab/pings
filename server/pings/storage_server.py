@@ -14,7 +14,16 @@ from daylight saving time.
 To use more than one storage server on a single computer, pass them
 different root directories."""
 
-import sys, os, socket, time, datetime, errno, json, zmq, ConfigParser, logging
+import sys
+import os
+import socket
+import time
+import datetime
+import errno
+import json
+import zmq
+import ConfigParser
+import logging
 from logging.config import fileConfig
 
 logger = logging.getLogger(__name__)
@@ -55,7 +64,8 @@ class OnDemandFile:
             force_new_file = True
 
         if force_new_file or time_period != self.current_time_period:
-            filename = '%02dh%02d-UTC.data' % (dt.hour, int(dt.minute / 10) * 10)
+            filename = '%02dh%02d-UTC.data' % (dt.hour, int(dt.minute / 10) *
+                                               10)
 
             if self.f is not None:
                 self.f.close()
@@ -65,12 +75,12 @@ class OnDemandFile:
             self.current_time_period = time_period
 
         return self.f
-        
+
     def write_msg(self, msg_string):
         """Appends a string message to the file. If the string contains
-        newlines, each is replaced by a space. A different file is used every hour.
-        The format for each line is 'timestamp msg_string' (where timestamp is the
-        number of seconds since the Unix epoch."""
+        newlines, each is replaced by a space. A different file is used every
+        hour. The format for each line is 'timestamp msg_string' (where
+        timestamp is the number of seconds since the Unix epoch."""
         f = self._get_file()
         f.write('%.3f %s\n' % (time.time(), msg_string.replace('\n', ' ')))
 
@@ -78,7 +88,8 @@ class OnDemandFile:
 def main():
     # Parse command line.
     if not (2 <= len(sys.argv) <= 3):
-        print >>sys.stderr, "Usage: storage_server config.ini [output_directory]"
+        msg = "Usage: storage_server config.ini [output_directory]"
+        print >>sys.stderr, msg
         sys.exit(1)
     elif len(sys.argv) == 3:
         root_dir = sys.argv[2]
@@ -100,7 +111,7 @@ def main():
 
     # Create input and output objects.
     f = OnDemandFile(root_dir)
-    
+
     zmq_context = zmq.Context()
     zmq_socket = zmq_context.socket(zmq.PULL)
     if localhost_only:

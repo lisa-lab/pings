@@ -1,4 +1,4 @@
 #!/bin/sh
 # Wrapper for test_server_proxy.py to set classpath.
 
-CLASSPATH="external_libs/json-simple-1.1.1.jar:$CLASPATH" exec jython -i test_server_proxy.py
+CLASSPATH="external_libs/json-simple-1.1.1.jar:$CLASPATH" exec jython test_server_proxy.py $@

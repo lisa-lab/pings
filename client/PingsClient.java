@@ -198,7 +198,7 @@ public class PingsClient extends Observable implements Runnable {
                     LOGGER.log(Level.WARNING, "Exception caught in subClient thread.", e);
 		    // Exponential backoff for consecutive errors
 		    int wait_time = (int)Math.pow(2, consecutive_error_count);
-                    wait_time = min(wait_time, MAX_WAIT_TIME);
+                    wait_time = Math.min(wait_time, MAX_WAIT_TIME);
 
                     if (consecutive_error_count > MAX_ERROR_COUNT) {
                         LOGGER.log(Level.SEVERE, "Too many errors; stopping the subClient thread.");
@@ -413,7 +413,7 @@ public class PingsClient extends Observable implements Runnable {
                 final int total_error_count = m_total_error_count.incrementAndGet();
                     consecutive_error_count++;
                     int wait_time = (int)Math.pow(2, consecutive_error_count);
-		    wait_time = min(wait_time, MAX_WAIT_TIME);
+		    wait_time = Math.min(wait_time, MAX_WAIT_TIME);
 
                     LOGGER.log(Level.WARNING, "Exception caught in PingsClient thread " + pings_index +
 			       " when contacting the server." +

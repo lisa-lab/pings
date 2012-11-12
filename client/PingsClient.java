@@ -351,13 +351,13 @@ public class PingsClient extends Observable implements Runnable {
         }
         
         public void run() {
-            ServerProxy.Pings pings = pings_queue[pings_index];
             while (true) {
                 try {
                     // Submit results to server.
-                    if (pings != null) {
+                    if (pings_queue[pings_index] != null) {
                         LOGGER.info("Submitting results to server.");
-                        m_server_proxy.submitResults(m_client_info, pings);
+                        m_server_proxy.submitResults(m_client_info,
+						     pings_queue[pings_index]);
                     }
                     // Get source geoip data and list of addresses to ping.
                     pings_queue[pings_index] = m_server_proxy.getPings(m_client_info);

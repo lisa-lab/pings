@@ -23,12 +23,16 @@ import javax.swing.SwingUtilities;
  *
  * We give up (and stop the thread) after a total of MAX_ERROR_COUNT errors
  * has occurred. We also do exponential backoff on consecutive errors,
- * to avoid overloading the servers if they have a problem.
+ * to avoid overloading the servers if they have a problem. There is a
+ * maximum wait time of MAX_WAIT_TIME. This is set to wait for 5 days before
+ * stopping to work without user intervention if we need to reboot the server.
  *
  * @author Christian Hudon <chrish@pianocktail.org>
  */
 public class PingsClient extends Observable implements Runnable {
-    public final int MAX_ERROR_COUNT = 20;
+    public final int MAX_WAIT_TIME = 15 * 60; //Max wait time of 15 minutes
+    public final int MAX_ERROR_COUNT = 10 + //It take 10 tries to wait 15 minutes
+                                       120*60/15; //We will try for 5 days before stopping!
     
     // These variables are initialized in the constructor and then
     // only accessed by the subClients thread. No need for locking, etc.
@@ -192,15 +196,21 @@ public class PingsClient extends Observable implements Runnable {
                     consecutive_error_count++;
                     
                     LOGGER.log(Level.WARNING, "Exception caught in subClient thread.", e);
-                    
-                    if (total_error_count > MAX_ERROR_COUNT) {
-                        LOGGER.log(Level.SEVERE, "Too many errors; stopping the thread.");
+		    // Exponential backoff for consecutive errors
+		    int wait_time = (int)Math.pow(2, consecutive_error_count);
+                    wait_time = min(wait_time, MAX_WAIT_TIME);
+
+                    if (consecutive_error_count > MAX_ERROR_COUNT) {
+                        LOGGER.log(Level.SEVERE, "Too many errors; stopping the subClient thread.");
+			PingsClient.this.errorConnectingToServer(
+			    "Too many problem happened." +
+			    "Click try to retry or reload this page to possibly get a newer clients version."
+								 );
                         break;
                     }
                     else {
-                        // Exponential backoff for consecutive errors
                         try {
-                            Thread.sleep(1000 * (int)Math.pow(2, consecutive_error_count));
+                            Thread.sleep(1000 * wait_time);
                         } catch (InterruptedException _) {break;}
                     }
                 }
@@ -339,6 +349,7 @@ public class PingsClient extends Observable implements Runnable {
      * <p>
      * If the Pings at the current index is null then it get replaced by a fresh
      * Pings
+     * It die after having submited/fetch new results once.
      */
     private class SendResultsGetNewAddress extends Thread {
         
@@ -401,11 +412,21 @@ public class PingsClient extends Observable implements Runnable {
                 catch (IOException e) {
                 final int total_error_count = m_total_error_count.incrementAndGet();
                     consecutive_error_count++;
+                    int wait_time = (int)Math.pow(2, consecutive_error_count);
+		    wait_time = min(wait_time, MAX_WAIT_TIME);
+
+                    LOGGER.log(Level.WARNING, "Exception caught in PingsClient thread " + pings_index +
+			       " when contacting the server." +
+			       " This is the " + consecutive_error_count +
+			       " consecutive error count. We will wait " + wait_time +
+			       " seconds before recontacting it again.", e);
                     
-                    LOGGER.log(Level.WARNING, "Exception caught in PingsClient thread.", e);
-                    
-                    if (total_error_count > MAX_ERROR_COUNT) {
+                    if (consecutive_error_count > MAX_ERROR_COUNT) {
                         LOGGER.log(Level.SEVERE, "Too many errors; stopping PingsClient thread.");
+			PingsClient.this.errorConnectingToServer(
+			    "Too many problem happened while trying to connect to the server." +
+			    "Click try to retry or reload this page to possibly get a newer clients version."
+								 );
                         break;
                     }
                     else {
@@ -413,8 +434,13 @@ public class PingsClient extends Observable implements Runnable {
                         // avoid thread busy-loop if IOException keeps getting
                         // raised in call to getPings.
                         try {
-                            Thread.sleep(1000 * (int)Math.pow(2, consecutive_error_count));
+                            Thread.sleep(1000 * wait_time);
                         } catch (InterruptedException e1) {
+			    LOGGER.log(Level.SEVERE,
+				       "SendResultsGetNewAddress got interrupted while waiting. pings_index=" +
+				       pings_index, e1);
+			    PingsClient.this.errorConnectingToServer(
+			        "Interupted while a thread was sleeping.");
                             break;
                         }
                     }

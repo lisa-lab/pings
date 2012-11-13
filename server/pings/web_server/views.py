@@ -31,16 +31,16 @@ def submit_ping_results(request):
 
     # Check that token is valid.
     token = request.json_body.get('token')
-    if not resources.check_token(token):
-        # FB: should return 403 client error
-        raise HTTPForbidden('Invalid or absent token value.')
+    bad_token = resources.check_token(token)
 
     # Store results.
     results = request.json_body.get('results')
-    results.insert(0, client_addr)
     if results is None:
         # FB: should return 400 client error
         raise HTTPBadRequest('No "results" field.')
+    results.insert(0, client_addr)
+    results.append("TOKEN=" + token)
+    results.append("TOKEN_VALID=" + str(bad_token))
     resources.store_results(results)
 
     # Update leaderboards if userid was passed.

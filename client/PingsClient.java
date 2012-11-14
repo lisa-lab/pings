@@ -27,13 +27,17 @@ import javax.swing.SwingUtilities;
  * maximum wait time of MAX_WAIT_TIME. This is set to wait for 5 days before
  * stopping to work without user intervention if we need to reboot the server.
  *
+ * We will wait at least MIN_ROUND_TIME seconds in average before contacting
+ * the server to get new ip to pings. As we have a queue of pings address to
+ * get, each pings slot in the queue need to wait MIN_ROUND_TIME*pings_queue_size.
  * @author Christian Hudon <chrish@pianocktail.org>
  */
 public class PingsClient extends Observable implements Runnable {
-    public final int MAX_WAIT_TIME = 15 * 60; //Max wait time of 15 minutes
+    public final int MAX_WAIT_TIME = 15 * 60; //Max wait time in seconds
     public final int MAX_ERROR_COUNT = 10 + //It take 10 tries to wait 15 minutes
-                                       120*60/15; //We will try for 5 days before stopping!
-    
+	5*24*60/(MAX_WAIT_TIME/60); //We will try for 5 days before stopping!
+    public final long MIN_ROUND_TIME = 1 * 60; //In seconds.
+
     // These variables are initialized in the constructor and then
     // only accessed by the subClients thread. No need for locking, etc.
     private ClientInfo m_client_info;
@@ -366,10 +370,27 @@ public class PingsClient extends Observable implements Runnable {
                 try {
                     // Submit results to server.
                     if (pings_queue[pings_index] != null) {
-                        LOGGER.info("Submitting results to server.");
+                        LOGGER.info("Submitting results to server for pings_index=" +
+				    pings_index);
                         m_server_proxy.submitResults(m_client_info,
 						     pings_queue[pings_index]);
-                    }
+
+			//Wait if needed
+			//elapsed_time and wait_time are in mili-seconds.
+			long elapsed_time = System.currentTimeMillis() - pings_queue[pings_index].time_fetched;
+			long wait_time = (MIN_ROUND_TIME * pings_queue_size * 1000) - elapsed_time ;
+			//LOGGER.info("\nBefore waiting before the next round elapsed_time(ms)" + elapsed_time + " MIN_ROUND_TIME(s)" + MIN_ROUND_TIME);
+			if (wait_time > 0){
+			    LOGGER.info("\nWaiting before the next round for pings_index=" + pings_index +
+					" elapsed_time(ms)=" + elapsed_time +
+					" min_round_time(s)=" + MIN_ROUND_TIME +
+					" wait_time(ms)=" + wait_time);
+			    try {
+				Thread.sleep(wait_time);
+			    } catch (InterruptedException e1) {}
+		    }
+		}
+
                     // Get source geoip data and list of addresses to ping.
                     pings_queue[pings_index] = m_server_proxy.getPings(m_client_info);
                     m_source_geoip.set(m_client_info.getGeoipInfo());

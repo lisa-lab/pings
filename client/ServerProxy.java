@@ -35,6 +35,7 @@ public class ServerProxy {
         public GeoipInfo[] geoip_info;
         public String[] results;
         public String token;
+	public long time_fetched;
     }
 
     /** Exception class for communication errors with the server. */
@@ -73,7 +74,7 @@ public class ServerProxy {
         // Fill Pings instance from JSON results of our request.
         Pings pings = new Pings();
         pings.token = (String)json_result.get("token");
-
+	pings.time_fetched = System.currentTimeMillis();
         JSONArray addresses = (JSONArray)json_result.get("pings");
         int num_addresses = addresses.size();
         pings.addresses = new InetAddress[num_addresses];

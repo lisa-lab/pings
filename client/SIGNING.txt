@@ -12,3 +12,19 @@ How to Sign a Jar File
 You will be prompted for a keystore password when creating the key pair and
 again when signing the jar file. The second step is automated by the Makefile
 target "signedjar".
+
+Doc about the step 1 above:
+https://www.sslshopper.com/article-how-to-create-a-self-signed-certificate-using-java-keytool.html
+
+Code-signing certificate:
+From Oracle doc: http://docs.oracle.com/javase/1.5.0/docs/guide/plugin/developer_guide/rsa_signing.html
+499$: https://www.symantec.com/verisign/code-signing/java?inid=vrsn_symc_cs_sunjava
+299$: https://www.thawte.com/code-signing/index.html
+
+from: https://www.sslshopper.com/java-code-signing-certificates.html
+199$: godaddy https://www.godaddy.com/ssl/code-signing-certificate.aspx?ci=13314
+
+From http://stackoverflow.com/questions/155241/cheapest-java-code-signing-certificate-not-self-signed
+223$: https://www.digicert.com/code-signing/?gclid=CNGLjv3gsbMCFQSf4Aod1k8AFQ
+223$: https://www.globalsign.com/code-signing/java.html?gclid=CJCQhf_gsbMCFQOf4Aod91QArw (recognized by JRE)
+95$: http://codesigning.ksoftware.net/ (Is it trusted by default?)

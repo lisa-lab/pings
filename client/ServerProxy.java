@@ -83,6 +83,7 @@ public class ServerProxy {
             pings.addresses[i] = InetAddress.getByName((String)addresses.get(i));
         }
 
+	// Fill GEOIP data from JSON results
         JSONArray all_geoip_data = (JSONArray)json_result.get("geoip");
         pings.geoip_info = new GeoipInfo[num_addresses];
         if (all_geoip_data != null) {

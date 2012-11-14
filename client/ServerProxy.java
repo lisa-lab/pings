@@ -36,6 +36,7 @@ public class ServerProxy {
         public String[] results;
         public String token;
 	public long time_fetched;
+	public long min_round_time;
     }
 
     /** Exception class for communication errors with the server. */
@@ -97,6 +98,8 @@ public class ServerProxy {
 
         pings.results = new String[num_addresses];
 
+	// Fill min_round_time from JSON results
+	pings.min_round_time = ((java.lang.Long)json_result.get("min_round_time")).longValue();
         return pings;
     }
 

@@ -19,7 +19,8 @@ def get_pings(request):
     return {'token': resources.get_token(),
             'pings': ip_addresses,
             'geoip': resources.get_geoip_data(ip_addresses),
-            'client_geoip': resources.get_geoip_data([client_addr])[0]}
+            'client_geoip': resources.get_geoip_data([client_addr])[0],
+            'min_round_time': 61} # in seconds
 
 
 @view_config(route_name='submit_ping_results',
@@ -29,7 +30,10 @@ def submit_ping_results(request):
     client_addr = request.client_addr
     logger.debug('submit_ping_results request: %s', request.json_body)
 
-    # Check that token is valid.
+    # Check that token is valid.  Always accept it even if it is bad
+    # as otherwise this would block client Also, the "bad" token is
+    # probably caused by a server problem, not people trying to push
+    # wrong results.
     token = request.json_body.get('token')
     bad_token = resources.check_token(token)
 

@@ -378,12 +378,14 @@ public class PingsClient extends Observable implements Runnable {
 			//Wait if needed
 			//elapsed_time and wait_time are in mili-seconds.
 			long elapsed_time = System.currentTimeMillis() - pings_queue[pings_index].time_fetched;
-			long wait_time = (MIN_ROUND_TIME * pings_queue_size * 1000) - elapsed_time ;
-			//LOGGER.info("\nBefore waiting before the next round elapsed_time(ms)" + elapsed_time + " MIN_ROUND_TIME(s)" + MIN_ROUND_TIME);
+			long min_round_time = Math.max(MIN_ROUND_TIME, pings_queue[pings_index].min_round_time);
+			
+			long wait_time = (min_round_time * pings_queue_size * 1000) - elapsed_time ;
+			//LOGGER.info("\nBefore waiting before the next round elapsed_time(ms)" + elapsed_time + " min_round_time(s)" + min_round_time + " " + pings_queue[pings_index].min_round_time);
 			if (wait_time > 0){
 			    LOGGER.info("\nWaiting before the next round for pings_index=" + pings_index +
 					" elapsed_time(ms)=" + elapsed_time +
-					" min_round_time(s)=" + MIN_ROUND_TIME +
+					" min_round_time(s)=" + min_round_time +
 					" wait_time(ms)=" + wait_time);
 			    try {
 				Thread.sleep(wait_time);

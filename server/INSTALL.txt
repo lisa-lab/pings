@@ -76,3 +76,15 @@ the Screen program installed, you can also use the ``development.screenrc``
 file instead, which starts all the above programs (except memcached) in
 separate screen windows. Simply do ``screen -c development.screenrc`` to do
 that.
+
+A faster ipaddr python module:
+
+git clone https://code.google.com/r/fredericbastien-ipaddr-py-speed-up/
+cd fredericbastien-ipaddr-py-speed-up/trunk
+pip install .
+
+
+- modify /etc/memcached.conf to listen to all port if needed AND set iptables rules AND enable them at start up
+#sudo iptables -A INPUT -p tcp --dport 11211 -j ACCEPT -s IP
+#sudo iptables -A INPUT -p tcp --dport 11211 -j ACCEPT -s LOCALHOSTIP
+#sudo iptables -A INPUT -p tcp --dport 11211 -j REJECT

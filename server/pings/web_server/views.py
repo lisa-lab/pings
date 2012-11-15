@@ -55,6 +55,12 @@ def submit_ping_results(request):
     return {'success': True}
 
 
+from pyramid.response import Response
+@view_config(route_name='hello')
+def hello_world(request):
+    return Response('Hello %(name)s!' % request.matchdict)
+
+
 @view_config(route_name='main', renderer='main.jinja2')
 def main(request):
     return resources.get_leaderboards()

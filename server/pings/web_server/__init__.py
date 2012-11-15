@@ -58,6 +58,7 @@ def main(global_config, **settings):
     config.add_route('main', '/')
     config.add_route('get_pings', '/get_pings')
     config.add_route('submit_ping_results', '/submit_ping_results')
+    config.add_route('hello', '/hello/{name}')
     config.scan()
 
     return config.make_wsgi_app()

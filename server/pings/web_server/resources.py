@@ -309,3 +309,7 @@ def store_results(results):
     storage_server instance."""
     logger.debug('Storing ping results: %s', results)
     zmq_send_results_socket.send_json(results)
+
+if __name__ == "__main__":
+    for i in range(10000):
+        get_pings("132.204.25.179")

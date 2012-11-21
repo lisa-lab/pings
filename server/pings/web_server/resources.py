@@ -1,5 +1,7 @@
-import os
 import logging
+import os
+import time
+
 #We need pylibmc, not memcache or ultramemcache or umemcache
 #We call token_mc.delete and only pylibmc return an error is the key was not then
 #We rely on this behavior
@@ -311,5 +313,8 @@ def store_results(results):
     zmq_send_results_socket.send_json(results)
 
 if __name__ == "__main__":
+    t0 = time.time()
     for i in range(10000):
         get_pings("132.204.25.179")
+    t1 = time.time()
+    print "Time per request (ms):", (t1 - t0) / 10000. * 1000

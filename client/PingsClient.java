@@ -367,6 +367,8 @@ public class PingsClient extends Observable implements Runnable {
         
         public void run() {
             while (true) {
+		String catched = "";
+		String err_msg = "";
                 try {
                     // Submit results to server.
                     if (pings_queue[pings_index] != null) {
@@ -409,31 +411,32 @@ public class PingsClient extends Observable implements Runnable {
                     break;
                 }
                 catch (UnknownHostException _) {
-                    PingsClient.this.errorConnectingToServer(
-                        "A problem happened while trying to connect to the server. The most probable causes are :\n" +
-                            "_ you are not connected to the internet\n" +
-                            "_ you have a DNS problem\n" +
-                            "_ the server you are trying to join is not correctly configured");
-                    break;
+		    catched = "UnknownHostException";
+		    err_msg =  "A problem happened while trying to connect to the server. The most probable causes are :\n" +
+			"_ you are not connected to the internet\n" +
+			"_ you have a DNS problem\n" +
+			"_ the server you are trying to join is not correctly configured";
                 }
                 catch (ConnectException e) {
-                    PingsClient.this.errorConnectingToServer(
-                        "A problem happened while trying to connect to the server. The most probable causes are :\n" +
-                            "_ a firewall is blocking the connection\n" +
-                            "_ you lost your connection to internet\n"+
-                            "_ the server you are trying to join reject the connection");
-                    break;
+		    catched = "ConnectException";
+		    err_msg = "A problem happened while trying to connect to the server. The most probable causes are :\n" +
+			"_ a firewall is blocking the connection\n" +
+			"_ you lost your connection to internet\n"+
+			"_ the server you are trying to join reject the connection";
                 }
                 catch(SocketTimeoutException e) {
-                    PingsClient.this.errorConnectingToServer(
-                        "A problem happened while trying to connect to the server . The most probable causes are :\n" +
-                            "_ a firewall is blocking the connection\n" +
-                            "_ the server is overloaded\n" +
-                            "_ the connection is taking too long");
-                    break;
+		    catched = "SocketTimeoutException";
+		    err_msg = "A problem happened while trying to connect to the server . The most probable causes are :\n" +
+			"_ a firewall is blocking the connection\n" +
+			"_ the server is overloaded\n" +
+			"_ the connection is taking too long";
                 }
                 catch (IOException e) {
-                final int total_error_count = m_total_error_count.incrementAndGet();
+		    catched = "IOException";
+		    err_msg =  "Exception caught in PingsClient thread " + pings_index +
+			" when contacting the server.\n" + e;
+		    /*
+		    final int total_error_count = m_total_error_count.incrementAndGet();
                     consecutive_error_count++;
                     int wait_time = (int)Math.pow(2, consecutive_error_count);
 		    wait_time = Math.min(wait_time, MAX_WAIT_TIME);
@@ -445,7 +448,7 @@ public class PingsClient extends Observable implements Runnable {
 			       " seconds before recontacting it again.", e);
                     
                     if (consecutive_error_count > MAX_ERROR_COUNT) {
-                        LOGGER.log(Level.SEVERE, "Too many errors; stopping PingsClient thread.");
+                        LOGGER.log(Level.SEVERE, "Too many errors; stopping PingsClient thread " + pings_index);
 			PingsClient.this.errorConnectingToServer(
 			    "Too many problem happened while trying to connect to the server." +
 			    "Click try to retry or reload this page to possibly get a newer clients version."
@@ -467,7 +470,42 @@ public class PingsClient extends Observable implements Runnable {
                             break;
                         }
                     }
-                }
+		    */
+                } // catch IOException
+		if (catched != ""){
+                    consecutive_error_count++;
+                    int wait_time = (int)Math.pow(2, consecutive_error_count);
+		    wait_time = Math.min(wait_time, MAX_WAIT_TIME);
+		    err_msg += "\n This is the " + consecutive_error_count +
+			       " consecutive error count. We will wait " + wait_time +
+			       " seconds before recontacting it again.";
+                    LOGGER.log(Level.WARNING, err_msg);
+
+                    if (consecutive_error_count > MAX_ERROR_COUNT) {
+                        LOGGER.log(Level.SEVERE,
+				   "Too many errors; stopping PingsClient thread " + pings_index);
+			PingsClient.this.errorConnectingToServer(
+			    "Too many problem happened while trying to connect to the server." +
+			    "Click try to retry or reload this page to possibly get a newer clients version."
+								 );
+                        break;
+                    }
+                    else {
+                        // Exponential backoff for consecutive errors. Also
+                        // avoid thread busy-loop if IOException keeps getting
+                        // raised in call to getPings.
+                        try {
+                            Thread.sleep(1000 * wait_time);
+                        } catch (InterruptedException e1) {
+			    LOGGER.log(Level.SEVERE,
+				       "SendResultsGetNewAddress got interrupted while waiting after an errors. pings_index=" +
+				       pings_index, e1);
+			    PingsClient.this.errorConnectingToServer(
+			        "Interupted while a thread was sleeping.");
+                            break;
+                        }
+                    }
+		}
             }
         }
     }

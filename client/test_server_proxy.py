@@ -39,6 +39,7 @@ print "Time get_results r/s:",  nb_iter / (t1 - t0)
 if True:
     for i in range(nb_iter):
         pings = pings_queue[i]
+        assert len(pings.addresses) > 0
         #print 'Client Geoip', info.getGeoipInfo()
         #print 'Token', pings.token
         #print 'First address', pings.addresses[0]

@@ -8,8 +8,8 @@
 screen -t Redis redis-server
 #started by the os.
 #screen -t Memcache memcached -v -p 11211
-screen -t Storage ./storage_server development.ini
-screen -t Leaderboards ./leaderboards_server development.ini
+screen -t Storage ./storage_server production.ini
+screen -t Leaderboards ./leaderboards_server production.ini
 screen -t Web1 paster serve production.ini http_port=6543
 screen -t Web2 paster serve production.ini http_port=6544
 

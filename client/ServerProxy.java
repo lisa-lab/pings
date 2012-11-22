@@ -24,7 +24,7 @@ public class ServerProxy {
 	
 	/** Timeouts in milliseconds*/
 	private int connection_timeout = 10000;
-	private int socket_operation_timeout = 1000;
+	private int socket_operation_timeout = 10000;
 
     /** Container class for the Pings data. Obtained from getPings().
         To use, fill in the results array with the corresponding Prober

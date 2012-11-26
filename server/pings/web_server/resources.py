@@ -245,9 +245,19 @@ def get_pings(client_addr):
         # Add address if it is a valid global IP address. (Addresses that
         # start with a leading first byte of 0 are also not valid
         # destination addresses, so filter them out too.)
-        if not (ip.is_link_local or ip.is_loopback or ip.is_multicast or
-                ip.is_private or ip.is_reserved or ip.is_unspecified
-                or ip.packed[0] == '\x00'):
+#        if not (ip.is_link_local or ip.is_loopback or ip.is_multicast or
+#                ip.is_private or ip.is_reserved or ip.is_unspecified
+#                or ip.packed[0] == '\x00'):
+
+        if not ((2851995648 <= ip._ip <= 28520611830) or  # is_link_local
+                (2130706432 <= ip._ip <= 2147483647) or  # is_loopback
+                (3758096384 <= ip._ip <= 4026531839) or  # is_multicast
+                ((167772160 <= ip._ip <= 184549375) or
+                 (2886729728 <= ip._ip <= 2887778303) or
+                 (3232235520 <= ip._ip <= 3232301055)) or  # is_private
+                (4026531840 <= ip._ip <= 4294967295) or  # is_reserved
+                (ip._ip == 0) or  #  is_unspecified
+                ip.packed[0] == '\x00'):
             ip_addresses.append(str(ip))
 
     return ip_addresses

@@ -22,7 +22,7 @@ mock==0.8.0
 pastegevent==0.1
 py==1.4.7
 pycrypto==2.6
-pygeoip==0.2.2
+pygeoip==0.2.4
 pyramid==1.2
 pyramid-debugtoolbar==0.9.9.1
 pyramid-jinja2==1.3

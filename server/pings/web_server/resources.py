@@ -271,8 +271,11 @@ def get_geoip_data(ip_addresses):
         try:
             geoip_data = geoip.record_by_addr(address)
 
-# The bug is fixed in pygeoip 0.2.4, but not in 0.2.5
-#            if geoip_data is not None:
+# pygeoip 0.2.2 need the following bug fix
+#         0.2.3 crash when we load the data file
+#         0.2.4 need the fix or the server err. With the fix 230 r/s
+#         0.2.5 need the fix or the client crash. With the fix 210 r/s
+            if geoip_data is not None:
                 # The pygeoip library doesn't use Unicode for string values
                 # and returns raw Latin-1 instead (at least for the free
                 # GeoLiteCity.dat data). This makes other module (like json)
@@ -282,9 +285,9 @@ def get_geoip_data(ip_addresses):
                 #
                 # As a workaround, convert all string values in returned
                 # dict from Latin-1 to Unicode.
-#                for key, value in geoip_data.iteritems():
-#                    if isinstance(value, str):
-#                        geoip_data[key] = value.decode('latin-1')
+                for key, value in geoip_data.iteritems():
+                    if isinstance(value, str):
+                        geoip_data[key] = value.decode('latin-1')
 
         except Exception, e:
             logger.exception('Exception during lookup of geoip data ' +

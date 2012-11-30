@@ -272,8 +272,8 @@ def get_geoip_data(ip_addresses):
             geoip_data = geoip.record_by_addr(address)
 
 # pygeoip 0.2.2 need the following bug fix
-#         0.2.3 crash when we load the data file
-#         0.2.4 need the fix or the server err. With the fix 230 r/s
+#         0.2.3 crash when we load the data file (DON'T USE)
+#         0.2.4 withoutthe fix the server err. With the fix, we never find the info. (DON'T USE)
 #         0.2.5 need the fix or the client crash. With the fix 210 r/s
             if geoip_data is not None:
                 # The pygeoip library doesn't use Unicode for string values

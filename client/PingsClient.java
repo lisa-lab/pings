@@ -31,6 +31,10 @@ import javax.swing.SwingUtilities;
  * We will wait at least MIN_ROUND_TIME seconds in average before contacting
  * the server to get new ip to pings. As we have a queue of pings address to
  * get, each pings slot in the queue need to wait MIN_ROUND_TIME*pings_queue_size.
+ * We also add a random number of up to 10% of the server MIN_ROUND_TIME to
+ * help spread the users in case they all start at the same time.
+ * We also multiple the wait_time by WAIT_TIME_BOOST to help load testing
+ * wait_time is the time we should wait normally.
  * @author Christian Hudon <chrish@pianocktail.org>
  */
 public class PingsClient extends Observable implements Runnable {
@@ -38,6 +42,7 @@ public class PingsClient extends Observable implements Runnable {
     public final int MAX_ERROR_COUNT = 10 + //It take 10 tries to wait 15 minutes
 	5*24*60/(MAX_WAIT_TIME/60); //We will try for 5 days before stopping!
     public final long MIN_ROUND_TIME = 1 * 60; //In seconds.
+    public double WAIT_TIME_BOOST = 1; //default to 1, no change.
 
     // These variables are initialized in the constructor and then
     // only accessed by the subClients thread. No need for locking, etc.
@@ -383,9 +388,9 @@ public class PingsClient extends Observable implements Runnable {
 			//elapsed_time and wait_time are in mili-seconds.
 			long elapsed_time = System.currentTimeMillis() - pings_queue[pings_index].time_fetched;
 			long min_round_time = Math.max(MIN_ROUND_TIME, pings_queue[pings_index].min_round_time);
-			min_round_time += 0.5 * this.rand.nextInt((int)min_round_time);
+			min_round_time += 0.1 * this.rand.nextInt((int)min_round_time);
 			long wait_time = (min_round_time * pings_queue_size * 1000) - elapsed_time ;
-			//LOGGER.info("\nBefore waiting before the next round elapsed_time(ms)" + elapsed_time + " min_round_time(s)" + min_round_time + " " + pings_queue[pings_index].min_round_time);
+			wait_time = (long)(wait_time * WAIT_TIME_BOOST);
 			if (wait_time > 0){
 			    LOGGER.info("\nWaiting before the next round for pings_index=" + pings_index +
 					" elapsed_time(ms)=" + elapsed_time +

@@ -22,6 +22,7 @@ JDOCFLAGS = -private -d $(JAVADOC_OUTPUT_DIR) -classpath .:$(EXTERNAL_LIBS) -sou
 JAR = jar
 JARSIGNER = jarsigner
 PINGS_KEYSTORE = ~/pings.keystore
+KEYSTORE_ALIAS = sign_jar
 
 .SUFFIXES: .java .class
 
@@ -54,7 +55,7 @@ jar: compile
 	$(JAR) i pings.jar
 
 signedjar: jar
-	$(JARSIGNER) -keystore $(PINGS_KEYSTORE) pings.jar sign_jar
+	$(JARSIGNER) -keystore $(PINGS_KEYSTORE) pings.jar $(KEYSTORE_ALIAS)
 
 clean:
 	$(RM) -vrf  $(ADDITIONAL_DIR_TO_CLEAN)

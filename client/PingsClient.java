@@ -557,51 +557,98 @@ public class PingsClient extends Observable implements Runnable {
     
         
     public static void main(String args[]) throws InterruptedException {
-        if (args.length > 2) {
-            System.err.println("Usage: PingsClient [hostname [port]]");
-            System.exit(1);
-        }
-        
-        String hostname = (args.length >= 1) ? args[0] : "iconnect.iro.umontreal.ca";
-        
+	String hostname = "iconnect.iro.umontreal.ca";
         int port = 6543;
-        if (args.length >= 2) {
-            try {
-                port = Integer.parseInt(args[1]);
-            }
-            catch (NumberFormatException e) {
-                System.err.println("Error: port argument must be an integer.");
-                System.exit(2);
-            }
-        }
+	boolean null_prober = false;
+	boolean icmp_prober = false;
+	int nb_clients = 1;
+
+	//Parse input
+	for (int i = 0 ; i < args.length ; i++) {
+	    if (args[i].equals("--null")) {
+		null_prober = true;
+	    } else if (args[i].equals("--icmp")) {
+		icmp_prober = true;
+	    } else if (args[i].startsWith("-n=")) {
+		try {
+		    nb_clients = Integer.parseInt(args[i].substring(3));
+		}
+		catch (NumberFormatException e) {
+		    System.err.println("Error: port argument must be an integer.");
+		    System.exit(2);
+		}
+
+	    } else if ((args.length - i) > 2) {
+		System.err.println("Usage: PingsClient [-n=N] [--{null,icmp}] [hostname [port]]");
+		System.exit(1);
+	    } else {
+		hostname = args[i];
+		if ((i + 1) < args.length){
+		    try {
+			port = Integer.parseInt(args[i + 1]);
+		    }
+		    catch (NumberFormatException e) {
+			System.err.println("Error: port argument must be an integer.");
+			System.exit(2);
+		    }
+		}
+		break;
+	    }
+	}
+	System.out.println("Hostname: " + hostname);
+	System.out.println("Port:" + port);
+	System.out.println("Nb clients:" + nb_clients);
+	if (null_prober && icmp_prober) {
+		System.err.println("Can only use one of --null and --icmp parameter");
+		System.exit(1);
+	}
+        // 1 clients 4587M virtual 34M real
+	// 10 clients 6497M virtual 60M real
+	// 20 clients 6645M virtual 99M real
+	// 20 clients 6800M virtual 146M real
+	// 50 clients 6993M virtual 124M real
+	// 50 clients Out of memory on 8G computers. even with ulimit -v unlimited
+
+        PingsClient[] clients = new PingsClient[nb_clients];
+	for (int i = 0 ; i < nb_clients ; i++) {
+	    clients[i] = new PingsClient(hostname, port);
+	    //Do only the ICMP ping as this is faster
+	    for(int j = 0 ; j < clients[i].subClients_pool.length ; j++){
+		PingsClient c = clients[i];
+		if (null_prober)
+		    c.subClients_pool[j].prober = new NullProber();
+		if (icmp_prober)
+		    c.subClients_pool[j].prober = new IcmpPinger(c.m_client_info);
+	    }
+	    clients[i].setNickname("yoda");
+	    clients[i].run();
+	}
+        if (false)
+	    for (int idx_client = 0 ; idx_client < nb_clients ; idx_client++) {
+		PingsClient client = clients[idx_client];
+		subClient[] copy = client.getSubClientsPoolCopy();
+		for (int i = 0 ; i < copy.length ; i++ ) {
+		    copy[i].addObserver(new Observer() {
+			    public void update(Observable o, Object arg) {
+				subClient client = (subClient)o;
+
+				InetAddress current_ping_dest = client.getCurrentPingDest();
+				if (current_ping_dest != null)
+				    System.out.printf("Current ping dest: %s\n",
+						      current_ping_dest.toString());
+
+				GeoipInfo dest_geoip_info = client.getCurrentDestGeoip();
+				if (dest_geoip_info != null) {
+				    System.out.printf("Long: %f; lat: %f; city: %s; country: %s\n",
+						      dest_geoip_info.longitude,
+						      dest_geoip_info.latitude,
+						      dest_geoip_info.city,
+						      dest_geoip_info.country);
+				}
+			    }
+			});
+		}
+	    }
         
-        PingsClient client = new PingsClient(hostname, port);
-        client.setNickname("yoda");
-        
-        subClient[] copy = client.getSubClientsPoolCopy();
-        
-        for (int i = 0 ; i < copy.length ; i++ ) {
-            copy[i].addObserver(new Observer() {
-                public void update(Observable o, Object arg) {
-                    subClient client = (subClient)o;
-                    
-                    InetAddress current_ping_dest = client.getCurrentPingDest();
-                    if (current_ping_dest != null)
-                        System.out.printf("Current ping dest: %s\n",
-                                          current_ping_dest.toString());
-                    
-                    GeoipInfo dest_geoip_info = client.getCurrentDestGeoip();
-                    if (dest_geoip_info != null) {
-                        System.out.printf("Long: %f; lat: %f; city: %s; country: %s\n",
-                                          dest_geoip_info.longitude,
-                                          dest_geoip_info.latitude,
-                                          dest_geoip_info.city,
-                                          dest_geoip_info.country);
-                    }
-                }
-            });
-        }
-        
-        client.run();
     }
 }

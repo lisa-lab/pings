@@ -10,6 +10,7 @@ import java.util.Observer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Random;
 
 import javax.swing.SwingUtilities;
 
@@ -359,6 +360,7 @@ public class PingsClient extends Observable implements Runnable {
         
         private int pings_index;
         private int consecutive_error_count = 0;
+	private Random rand = new Random();
         
         public SendResultsGetNewAddress(int pings_index) {
             this.pings_index = pings_index;
@@ -381,13 +383,14 @@ public class PingsClient extends Observable implements Runnable {
 			//elapsed_time and wait_time are in mili-seconds.
 			long elapsed_time = System.currentTimeMillis() - pings_queue[pings_index].time_fetched;
 			long min_round_time = Math.max(MIN_ROUND_TIME, pings_queue[pings_index].min_round_time);
-			
+			min_round_time += 0.5 * this.rand.nextInt((int)min_round_time);
 			long wait_time = (min_round_time * pings_queue_size * 1000) - elapsed_time ;
 			//LOGGER.info("\nBefore waiting before the next round elapsed_time(ms)" + elapsed_time + " min_round_time(s)" + min_round_time + " " + pings_queue[pings_index].min_round_time);
 			if (wait_time > 0){
 			    LOGGER.info("\nWaiting before the next round for pings_index=" + pings_index +
 					" elapsed_time(ms)=" + elapsed_time +
 					" min_round_time(s)=" + min_round_time +
+					" pings_queue_size=" + pings_queue_size +
 					" wait_time(ms)=" + wait_time);
 			    try {
 				Thread.sleep(wait_time);

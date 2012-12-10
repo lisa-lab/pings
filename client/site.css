@@ -1,0 +1,125 @@
+body {
+  margin: auto 10px auto 10px; 
+  background: #eef;
+  color: #080808;
+  font: Arial, Helvetica, sans-serif;
+  font-size: 11pt;
+  background-image: linear-gradient(bottom, #e7e7f7 78%, #f2f2ff 35%);
+  background-image: -o-linear-gradient(bottom, #e7e7f7 78%, #f2f2ff 35%);
+  background-image: -moz-linear-gradient(bottom, #e7e7f7 78%, #f2f2ff 35%);
+  background-image: -webkit-linear-gradient(bottom, #e7e7f7 78%, #f2f2ff 35%);
+  background-image: -ms-linear-gradient(bottom, #e7e7f7 78%, #f2f2ff 35%);
+  background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0.78, #e7e7f7), color-stop(0.35, #f2f2ff));
+}
+
+applet {
+  align: center;
+  width: 800px;
+  height: 450px
+}
+
+a:link, a:visited {
+  color: #e35a00;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+a img {
+  border: none;
+}
+
+.title {
+  padding-top: 22px;
+  font-size: 2.4em;
+  width: 600px;
+  float: left;
+  height: 66px;
+  color: #111;
+  letter-spacing: 1px;
+}
+
+.title sup {
+  font-size: 0.5em;
+  color: #666;
+  font-weight: bold;
+}
+
+.main_div {
+  width: 1010px;
+  text-align: left;
+  border: 1px solid #ccc;
+  padding: 0px 10px;
+  background: #fff;
+  margin-top: 5px;
+}
+
+p {
+  margin: 0px 10px;
+  line-height: 22px;
+  text-align: justify;
+}
+
+.codeblock {
+  font-family: "American Typewriter", Courier, "Courier New", monospace;
+  border: 1px dotted #f88;
+  background: #fee;
+  padding: 4px;
+  margin: 10px 30px;
+  width: 80%;
+  font-size: 0.9em;
+}
+
+.nav {
+	margin:0;
+	padding:0;
+	background: #6D7D57 /*#808259*/;
+	width: 100%;
+	float:left;
+	border:1px solid #42432d;
+	border-width:1px 0 1px 1px;
+}
+.nav li {
+	display:inline;
+	padding:0;
+	margin:0;
+}
+.nav a:link,
+.nav a:visited {
+	color:#000;
+	background: #ABC389 /*#b2b580*/;
+	padding:10px 40px 10px 10px;
+	float:left;
+	width:auto;
+	border-right:1px solid #42432d;
+	text-decoration:none;
+	font:bold 1em/1em Arial, Helvetica, sans-serif;
+	text-transform: uppercase;
+	text-shadow: 2px 2px 2px #666;
+}
+.nav a:hover {
+	color:#fff;
+	background: #6D7D57 /*#727454*/;
+}
+
+.nav a:active {
+	background: #e35a00;
+	color: #fff;
+}
+
+.navsel a,
+.navsel a:link,
+.navsel a:hover,
+.navsel a:visited {
+	background:#e35a00;
+	color:#fff;
+	text-shadow:none;
+}
+
+h2 {
+  background: #E8ECF0;
+  border: 1px solid #7088B0;
+  color: #036;
+  font: bold 110% Arial,Helvetica,sans-serif;
+  margin: 35px 0px 10px 0px;
+  padding: 3px 10px;
+}

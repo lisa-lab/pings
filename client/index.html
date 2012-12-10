@@ -4,78 +4,100 @@
 <html lang="en">
 
  <head>
-  <title>Pings Applet (jar test)</title>
+  <title>Home - The Internet Connectome project</title>
   <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
-  <style type="text/css">
-   html,body { margin:auto 10px auto 10px; 
-               background: black;
-               color:white; }
-   applet { align:center; width:700px;height:500px }
-   a:link{color:gray}
-   a:visited{color:orange}
-
-  </style>
+  <link href="site.css" media="all" type="text/css" rel="stylesheet">
  </head>
- 
+
  <body>
    <center>
-     <div style="width:60%" align="left">
-   <font size="-2">
-     <h1 style="color:green">The Internet Connectome Project Test Page</h1>
+     <div class="main_div">
 
-     <h2>Instructions</h2>
+<div class="title">The Internet Connectome Project<sup>BETA</sup></div>
 
-     <ul>
-       <li><b>Fill the name box with a nick name</b>. The nickname is used
-         to collect the effort statistics. Use a common nickname if you want
-         to form teams (be careful, it's case-sensitive!).</li>
+<a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en" target="_blank"><img style="float: right; padding-left: 25px;" src="http://www.iro.umontreal.ca/images/neurone_chip2.jpg" height="75"></a>
+<a href="http://www.ubi.com" target="_blank"><img style="float: right; padding-left: 25px;" src="http://upload.wikimedia.org/wikipedia/en/thumb/8/8c/Ubisoft.png/200px-Ubisoft.png" height="75"></a>
 
-       <li><b>Let it run for a while</b>. Let the applet run for a while so
-         that it can gather lots of information. The more we have, the
-         better!</li>
+<div style="clear: both;"></div>
 
-<!-- http://iconnect.iro.umontreal.ca:6543 is the generator, but it don't support a high load.-->
-       <li><b><a href="http://iconnect.iro.umontreal.ca/leaderboard.html"
-       target=_blank>Check the leaderboard</a>!</b></li>
+<ul class="nav">
+  <li class="navsel"><a href="index.html">Home</a></li>
+  <li><a href="about.html">About</a></li>
+  <li><a href="data.html">Get the data</a></li>
+  <li><a href="https://github.com/lisa-lab/pings" target="_blank">Get the source</a></li>
+</ul>
 
-       <li><b>A signed applet</b>. The applet is digitally signed by the
-       Université de Montréal so that Java can access the platform-specific
-       ping and traceroute commands.</li>
-         
-       <li><b>Help us debug!</b> This applet is still in its
-         prototypical stages, and bugs may occur. One way to trap Java's
-         debug output is to redirect both standard output and standard
-         error to a file, using, for example, a command-line such
-         as<br><br>
+<br /><br />
 
-         <pre>
-           firefox http://iconnect.iro.umontreal.ca/secret/applet_jar.html &> ping.debug.log
-         </pre>
+<h2>Welcome to the Internet Connectome project</h2>
 
-         You can send us (at <a href="mailto:iconnectome@googlegroups.com"
-         title="Internet Connectome Applet">connectome@googlegroups.com</a>)
-         the log if something goes wrong, or if you have suggestions,
-         questions, etc.</li>
-     </ul>
-     <br>
-     <br>
+<p>
+<img style="float: right; height: 145px; padding: 0px 12px;" src="images/internet_study_map.gif">
+
+<b>Nowadays, console and web applications need information about their users Internet connection in relation to other machines distributed all around the world.</b>
+<br />
+Using the "PING" applet, you can help us construct a <i>connectome</i> of the internet, i.e. a topology of network connectivity.
+<br />
+As a bonus after you have collected 500+ connections, we will tell you where you fit according to our model.
+<br />
+The project originates from a collaboration between <a href="http://www.ubi.com">Ubisoft</a> and the <a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en">LISA lab</a> at Université de Montréal.<br />
+We target applications in advanced match-making, video on demand and multiplayer game experience.
+<br /> <a href="about.html">Learn more »</a>
+</p>
 
 
-     <h2>The Applet</h2>
+<h2>Start pinging now! <sup>*</sup></h2>
 
-       <applet code="PingsApplet.class" archive="pings.jar">
+<p>
+1. Make sure to enter a valid identifier <b>(nickname)</b> in order to appear in the <a href="leaderboard.html" target=_blank>leaderboard</a>.<br />
+2. Let the applet run for a while. The more data you help us collect, the better!<br />
+3. After 500 connections from all around the world, <b>we will display a detailed analysis of your Internet access</b>.
+</p><br />
+
+      <center><applet code="PingsApplet.class" archive="pings.jar">
 	 <param name="ping_hostname" value="iconnect.iro.umontreal.ca">
 	 <param name="ping_port" value="6543">
          Java failed to load
-       </applet>
+       </applet></center>
 
-     <br>
-     <br>
-     <br>
+<br />
+* This Java applet is digitally signed by the Université de Montréal. Click "Run" to authorize access to network functions.
+No personal data will be collected.
 
-   </font>
-   </div>
-   </center>
- </body>
+
+<h2>Need help?</h2>
+
+<p>
+As our applet is still in a prototypical stage, bugs may occur.
+<br />
+Don't hesitate to contact us at <a href="mailto:iconnectome@googlegroups.com" title="Internet Connectome Applet">iconnectome@googlegroups.com</a> if you have any question or suggestion.
+<br /><br />
+If you encounter a reproducible bug, you can help us fix it by issuing the following command:
+</p>
+
+<div class="codeblock">firefox http://iconnect.iro.umontreal.ca/secret/applet_jar.html &> ping.log</div>
+
+<p>and <a href="mailto:iconnectome@googlegroups.com" title="Bug report">send us</a> the resulting <i>ping.log</i> file along with information about your OS, browser and Java environment.</p>
+
+
+<h2>Sponsored by</h2>
+
+<center>
+<a href="http://www.umontreal.ca" target="_blank"><img style="padding: 5px 25px;" src="images/UMontreal.jpg" height="65"></a>
+<a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en" target="_blank"><img style="padding: 0 15px 0 25px;" src="images/neurone_chip2.jpg" height="75"></a>
+<a href="http://www.ubi.com" target="_blank"><img style="padding: 0 25px;" src="images/Ubisoft.png" height="75"></a>
+<a href="http://www.nserc-crsng.gc.ca/index_eng.asp" target="_blank"><img style="padding: 0 25px;" src="images/NSERC_logo.png" height="75"></a>
+<br /><p style="text-align: center; border-top: 1px dotted #aaa; margin-top: 13px; padding-top: 6px;">
+The Internet Connectome Project | Montréal | Québec<br />
+Copyright © 2012 All rights reserved.
+</p>
+</center>
+
+<br />
+</div>
+</center>
+
+<br />
+</body>
  
 </html>

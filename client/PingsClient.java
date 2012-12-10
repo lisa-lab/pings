@@ -438,42 +438,6 @@ public class PingsClient extends Observable implements Runnable {
 		    catched = "IOException";
 		    err_msg =  "Exception caught in PingsClient thread " + pings_index +
 			" when contacting the server.\n" + e;
-		    /*
-		    final int total_error_count = m_total_error_count.incrementAndGet();
-                    consecutive_error_count++;
-                    int wait_time = (int)Math.pow(2, consecutive_error_count);
-		    wait_time = Math.min(wait_time, MAX_WAIT_TIME);
-
-                    LOGGER.log(Level.WARNING, "Exception caught in PingsClient thread " + pings_index +
-			       " when contacting the server." +
-			       " This is the " + consecutive_error_count +
-			       " consecutive error count. We will wait " + wait_time +
-			       " seconds before recontacting it again.", e);
-                    
-                    if (consecutive_error_count > MAX_ERROR_COUNT) {
-                        LOGGER.log(Level.SEVERE, "Too many errors; stopping PingsClient thread " + pings_index);
-			PingsClient.this.errorConnectingToServer(
-			    "Too many problem happened while trying to connect to the server." +
-			    "Click try to retry or reload this page to possibly get a newer clients version."
-								 );
-                        break;
-                    }
-                    else {
-                        // Exponential backoff for consecutive errors. Also
-                        // avoid thread busy-loop if IOException keeps getting
-                        // raised in call to getPings.
-                        try {
-                            Thread.sleep(1000 * wait_time);
-                        } catch (InterruptedException e1) {
-			    LOGGER.log(Level.SEVERE,
-				       "SendResultsGetNewAddress got interrupted while waiting. pings_index=" +
-				       pings_index, e1);
-			    PingsClient.this.errorConnectingToServer(
-			        "Interupted while a thread was sleeping.");
-                            break;
-                        }
-                    }
-		    */
                 } // catch IOException
 		if (catched != ""){
                     consecutive_error_count++;

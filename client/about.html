@@ -32,33 +32,38 @@
 <h2>About the Internet Connectome project</h2>
 
 <p>
-To provide superior user experience, many applications need to know a lot about the users' Internet
-connections. Not only must the applications know the connection characteristics (such as bandwidth
-and latency) between the users and the servers, they sometimes also need to know about the
-connections between the users themselves. An example of application where it is mostly the
+To provide superior user experience, many applications need to know a lot about the characteristics of 
+the user's Internet
+connection, such as bandwidth and latency. When the applications are peer-to-peer, i.e., with messages
+flowing directly between users rather than through a server, it is important to estimate these 
+speed and delay characteristics for potential connections <bf>between users</bf>.
+An example of application where it is mostly the
 connections between the users and the servers that matter is video on demand. The servers can tailor
 the videos, adapting bit-rate and resolution to yield the most enjoyable experience possible given the
-user's connection. An other example is given by multi-player games where one of the players in a party
+user's connection. Another example is given by multi-player games where one of the players in a party
 will serve as the game host, offering his computer or game console as a temporary game server. In this
 setting, the quality of the connection between the users in the same party (connecting to the same user-hosted
 game server) will matter a lot more than the connection to the server.
 <br /><br />
 However, the Internet, by its very nature, is particularly difficult to observe and measure as a whole.
 First, the Internet is not under a central authority, but instead is composed of a rather ad-hoc assembly
-of many sub-networks with different characteristics, each being cared of by different entities, all rather
+of many sub-networks with different characteristics, each being cared for by different entities, all rather
 reluctant to share their knowledge of their corner of the Internet. Second, the very scale of the Internet
 is, in itself, a major (but not insuperable) obstacle to any comprehensive survey. Any effort to map the
-topology of the Internet, measure its different local characteristics such as latency and bandwidth, is
+topology of the Internet, measure its different local characteristics such as latency and bandwidth between
+addresses, is
 impossible to complete using a few computers or with the help of only a handful of volunteers.
 <br /><br />
 This is why crowd-sourcing our survey of the Internet (in a way we will discuss further in just a
 moment) appears to be the only viable solution. By the individually small effort of a great number of
-people, great things can be achieved! Indeed, the more volunteers from different locations in the world
-will join the survey, the better and the more reliable the collected data will be. Ultimately, the collected
-data has the potential to benefit the whole Internet community by letting us, of the <a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en">Laboratoire
-d'informatique des systèmes adaptatifs</a> (LISA), at <a href="http://www.umontreal.ca">Université de Montréal</a> (or, for that matter, any
-other researchers, as the collected data is to be under a license that guarantees free access to the data)
-devise better algorithms that will help deliver, in the end, a better user experience for all kinds of
+people, great things can be achieved! Indeed, as more volunteers from different locations in the world
+join the survey, better and the more reliable data get collected data. The data will be made public
+and available to researchers and developers anywhere in the world. Ultimately, the collected
+data has the potential to benefit the whole Internet community, and our goal at
+the <a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en">machine learning
+lab</a> (LISA), at <a href="http://www.umontreal.ca">Université de Montréal</a> 
+is to devise and train models that will predict internet latency between
+pairs of Internet addresses, and thus help deliver, in the end, a better user experience for all kinds of
 applications.
 </p>
 
@@ -66,15 +71,16 @@ applications.
 <p>
 As hinted in the introduction, the goal of the survey is to map the topology of the Internet as well as
 measuring, as accurately as possible, the latency between any two end points of the Internet where
-players could be. The topology (the way computers and routers are connected together) is to be
+users could be. The topology (the way computers and routers are connected together) is to be
 surveyed using the traceroute tool. The latency is to be estimated using two types of pings. The first
 ping method is the classical ping that uses the ICMP protocol to estimate the round-trip time between
 two computers, that is, the time a message takes to reach a remote destination and come back to the
 sender. The second ping method is the non-traditional TCP ping that uses the TCP protocol to estimate
 the time it takes to establish a TCP connection between the local host and the remote destination. Both
-pings methods gather different type information, and both are useful in their own way.
+ping methods gather different type information, and both are useful in their own way.
 <br /><br />
-Volunteers can participate to the survey quite easily by going to our <a href="index.html">Internet survey web page</a> and by
+Volunteers can participate to the survey quite easily by going to our 
+<a href="index.html">Internet survey web page</a> and by
 launching a digitally-signed Java applet (the applet is digitally signed because it needs to access the
 system-specific ping and traceroute commands). The applet will probe the topology of the Internet and
 estimate the latency to a number of remote destinations as determined by our survey server. The survey
@@ -86,68 +92,85 @@ of their bandwidth they are giving us. In any case, the probes are likely to hav
 volunteers' connection, as the individual probes are not bandwidth intensive, necessitating only a few
 hundred bytes each.
 <br /><br />
-The data is collected on the survey server at Université de Montréal and will be available under a <a href="license.txt">BSD
-3 Clause</a> license using an easy to parse, text-only, format, and updated weekly. We have yet to
-determine exactly how the data will be available, for example, will it be available as daily, weekly, or
-monthly chunks?
+The data is collected on the survey server at Université de Montréal and will be 
+available under a <a href="license.txt">BSD
+3 Clause</a> license. The data files will be in 
+an easy to parse, text-only, format, and updated as more data are accumulated.
 <br /><br />
 Further, the volunteers are invited to register a nickname to have their contribution appear on the daily,
-weekly, and monthly leaderboards of volunteers performing the most pings. While the collected data is
-not anonymized per se, the volunteers' nicknames are only collected internally in our server for leaderboard purposes; they will not appear in the collected data.
+weekly, and monthly leaderboards of volunteers performing the most pings. The volunteers' nicknames are only 
+collected internally  in our server for leaderboard purposes; they will not appear in the distributed
+data files.
 </p>
 
 <h2>An Open Approach</h2>
 <p>
-On a fundamental level, we, at the <a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en">LISA</a>, believe in the importance of <a href="http://en.wikipedia.org/wiki/Open_science">Open Science</a>. We are
+On a fundamental level, we, at the <a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en">LISA</a>, 
+believe in the importance of <a href="http://en.wikipedia.org/wiki/Open_science">Open Science</a>. We are
 convinced that scientific knowledge, and the data it is based on, is to be open to all.
 This is why the complete source code (both applet and server side) as well as the collected data are
 available to all, to be used under Open Source and Open Data licenses, respectively. The source code is
-to be found on our <a href="https://github.com/lisa-lab/pings">project's github page</a>, and all are invited to have a look at it, comment, and
-participate. The software is available under a <a href="license.txt">BSD 3 Clause</a> license, and contains bits of software
-from other people, such as the globe applet based on the work of <a href="http://www.jhlabs.com/java/maps/proj/">JH Labs java projection project page</a>
+to be found on our <a href="https://github.com/lisa-lab/pings">project's github page</a>, and all are invited
+to have a look at it, comment, and
+participate. The software is available under a <a href="license.txt">BSD 3 Clause</a> license, and contains bits
+of software
+from other people, such as the globe applet based on the work of the <a href="http://www.jhlabs.com/java/maps/proj/">
+JH Labs java projection project</a>
 (available under an Apache license) and MaxMind's GeoLite database and API for geolocation
 (available under LGPL and BSD-like licences).
 <br /><br />
-We also believe in the importance of <a href="http://en.wikipedia.org/wiki/Open_data">Open Data</a> for science. One of the core components of science
-(and experimental science in particular) is the reproducibility of experiments, which seems to be often
+We also believe in the importance of <a href="http://en.wikipedia.org/wiki/Open_data">Open Data</a> for science.
+One of the core components of science
+(and experimental sciences in particular) is the reproducibility of experiments, which seems to be often
 overlooked or treated quite lightly. In order to ensure wider cooperation from other researchers and the
 reproducibility of our results, all the data we collect is available under an <a href="license.txt">BSD 3 Clause Like</a> open
 data license, which grants the use of the data for any purpose, that is, everyone is free to use it to do
-more research, to publish it, or rehash it as need be, as long as they comply to the license.
+more research, to publish it, or rehash it as need be, as long as they comply with the license.
 </p>
 
 <h2>A Partnership</h2>
 <p>
-This project is part of the <a href="http://www.ubi.com">Ubisoft</a> / <a href="http://www.nserc-crsng.gc.ca/index_eng.asp">NSERC</a> industrial chair on Artificial Intelligence at the <a href="http://www.iro.umontreal.ca/?lang=en">DIRO</a>,
-<a href="http://www.umontreal.ca">Université de Montréal</a>. The chair, created over a year ago (in March 2011), concentrates on the
+This project is part of the <a href="http://www.ubi.com">Ubisoft</a> / 
+<a href="http://www.nserc-crsng.gc.ca/index_eng.asp">NSERC</a> industrial chair on Artificial Intelligence 
+at the <a href="http://www.iro.umontreal.ca/?lang=en">DIRO</a>,
+<a href="http://www.umontreal.ca">Université de Montréal</a>. The National Science and Engineering
+Research Council (NSERC) of Canada funds basic and applied research.
+The chair, created by NSERC over a year ago (in March 2011), concentrates on the
 applications of Machine Learning to the challenges brought by next-generation games. One such
-challenge is <a href="http://en.wikipedia.org/wiki/Matchmaking_(video_games)">advanced match-making</a>, where the goal is to form two opposing teams such that players
+challenge is <a href="http://en.wikipedia.org/wiki/Matchmaking_(video_games)">advanced match-making</a>, 
+where the goal is to form two opposing teams such that players
 in each team complement each other well, and such that the resulting teams' strengths are as balanced
 as possible, in order to maximize all of the players' fun during the game &ndash; everyone wants a good fight!
-The current project of mapping the Internet and estimating latency between players is part of the match
-making project where one of the many parameters used to form teams is the latency between players
-(especially crucial for games where one of the players hosts the temporary game server). You can learn
+The current project of mapping the Internet and estimating latency between players is motivated by 
+the desire to take estimated latency between players into account when forming teams.
+You can learn
 more about the industrial chair <a href="http://www.nserc-crsng.gc.ca/Chairholders-TitulairesDeChaire/Chairholder-Titulaire_eng.asp?pid=436">here</a>.
 <br /><br />
 However, the partnership isn't limited to Ubisoft and Université de Montréal: having the complete
-project under Open Source and Open Data licenses allows any volunteer to join us and participate to
+project under Open Source and Open Data licenses allows any volunteer to join us and participate in
 the project! So, if you are interested in participating to the code base or have ideas on how to use the
-collected data, you can contact me, <a href="mailto:steven.pigeon@iro.umontreal.ca">Steven Pigeon</a>.
+collected data, you can <a href="mailto:iconnectome@googlegroups.com">contact us</a>.
 </p>
 
 <h2>The Team</h2>
 <p>
-Who are we? The <a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en">LISA</a> (The laboratoire d'informatique des systèmes adaptatifs) at <a href="http://www.umontreal.ca">Université de
+Who are we? The <a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en">machine learning (LISA)</a> 
+(Laboratoire d'Informatique des Systèmes Adaptatifs) at <a href="http://www.umontreal.ca">Université de
 Montréal</a> is one of the foremost artificial intelligence laboratories in the world, and is led by professor
-<a href="http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html">Yoshua Bengio</a>. As we mentioned previously, the LISA and Ubisoft Montréal collaborate through the
+<a href="http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html">Yoshua Bengio</a>. As we mentioned previously, 
+the LISA and Ubisoft Montréal collaborate through the
 Ubisoft/NSERC Industrial chair on Artificial Intelligence.
 <br /><br />
-The principal investigators in this project are myself, <a href="mailto:steven.pigeon@iro.umontreal.ca">Steven Pigeon</a> and
-<a href="mailto:yoshua.bengio@iro.umontreal.ca">Yoshua Bengio</a>, head of the LISA. The team is further composed of <a href="mailto:cotemyri@iro.umontreal.ca">Myriam
-Côté</a>, projects manager, <a href="mailto:chrish@pianocktail.org">Christian Hudon</a>, who is responsible for the server-side code, Raphaël
-Bonaque, who is responsible for the Java applet's graphical look. <a href="mailto:olivier.delalleau@ubisoft.com">Olivier Delalleau</a> contributed ideas
-in the early stages of the project. On Ubisoft Montréal's side: Yves Jacquier, Frédéric Bernard and
-Frank Zhang helped us quite a lot in selling the idea that latency should be collected.
+The principal contributors to this project are or have been
+Steven Pigeon,
+Yoshua Bengio, 
+Frederic Bastien,
+Myriam Côté,
+Christian Hudon,  
+Raphaël Bonaque,
+Olivier Delalleau,
+Yves Jacquier, Frédéric Bernard and
+Frank Zhang.
 </p>
 
 

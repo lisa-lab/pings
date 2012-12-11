@@ -36,14 +36,16 @@ To provide superior user experience, many applications need to know a lot about 
 the user's Internet
 connection, such as bandwidth and latency. When the applications are peer-to-peer, i.e., with messages
 flowing directly between users rather than through a server, it is important to estimate these 
-speed and delay characteristics for potential connections <bf>between users</bf>.
+speed and delay characteristics for potential connections <em>between users</em>.
 An example of application where it is mostly the
 connections between the users and the servers that matter is video on demand. The servers can tailor
 the videos, adapting bit-rate and resolution to yield the most enjoyable experience possible given the
 user's connection. Another example is given by multi-player games where one of the players in a party
 will serve as the game host, offering his computer or game console as a temporary game server. In this
 setting, the quality of the connection between the users in the same party (connecting to the same user-hosted
-game server) will matter a lot more than the connection to the server.
+game server) will matter a lot more than the connection to the server. To help decide who to connect
+with who without having to spend seconds on each potential pair of users, it would be very useful
+to be able to <em>predict</em> latency between any pair of Internet addresses.
 <br /><br />
 However, the Internet, by its very nature, is particularly difficult to observe and measure as a whole.
 First, the Internet is not under a central authority, but instead is composed of a rather ad-hoc assembly

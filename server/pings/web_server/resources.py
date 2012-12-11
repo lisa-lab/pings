@@ -327,8 +327,22 @@ def store_results(results):
     zmq_send_results_socket.send_json(results)
 
 if __name__ == "__main__":
-    t0 = time.time()
-    for i in range(10000):
-        get_pings("132.204.25.179")
-    t1 = time.time()
-    print "Time per request (ms):", (t1 - t0) / 10000. * 1000
+    if True:#False:
+        nb_iter = 100000
+        # Speed test get_pings
+        t0 = time.time()
+        for i in range(nb_iter):
+            #        get_pings("132.204.25." + str(i%255))
+            get_pings("132.204.25.12")
+        t1 = time.time()
+        print "Time per request (ms):", (t1 - t0) / float(nb_iter) * 1000
+    else:
+        nb_iter = 3000
+        # Speed test
+        init_geoip()
+        pings = get_pings("132.204.25.12")
+        t0 = time.time()
+        for i in range(nb_iter):
+            get_geoip_data(pings)
+        t1 = time.time()
+        print "Time per request (ms):", (t1 - t0) / float(nb_iter) * 1000

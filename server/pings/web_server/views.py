@@ -32,7 +32,7 @@ time_table_idx = 0
 
 #We will store stats information in that file.
 hostname = socket.gethostname()
-stats = open("ip_server_stats.%s.%d.txt" % (hostname, os.getpid()), "w")
+stats = open("ip_server_stats.%s.%d.txt" % (hostname, os.getpid()), "a")
 
 
 @view_config(route_name='get_pings',
@@ -59,10 +59,15 @@ def get_pings(request):
             time_table_idx = max(time_table_idx - 1, 0)
 
         min_round_time = time_table[time_table_idx]
-        print >>stats, ("new_pings=%d, ratio_pings_on_expected=%f,"
-                        " time_table_index=%d, min_round_time%d" % (
+        print >>stats, ("nb_get_pings=%d, new_pings=%d,"
+                        " time=%d, elapsed_time=%d,"
+                        " ping_per_second=%d, ratio_pings_on_expected=%f,"
+                        " time_table_index=%d, min_round_time=%d" % (
+                            nb_get_pings, nb_get_pings - last_nb_get_pings,
+                            now, now - last_time,
                             p_s, ratio_pings_on_expected,
                             time_table_idx, min_round_time))
+        stats.flush()
 
         last_time = now
         last_nb_get_pings = nb_get_pings

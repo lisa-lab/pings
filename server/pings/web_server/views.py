@@ -27,7 +27,7 @@ last_nb_get_pings = 0
 
 # The round delay table. We change of index when we go over/under the threshold
 time_table = [i * 60 for i in range(1, 6) +
-              range(7, 16, 2) + range(20, 121, 5)]
+              range(7, 16, 2) + range(20, 241, 5)]
 time_table_idx = 0
 
 #We will store stats information in that file.

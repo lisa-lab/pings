@@ -14,16 +14,25 @@ import pylab
 
 sets = [cPickle.load(file('../data/sandbox2/' + t)) for t in 'train', 'valid', 'test']
 
-for s in sets:
+for i, s in enumerate(sets):
   s[:, 3] += 1  # avoid -1
   s[:, 7] += 1
+  
+  s = numpy.hstack((s, numpy.zeros((len(s), 3), dtype=int)))  # add "same X" features
+  s[:, -3] = s[:, 0] == s[:, 4]  # same country
+  s[:, -2] = s[:, 1] == s[:, 5]  # same region
+  s[:, -1] = s[:, 2] == s[:, 6]  # same city
+  sets[i] = s
+
 
 sizes = numpy.maximum(*[s.max(axis=0) for s in sets]) + 1
 
-terms = [((), -1), ((8,), -1), ((3,), -1), ((7,), -1), ((3, 7), -1), ((0,), -1), ((4,), -1), ((0, 4), -1), ((1,), -1), ((5,), -1), ((1, 5), -1), ((2,), -1), ((6,), -1), ((2, 6), -1)]
-names = 'country1', 'region1', 'city1', 'type1', 'country2', 'region2', 'city2', 'type2', 'distance', 'latency'
+terms = [((), -1), ((8,), -1), ((3,), -1), ((7,), -1), ((3, 7), -1), ((0,), -1), ((4,), -1), ((10,), -1), ((0, 4), -1), ((1,), -1), ((5,), -1), ((11,), -1), ((1, 5), -1), ((2,), -1), ((6,), -1), ((12,), -1), ((2, 6), -1)]
+names = 'country1', 'region1', 'city1', 'type1', 'country2', 'region2', 'city2', 'type2', 'distance', 'latency', 'same_country', 'same_region', 'same_city'
 
-residuals = [s[:, -1].astype(float) for s in sets]
+TARGET = names.index('latency')
+
+residuals = [s[:, TARGET].astype(float) for s in sets]
 print [numpy.mean(r**2)**0.5 for r in residuals]
 sys.stdout.flush()
 
@@ -31,18 +40,25 @@ for feature_indices, regularization in terms:
   feature_indices = list(feature_indices)
   strides = numpy.array([numpy.prod(sizes[feature_indices[:i]]) for i in xrange(len(feature_indices) + 1)], dtype=int)
   features = [numpy.sum(s[:, feature_indices] * strides[:-1], axis=1) for s in sets]
-  regression = max(feature_indices + [-1]) >= 8
+  regression = 8 in feature_indices
   
-  if regression:
+  if regression:  # ridge regression
     floats = features[0].astype(float)
-    param = (floats*residuals[0]).sum()
-    number = (floats**2).sum()
+    
+    ATA = numpy.empty((2, 2))
+    ATA[0, 0] = (floats**2).sum()
+    ATA[1, 1] = len(floats)
+    ATA[0, 1] = ATA[1, 0] = floats.sum()
+    ATb = numpy.empty((2, 1))
+    ATb[0, 0] = (floats*residuals[0]).sum()
+    ATb[1, 0] = residuals[0].sum()
+
     def regularize(coefficient, update=False):
-      param_adjusted = param / (number + coefficient)
-      result = residuals[1] - param_adjusted * features[1]
+      m, b = numpy.linalg.solve(ATA + numpy.diag([float(coefficient)]*2), ATb)
+      result = residuals[1] - m * features[1] - b
       if update:
         for i, f in enumerate(features):
-          residuals[i] -= param_adjusted * f
+          residuals[i] -= m * f + b
       return result
   
   elif strides[-1] < 5000:  # dense
@@ -94,16 +110,18 @@ for feature_indices, regularization in terms:
   sys.stdout.flush()
 
 
-a = numpy.array([sets[2][:, -1], sets[2][:, -1] - residuals[2]])
+a = numpy.array([sets[2][:, TARGET], sets[2][:, TARGET] - residuals[2]])
 numpy.random.shuffle(a.T)
+b = a.shape[1]
 print numpy.mean(abs(a[0, :] - a[0, :].mean())), numpy.mean(abs(residuals[2]))  # L1 error
-print numpy.mean([(lambda i, j : (a[0, i] > a[0, j]) == (a[1, i] > a[1, j]))(numpy.random.randint(b), numpy.random.randint(b)) for k in xrange(100000)])  # ordering error
-pylab.plot(a[:, :200].T)
+print numpy.mean([(lambda i, j : (a[0, i] > a[0, j]) == (a[1, i] > a[1, j]))(numpy.random.randint(b), numpy.random.randint(b)) for k in xrange(500000)])  # ordering error
+examples = a[:, :200].T
+#examples = sorted(examples, key=lambda x: x[1])
+pylab.plot(examples)
 pylab.legend(('target', 'prediction'))
 pylab.xlabel('test example')
 pylab.ylabel('latency (ms)')
 pylab.show()
-
 
 
 def export_datasets():

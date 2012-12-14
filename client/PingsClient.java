@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Random;
 
 import javax.swing.SwingUtilities;
+import netscape.javascript.JSObject;
 
 /**
  * Pings client. Connects to the Pings server, retrieves addresses
@@ -90,8 +91,21 @@ public class PingsClient extends Observable implements Runnable {
     public boolean connect_error;
     public String error_reason;
     
-    public PingsClient(String server_hostname, int server_port) {
-        m_client_info = new ClientInfo();
+    /**
+       A reference to the applet. This is needed to set the cookie.
+     */
+    private PingsApplet applet;
+
+    /**
+       The prefix of cookies
+       The name is hardcoded in the index.html file too.
+    */
+    public final static String m_cookie_name="udem_ping";
+
+    public PingsClient(String server_hostname, int server_port, PingsApplet applet, String uuid, String nick) {
+        m_client_info = new ClientInfo(uuid, nick);
+	this.applet = applet;
+
         m_server_proxy = new ServerProxy(server_hostname, server_port);
         
         m_nick = new AtomicReference<String>(m_client_info.getNickname());
@@ -124,14 +138,14 @@ public class PingsClient extends Observable implements Runnable {
     /**
      * This constructor in only for simulation and test purpose
      */
-    public PingsClient() {
+    /*    public PingsClient() {
         m_client_info = new ClientInfo();
         m_nick = new AtomicReference<String>("");
         m_source_geoip = new AtomicReference<GeoipInfo>();
         m_total_error_count = new AtomicInteger();
         m_is_running = new AtomicBoolean(false);
         pings_queue = new ServerProxy.Pings[pings_queue_size];
-    }
+	}*/
     
     public void run() {
         LOGGER.info("PingsClient starting.");
@@ -512,6 +526,7 @@ public class PingsClient extends Observable implements Runnable {
     public void setNickname(String nick) {
         m_nick.set(nick);
         m_client_info.setNickname(nick);
+	this.setCookie();
     }
     
     public String getNickname() {
@@ -537,6 +552,7 @@ public class PingsClient extends Observable implements Runnable {
     }
     
     public void resume() {
+	this.setCookie();
         m_is_running.set(true);
         for (int i = 0; i < subClient_number; i++) {
             synchronized(pings_queue) {
@@ -556,6 +572,15 @@ public class PingsClient extends Observable implements Runnable {
     }
     
         
+    public void setCookie() {
+	System.out.println("setCookie " + this.m_client_info.m_uuid);
+	JSObject.getWindow(this.applet).eval("javascript:set_cookie('" + m_cookie_name +
+					     "_uuid', '" + this.m_client_info.m_uuid + "')");
+	System.out.println("setCookie " + this.m_client_info.getNickname());
+	JSObject.getWindow(this.applet).eval("javascript:set_cookie('" + m_cookie_name +
+					     "_nickname', '" + this.m_client_info.getNickname() + "')");
+    }
+
     public static void main(String args[]) throws InterruptedException {
 	String hostname = "iconnect.iro.umontreal.ca";
         int port = 6543;
@@ -611,7 +636,7 @@ public class PingsClient extends Observable implements Runnable {
 
         PingsClient[] clients = new PingsClient[nb_clients];
 	for (int i = 0 ; i < nb_clients ; i++) {
-	    clients[i] = new PingsClient(hostname, port);
+	    clients[i] = new PingsClient(hostname, port, null, "", "");
 	    //Do only the ICMP ping as this is faster
 	    for(int j = 0 ; j < clients[i].subClients_pool.length ; j++){
 		PingsClient c = clients[i];

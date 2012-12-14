@@ -2,6 +2,7 @@ import java.util.Observable;
 import java.util.Observer;
 
 import javax.swing.JApplet;
+import netscape.javascript.JSObject;
 
 /**
  * This class holds the web applet. It creates the threads for the clients and
@@ -46,6 +47,8 @@ public class PingsApplet extends JApplet {
 		s = getParameter("ping_port");
 		if (s != null)
 		    SERVER_PORT = Integer.parseInt(s);
+		String uuid = getParameter("ping_uuid");
+		String nick = getParameter("ping_nickname");
 
 		//Setup the simulation mode if the argument 'simulation' was set to true
 		try {
@@ -60,10 +63,22 @@ public class PingsApplet extends JApplet {
 				pings_clients[i] = (PingsClient) new PingsClientSimulation();
 			}
 			else {
-				pings_clients[i] = new PingsClient(SERVER_HOSTNAME, SERVER_PORT);
-				pings_clients[i].addObserver(new ConnectErrorObserver());
+			    System.out.println("got uuid " + uuid);
+			    System.out.println("got nickname " + nick);
+			    if (uuid == null || uuid.length() == 0)
+				uuid = (String)JSObject.getWindow(this).eval("javascript:get_cookie('" +
+									     PingsClient.m_cookie_name + "_uuid', '')");
+			    if (nick == null || nick.length() == 0)
+				nick = (String)JSObject.getWindow(this).eval("javascript:get_cookie('" +
+									     PingsClient.m_cookie_name + "_nickname', '')");
+			    if (nick == null || nick.length() == 0)
+				nick = initial_nickname;
+			    System.out.println("got uuid " + uuid);
+			    System.out.println("got nickname " + nick);
+
+			    pings_clients[i] = new PingsClient(SERVER_HOSTNAME, SERVER_PORT, this, uuid, nick);
+			    pings_clients[i].addObserver(new ConnectErrorObserver());
 			}
-			pings_clients[i].setNickname(initial_nickname);
 		}
 		
 		pings_gui = new PingsGUI(this);

@@ -14,23 +14,11 @@ import pylab
 
 sets = [cPickle.load(file('../data/sandbox2/' + t)) for t in 'train', 'valid', 'test']
 
-for i, s in enumerate(sets):
-  s[:, 3] += 1  # avoid -1
-  s[:, 7] += 1
-  
-  s = numpy.hstack((s, numpy.zeros((len(s), 3), dtype=int)))  # add "same X" features
-  s[:, -3] = s[:, 0] == s[:, 4]  # same country
-  s[:, -2] = s[:, 1] == s[:, 5]  # same region
-  s[:, -1] = s[:, 2] == s[:, 6]  # same city
-  sets[i] = s
-
-
 sizes = numpy.maximum(*[s.max(axis=0) for s in sets]) + 1
-
-terms = [((), -1), ((8,), -1), ((3,), -1), ((7,), -1), ((3, 7), -1), ((0,), -1), ((4,), -1), ((10,), -1), ((0, 4), -1), ((1,), -1), ((5,), -1), ((11,), -1), ((1, 5), -1), ((2,), -1), ((6,), -1), ((12,), -1), ((2, 6), -1)]
-names = 'country1', 'region1', 'city1', 'type1', 'country2', 'region2', 'city2', 'type2', 'distance', 'latency', 'same_country', 'same_region', 'same_city'
-
+names = 'country1', 'region1', 'city1', 'type1', 'country2', 'region2', 'city2', 'type2', 'distance', 'latency', 'same_country', 'same_region', 'same_city', 'ip1', 'ip2'
 TARGET = names.index('latency')
+
+terms = [((), 0), ((8,), 0), ((3,), -1), ((7,), -1), ((3, 7), -1), ((0,), -1), ((4,), -1), ((10,), -1), ((0, 4), -1), ((1,), -1), ((5,), -1), ((11,), -1), ((1, 5), -1), ((2,), -1), ((6,), -1), ((12,), -1), ((2, 6), -1), ((13,), -1), ((14,), -1), ((13, 14), -1)]
 
 residuals = [s[:, TARGET].astype(float) for s in sets]
 print [numpy.mean(r**2)**0.5 for r in residuals]
@@ -38,9 +26,9 @@ sys.stdout.flush()
 
 for feature_indices, regularization in terms:
   feature_indices = list(feature_indices)
-  strides = numpy.array([numpy.prod(sizes[feature_indices[:i]]) for i in xrange(len(feature_indices) + 1)], dtype=int)
+  strides = numpy.array([numpy.prod(sizes[feature_indices[:i]]) for i in xrange(len(feature_indices) + 1)], dtype='uint64')
   features = [numpy.sum(s[:, feature_indices] * strides[:-1], axis=1) for s in sets]
-  regression = 8 in feature_indices
+  regression = 8 in feature_indices  # hardcoded (only on distance)
   
   if regression:  # ridge regression
     floats = features[0].astype(float)
@@ -134,7 +122,8 @@ def export_datasets():
       destination = d['destination_geoip']
       row = [origin['country_code'], origin['region_name'], origin['city'], d['origin_type'],
              destination['country_code'], destination['region_name'], destination['city'], d['destination_type'],
-             d['distance'], d['peer_latency']]
+             d['distance'], d['peer_latency'], 0, 0, 0,
+             utils.get_int_from_ip(d['origin_ip']), utils.get_int_from_ip(d['destination_ip'])]
       rows.append(row)
 
   countries, regions, cities = set(), set(), set()
@@ -157,17 +146,23 @@ def export_datasets():
     r[0] = bisect.bisect_left(countries, t[0])
     r[1] = bisect.bisect_left(regions, t[0:2])
     r[2] = bisect.bisect_left(cities, t[0:3])
+    r[3] += 1  # avoid -1
     r[4] = bisect.bisect_left(countries, t[4])
     r[5] = bisect.bisect_left(regions, t[4:6])
     r[6] = bisect.bisect_left(cities, t[4:7])
-    r[-2] = int(numpy.round(t[-2]))
-    r[-1] = int(numpy.round(t[-1]))
+    r[7] += 1  # avoid -1
+    r[8] = int(numpy.round(t[8]))
+    r[9] = int(numpy.round(t[9]))
+    r[10] = int(r[0]==r[4])  # same country
+    r[11] = int(r[1]==r[5])  # same region
+    r[12] = int(r[2]==r[6])  # same city
 
-  data = numpy.array(rows, dtype='int32')
+  data = numpy.array(rows, dtype='uint32')
   numpy.random.shuffle(data)
   bounds = 0, 0.8*len(data), 0.9*len(data), len(data)
   train, valid, test = [data[bounds[i]:bounds[i+1]] for i in 0, 1, 2]
   for t in 'train', 'valid', 'test':
+    #numpy.random.shuffle(locals()[t])
     filename = os.path.join(os.path.dirname(__file__), '..', 'data', 'sandbox2', t)
     cPickle.dump(locals()[t], file(filename, 'w'), cPickle.HIGHEST_PROTOCOL)
 

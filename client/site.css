@@ -1,6 +1,6 @@
 body {
   margin: auto 10px auto 10px; 
-  background: #eef;
+  background: #f2f2ff no-repeat;
   color: #080808;
   font: Arial, Helvetica, sans-serif;
   font-size: 11pt;
@@ -123,3 +123,40 @@ h2 {
   margin: 35px 0px 10px 0px;
   padding: 3px 10px;
 }
+
+
+/* leaderboard related */
+
+.leaderboard.main_div {
+  -moz-border-radius: 15px;
+  border-radius: 15px;
+  width: 500px;
+  height: 100%;
+  padding-top: 7px;
+}
+.leaderboard h2 {
+  margin-top: 15px;
+}
+.leaderboard .title {
+  height: 41px;
+  padding-top: 13px;
+  text-align: center;
+  float: none;
+  width: 100%;
+  font-weight: bold;
+}
+.leaderboard table {
+  width: 98%;
+}
+.leaderboard td {
+  padding: 3px 4px;
+  text-align: center;
+  border-bottom: 1px dotted #ddd;
+}
+.leaderboard tr:nth-child(even) {
+  background: #fff;
+}
+.leaderboard tr:nth-child(odd) {
+  background: #eee;
+}
+

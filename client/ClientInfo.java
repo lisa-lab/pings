@@ -6,8 +6,8 @@ import java.util.logging.Logger;
 /**
    This class holds the configuration of the client, some elements of which
    are detected at launch, and where some others may be set through the
-   interface and stored in local storage (in a context- and
-   implementation-specific fashion; possibly in a cookie).
+   interface.
+   Some of this information is stored in a cookie in the PingsClient class
 
    <p>
    FIXME
@@ -78,12 +78,6 @@ public class ClientInfo {
        Geoip information for the client address.
     */
     private GeoipInfo m_client_geoip_info;
-
-
-    /**
-       The name of the cookie
-    */
-    public final static String m_cookie_name="udem_ping";
 
     /**
        List the supported OSes.
@@ -276,7 +270,7 @@ public class ClientInfo {
     public String getUUID() { return m_uuid; }
 
     /**
-       Sets a UUID, if none was read from the cookie.
+       Sets a new UUID
     */
     public void setUUID() {
         m_uuid = UUID.randomUUID().toString();
@@ -326,10 +320,9 @@ public class ClientInfo {
     }
 
     /**
-       Uses the cookie strings to set preferences
-       or (if the string is empty) sets defaults.
+       Set preferences or (if the string is empty) for uuid sets defaults.
     */
-    public void setPreferences(String cookie) {
+    public void setPreferences(String uuid, String nickname) {
         m_os_type = OSType.NotDetected;
         m_local_addr = null;
         m_global_addr = null;
@@ -343,47 +336,22 @@ public class ClientInfo {
         m_os_type = getOS(); // Detect and set
         detectInterface(null); // Detects and sets m_local_addr and m_adapter
 
-        if (cookie.length()!=0) {
-            // gets the contents between the curly braces
-            String[] keys=cookie.replaceAll("([^{]+)\\{([^}]+)\\}.*","$2").split(";");
+	m_nickname=nickname;
+	m_uuid=uuid;
 
-            m_nickname=keys[0].split("=")[1];
-            m_uuid=keys[1].split("=")[1];
-        }
-        else {
-            m_nickname="";
-            m_uuid = UUID.randomUUID().toString();
-        }
+        if (uuid.length() == 0 || uuid == null)
+	    this.setUUID();
 
         LOGGER.info("nick is " + m_nickname);
         LOGGER.info("uuid is " + m_uuid);
     }
 
     /**
-       Saves preferences
-    */
-    public String getPreferences() {
-
-        String cookie=m_cookie_name+"={nickname=";
-        if (m_nickname != null)
-            cookie+=m_nickname;
-
-        // FIXME: expiration date may be necessary;
-        // maybe it should be done in the cookie manager
-        // also: not sure path=/ is useful.
-        cookie+=":uuid="+m_uuid+"};path=/';"; // expires="+expirationDate();
-
-        return cookie;
-    }
-
-    /**
        Constructor
+       If uuid is empty, we will generate one.
     */
-    public ClientInfo(String cookie) {
-        setPreferences(cookie);
+    public ClientInfo(String uuid, String nickname) {
+        setPreferences(uuid, nickname);
     }
 
-    public ClientInfo() {
-        this("");
-    }
 }

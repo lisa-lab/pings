@@ -42,7 +42,7 @@ doc: $(SRC:.java=.class)
 	$(JAVADOC) $(JDOCFLAGS) $(SRC)
 
 jar: compile
-	$(JAR) cf pings.jar *.class org/apache/commons/codec/*.class org/apache/commons/codec/binary/*.class
+	$(JAR) cf pings.jar *.class
         # The -C option to jar only applies to the next argument, so ask
         # xargs to pass one file at a time with -L 1.
 	(cd globe; find . -type f -name \*.class -print0) | xargs -L 1 -0 $(JAR) uf pings.jar -C globe

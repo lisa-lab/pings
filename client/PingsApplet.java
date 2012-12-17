@@ -3,7 +3,6 @@ import java.util.Observer;
 
 import javax.swing.JApplet;
 import netscape.javascript.JSObject;
-import org.apache.commons.codec.binary.Base64;
 
 /**
  * This class holds the web applet. It creates the threads for the clients and
@@ -69,18 +68,11 @@ public class PingsApplet extends JApplet {
 			    if (uuid == null || uuid.length() == 0)
 				uuid = (String)JSObject.getWindow(this).eval("javascript:get_cookie('" +
 									     PingsClient.m_cookie_name + "_uuid', '')");
-			    if (uuid != null && uuid.length() > 0){
-				uuid = new String(Base64.decodeBase64(uuid));
-			    }
 			    if (nick == null || nick.length() == 0)
 				nick = (String)JSObject.getWindow(this).eval("javascript:get_cookie('" +
 									     PingsClient.m_cookie_name + "_nickname', '')");
 			    if (nick == null || nick.length() == 0)
 				nick = initial_nickname;
-			    else {
-				nick = new String(Base64.decodeBase64(nick));
-			    }
-
 			    System.out.println("got uuid " + uuid);
 			    System.out.println("got nickname " + nick);
 

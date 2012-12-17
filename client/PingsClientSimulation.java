@@ -176,8 +176,8 @@ public class PingsClientSimulation extends PingsClient{
                 //In case the thread is paused here
                 if (!m_is_running.get()) {
                     while (!m_is_running.get()) {
-                        synchronized(pings_queue) {
-                            try {pings_queue.wait();} catch (InterruptedException e) {}
+                        synchronized(this) {
+                            try {wait();} catch (InterruptedException e) {}
                         }
                     }
                 }

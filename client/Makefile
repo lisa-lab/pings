@@ -53,9 +53,12 @@ jar: compile
 	$(JAR) uf pings.jar -C globe world.shp -C globe world.dbf
         # Add Jar Index.
 	$(JAR) i pings.jar
+	chmod a+r pings.jar
 
 signedjar: jar
 	$(JARSIGNER) -keystore $(PINGS_KEYSTORE) pings.jar $(KEYSTORE_ALIAS)
+	chmod a+r pings.jar
+	ls -lh pings.jar
 
 clean:
 	$(RM) -vrf  $(ADDITIONAL_DIR_TO_CLEAN)

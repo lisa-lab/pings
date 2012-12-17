@@ -14,6 +14,7 @@ import java.util.Random;
 
 import javax.swing.SwingUtilities;
 import netscape.javascript.JSObject;
+import org.apache.commons.codec.binary.Base64;
 
 /**
  * Pings client. Connects to the Pings server, retrieves addresses
@@ -138,14 +139,14 @@ public class PingsClient extends Observable implements Runnable {
     /**
      * This constructor in only for simulation and test purpose
      */
-    /*    public PingsClient() {
-        m_client_info = new ClientInfo();
+    public PingsClient() {
+        m_client_info = new ClientInfo("", "");
         m_nick = new AtomicReference<String>("");
         m_source_geoip = new AtomicReference<GeoipInfo>();
         m_total_error_count = new AtomicInteger();
         m_is_running = new AtomicBoolean(false);
         pings_queue = new ServerProxy.Pings[pings_queue_size];
-	}*/
+    }
     
     public void run() {
         LOGGER.info("PingsClient starting.");
@@ -574,11 +575,16 @@ public class PingsClient extends Observable implements Runnable {
         
     public void setCookie() {
 	System.out.println("setCookie " + this.m_client_info.m_uuid);
+	String uuid_b64 = new String(Base64.encodeBase64(this.m_client_info.m_uuid.getBytes()));
+	System.out.println("setCookie encoded " + uuid_b64);
+
 	JSObject.getWindow(this.applet).eval("javascript:set_cookie('" + m_cookie_name +
-					     "_uuid', '" + this.m_client_info.m_uuid + "')");
+					     "_uuid', '" + uuid_b64 + "')");
 	System.out.println("setCookie " + this.m_client_info.getNickname());
+	String nick_b64 = new String(Base64.encodeBase64(this.m_client_info.getNickname().getBytes()));
+	System.out.println("setCookie encoded " + nick_b64);
 	JSObject.getWindow(this.applet).eval("javascript:set_cookie('" + m_cookie_name +
-					     "_nickname', '" + this.m_client_info.getNickname() + "')");
+					     "_nickname', '" + nick_b64 + "')");
     }
 
     public static void main(String args[]) throws InterruptedException {

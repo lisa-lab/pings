@@ -208,7 +208,7 @@ public class PingsClient extends Observable implements Runnable {
                     //In case the thread is paused here
                     if (!m_is_running.get()) {
                         while (!m_is_running.get()) {
-                            synchronized(this) {wait();}
+                            synchronized(pings_queue) {pings_queue.wait();}
                         }
                     }
                     
@@ -547,7 +547,7 @@ public class PingsClient extends Observable implements Runnable {
     }
     
     public void pause() {
-        synchronized(this) {
+        synchronized(pings_queue) {
            m_is_running.set(false);
         }
     }

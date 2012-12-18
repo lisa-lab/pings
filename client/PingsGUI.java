@@ -368,6 +368,13 @@ public class PingsGUI implements ActionListener {
         //Handle the rename button
         else if (command.equals("rename")) {
             String new_name = nickname_field.getText();
+	    new_name = new_name.replace('=', '_');
+	    new_name = new_name.replace(';', '_');
+	    new_name = new_name.replace('\'', '_');
+	    new_name = new_name.replace('"', '_');
+	    System.out.println(new_name);
+	    new_name = new_name.replace('\\', '_');
+	    nickname_field.setText(new_name);
             for (int i = 0; i < applet.nb_clients; i++) {
                 applet.pings_clients[i].setNickname(new_name);
             }

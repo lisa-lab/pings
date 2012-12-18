@@ -214,28 +214,43 @@ public class PingsGUI implements ActionListener {
     
     private void updateClientInfoDisplay(String ip_address, GeoipInfo client_info) {
         String info_str = ip_address;
-	if (ip_address != null && !ip_address.equals(""))
-	    info_str += ", ";
 	int nb = 0;
-        if (client_info.city != null && !client_info.city.equals("")){
+	if (ip_address != null && !ip_address.equals(""))
+	    nb += 1;
+        if (client_info != null &&
+	    (client_info.city != null) &&
+	    !client_info.city.equals("")){
+	    if (nb > 0){
+		info_str += ", ";
+	    }
 	    info_str += client_info.city;
 	    nb += 1;
 	}
-	if (client_info.region != null && !client_info.region.equals("")){
+	if (client_info != null &&
+	    (client_info.region != null) &&
+	    !client_info.region.equals("")){
 	    if (nb > 0){
 		info_str += ", ";
 	    }
 	    info_str += client_info.region;
 	}
-	if (client_info.country != null && !client_info.country.equals("")){
+	if (client_info != null &&
+	    (client_info.country != null) &&
+	    !client_info.country.equals("")){
 	    if (nb > 0){
 		info_str += ", ";
 	    }
 	    info_str += client_info.country;
 	}
-
+	if (info_str.equals(ip_address)){
+	    if (nb > 0){
+		info_str += ", ";
+	    }
+	    info_str += "No geographic information";
+	}
         client_info_display.setText(info_str);
-        ping_globe.setOrigin(client_info);
+	if (client_info != null)
+	    ping_globe.setOrigin(client_info);
         setLayout();
         applet.repaint();
     }
@@ -258,8 +273,10 @@ public class PingsGUI implements ActionListener {
             
             PingsClient.subClient client = (PingsClient.subClient)o;
             
-            if (client.getSourceGeoip() != null) {
-	            if (!client.getSourceGeoip().equals(client_geoip_info)) {
+	    System.out.println("client.getSourceGeoip " + client.getSourceGeoip());
+            if (client.getSourceGeoip() != null || client_info_display.getText().length() == 0) {
+	            if (client_info_display.getText().length() == 0 ||
+			!client.getSourceGeoip().equals(client_geoip_info)) {
 	                client_geoip_info = client.getSourceGeoip();
 			InetAddress local = client.getSourceAddress();
 			InetAddress global = null;

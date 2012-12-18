@@ -8,6 +8,7 @@ public class GeoipInfo {
 
     final public String city;
     final public String country;
+    final public String region;
 
     final public double longitude;
     final public double latitude;
@@ -16,6 +17,7 @@ public class GeoipInfo {
         the Pings server. */
     public GeoipInfo(JSONObject json) {
         city = (String)json.get("city");
+        region = (String)json.get("region_name");
         country = (String)json.get("country_name");
         
         longitude = ((Number)json.get("longitude")).doubleValue();
@@ -25,10 +27,11 @@ public class GeoipInfo {
     /**
      * An alternative constructor for testing purposes.
      */
-    public GeoipInfo(String city, String country,
+    public GeoipInfo(String city, String region, String country,
                      double longitude, double latitude) {
     	this.city = city;
     	this.country = country;
+	this.region = region;
     	this.longitude = longitude;
     	this.latitude = latitude;
     }
@@ -37,6 +40,7 @@ public class GeoipInfo {
     	if (o == null) return false;
     	return o.city.equals(this.city)
     	 && o.country.equals(this.country)
+    	 && o.region.equals(this.region)
     	 && o.latitude == this.latitude
     	 && o.longitude == this.longitude;	
     }

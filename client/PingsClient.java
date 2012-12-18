@@ -138,14 +138,14 @@ public class PingsClient extends Observable implements Runnable {
     /**
      * This constructor in only for simulation and test purpose
      */
-    /*    public PingsClient() {
-        m_client_info = new ClientInfo();
+    public PingsClient() {
+        m_client_info = new ClientInfo("", "");
         m_nick = new AtomicReference<String>("");
         m_source_geoip = new AtomicReference<GeoipInfo>();
         m_total_error_count = new AtomicInteger();
         m_is_running = new AtomicBoolean(false);
         pings_queue = new ServerProxy.Pings[pings_queue_size];
-	}*/
+    }
     
     public void run() {
         LOGGER.info("PingsClient starting.");

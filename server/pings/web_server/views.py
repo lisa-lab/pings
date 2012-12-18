@@ -59,15 +59,19 @@ def get_pings(request):
         elif ratio_pings_on_expected < 0.5:
             time_table_idx = max(time_table_idx - 1, 0)
 
+        size_clients_list = len(resources.last_clients)
+
         min_round_time = time_table[time_table_idx]
         print >>stats, ("nb_get_pings=%d, new_pings=%d,"
-                        " time=%d, elapsed_time=%d,"
-                        " ping_per_second=%d, ratio_pings_on_expected=%f,"
-                        " time_table_index=%d, min_round_time=%d" % (
+                        " time=%.2f, elapsed_time(s)=%.2f,"
+                        " ping_per_second=%f, ratio_pings_on_expected=%f,"
+                        " time_table_index=%d, min_round_time=%d"
+                        " size_clients_list=%d"% (
                             nb_get_pings, nb_get_pings - last_nb_get_pings,
                             now, now - last_time,
                             p_s, ratio_pings_on_expected,
-                            time_table_idx, min_round_time))
+                            time_table_idx, min_round_time,
+                            size_clients_list))
         stats.flush()
 
         last_time = now

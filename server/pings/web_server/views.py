@@ -39,7 +39,8 @@ stats = open("ip_server_stats.%s.%d.txt" % (hostname, os.getpid()), "a")
              renderer='json', request_method='POST')
 def get_pings(request):
     """Called by the client to get a list of addresses to ping."""
-    global nb_get_pings, min_round_time, last_time, last_nb_get_pings, time_table_idx
+    global nb_get_pings, min_round_time
+    global last_time, last_nb_get_pings, time_table_idx
     client_addr = request.client_addr
     logger.debug('get_pings request client address: %s', client_addr)
 

@@ -26,8 +26,7 @@ if False:
 
 print
 
-info = ClientInfo()
-info.setNickname("yoda")
+info = ClientInfo("", "yoda")
 
 pings_queue = [None] * nb_iter
 t0 = time.time()
@@ -35,15 +34,23 @@ for i in range(nb_iter):
     pings_queue[i] = sp.getPings(info)
 t1 = time.time()
 print "Time get_results r/s:",  nb_iter / (t1 - t0)
+print
 
 if True:
-    for i in range(nb_iter):
+    d = {}
+    for i in range(len(pings_queue)):
         pings = pings_queue[i]
         assert len(pings.addresses) > 0
+        assert len(pings.geoip_info) == len(pings.addresses)
+        #Check that we have at least half of ip with geoip info.
+        assert len([n for n in pings.geoip_info if n is not None]) >= (len(pings.geoip_info) / 2.)
+        d.setdefault(pings.min_round_time, 0)
+        d[pings.min_round_time] += 1
         #print 'Client Geoip', info.getGeoipInfo()
         #print 'Token', pings.token
         #print 'First address', pings.addresses[0]
         #print 'Geoip for first address', pings.geoip_info[0]
+    print "dict(min_round_time -> nd round", d
 
 # Fill in results.
 for it in range(len(pings_queue)):

@@ -277,7 +277,6 @@ public class PingsGUI implements ActionListener {
             
             PingsClient.subClient client = (PingsClient.subClient)o;
             
-	    System.out.println("client.getSourceGeoip " + client.getSourceGeoip());
             if (client.getSourceGeoip() != null || client_info_display.getText().length() == 0) {
 	            if (client_info_display.getText().length() == 0 ||
 			!client.getSourceGeoip().equals(client_geoip_info)) {
@@ -432,7 +431,6 @@ public class PingsGUI implements ActionListener {
 	    new_name = new_name.replace(';', '_');
 	    new_name = new_name.replace('\'', '_');
 	    new_name = new_name.replace('"', '_');
-	    System.out.println(new_name);
 	    new_name = new_name.replace('\\', '_');
 	    nickname_field.setText(new_name);
             for (int i = 0; i < applet.nb_clients; i++) {

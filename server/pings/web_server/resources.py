@@ -3,8 +3,8 @@ import os
 import time
 
 #We need pylibmc, not memcache or ultramemcache or umemcache
-#We call token_mc.delete and only pylibmc return an error is the key was not then
-#We rely on this behavior
+#We call token_mc.delete and only pylibmc return an error when the key
+#was not there.  We rely on this behavior
 import pylibmc as memcache
 import ipaddr
 import random
@@ -191,7 +191,8 @@ last_clients = active_queue(queue_size)
 
 def get_int_from_ip(ip):
     int_parts = [int(str_) for str_ in ip.split('.')]
-    return int_parts[3] + 256 * (int_parts[2] + 256 * (int_parts[1] + 256 * int_parts[0]))
+    return int_parts[3] + 256 * (int_parts[2] + 256 *
+                                 (int_parts[1] + 256 * int_parts[0]))
 
 
 def get_pings(client_addr):
@@ -256,7 +257,7 @@ def get_pings(client_addr):
                  (2886729728 <= ip._ip <= 2887778303) or
                  (3232235520 <= ip._ip <= 3232301055)) or  # is_private
                 (4026531840 <= ip._ip <= 4294967295) or  # is_reserved
-                (ip._ip == 0) or  #  is_unspecified
+                (ip._ip == 0) or  # is_unspecified
                 ip.packed[0] == '\x00'):
             ip_addresses.append(str(ip))
 
@@ -273,8 +274,10 @@ def get_geoip_data(ip_addresses):
 
 # pygeoip 0.2.2 need the following bug fix
 #         0.2.3 crash when we load the data file (DON'T USE)
-#         0.2.4 withoutthe fix the server err. With the fix, we never find the info. (DON'T USE)
-#         0.2.5 need the fix or the client crash. With the fix 210 r/s
+#         0.2.4 without the fix the server err.
+#               With the fix, we never find the info. (DON'T USE)
+#         0.2.5 need the fix or the client crash.
+#               With the fix 210 r/s (faster then 0.2.2)
             if geoip_data is not None:
                 # The pygeoip library doesn't use Unicode for string values
                 # and returns raw Latin-1 instead (at least for the free
@@ -327,7 +330,7 @@ def store_results(results):
     zmq_send_results_socket.send_json(results)
 
 if __name__ == "__main__":
-    if True:#False:
+    if True:  # False:
         nb_iter = 100000
         # Speed test get_pings
         t0 = time.time()

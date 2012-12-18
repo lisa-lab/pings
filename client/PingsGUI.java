@@ -10,6 +10,7 @@ import java.awt.event.KeyListener;
 import java.net.InetAddress;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -45,7 +46,7 @@ public class PingsGUI implements ActionListener {
     private JButton retry_button;
     
     //State variables
-    private int pings_counter = 0;
+    private AtomicInteger pings_counter;
     private GeoipInfo client_geoip_info = null;
     private String ips = "";
     
@@ -65,6 +66,8 @@ public class PingsGUI implements ActionListener {
     * The buttons comes with tooltips and shortcuts.
     */
     PingsGUI (PingsApplet parent) {
+	pings_counter = new AtomicInteger();
+
         applet = parent;
         applet.setBackground(background_color);
         
@@ -203,11 +206,12 @@ public class PingsGUI implements ActionListener {
      * Update the counter displaying the number of ping sent
      */    
     private void updatePingsCounterDisplay() {
-        if (pings_counter == 0) {
+	int nb = pings_counter.get();
+        if (nb == 0) {
             pings_counter_display.setText("No ping sent yet");
         }
         else {
-            pings_counter_display.setText(pings_counter + " ip tested");
+            pings_counter_display.setText(nb + " ip tested");
         }
         setLayout();
     }
@@ -319,8 +323,7 @@ public class PingsGUI implements ActionListener {
             //effect for the globe
             if (gui_effect == null && last_address != current_ping_address) {
                 last_address = current_ping_address;
-                
-                pings_counter++;
+		pings_counter.incrementAndGet();
                 SwingUtilities.invokeLater( new Runnable() {
                     public void run() {
                         updatePingsCounterDisplay();

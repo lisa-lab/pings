@@ -80,6 +80,7 @@ def get_pings(request):
             'pings': ip_addresses,
             'geoip': resources.get_geoip_data(ip_addresses),
             'client_geoip': resources.get_geoip_data([client_addr])[0],
+            'client_ip': client_addr,
             'min_round_time': min_round_time}  # in seconds
 
 

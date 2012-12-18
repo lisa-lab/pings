@@ -69,8 +69,13 @@ public class ServerProxy {
 
         // Update client_info with new client-related information.
         JSONObject client_geoip = (JSONObject)json_result.get("client_geoip");
-        if (client_geoip != null)
+        if (client_geoip != null){
             client_info.setGeoipInfo(new GeoipInfo(client_geoip));
+	}
+        String client_ip = (String)json_result.get("client_ip");
+	if (client_ip != null && !client_ip.equals("")){
+            client_info.setExternalAddress(InetAddress.getByName(client_ip));
+	}
 
         // Fill Pings instance from JSON results of our request.
         Pings pings = new Pings();

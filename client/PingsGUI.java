@@ -47,6 +47,7 @@ public class PingsGUI implements ActionListener {
     //State variables
     private int pings_counter = 0;
     private GeoipInfo client_geoip_info = null;
+    private String ips = "";
     
     //The observers of the subclients that add pings effect on the globe
     // see ClientThreadObserver for more details
@@ -212,7 +213,9 @@ public class PingsGUI implements ActionListener {
     }
     
     private void updateClientInfoDisplay(String ip_address, GeoipInfo client_info) {
-        String info_str = ": " + ip_address + " ";
+        String info_str = ip_address;
+	if (ip_address != null && !ip_address.equals(""))
+	    info_str += ", ";
 	int nb = 0;
         if (client_info.city != null && !client_info.city.equals("")){
 	    info_str += client_info.city;
@@ -258,10 +261,31 @@ public class PingsGUI implements ActionListener {
             if (client.getSourceGeoip() != null) {
 	            if (!client.getSourceGeoip().equals(client_geoip_info)) {
 	                client_geoip_info = client.getSourceGeoip();
+			InetAddress local = client.getSourceAddress();
+			InetAddress global = null;
+			try{
+			    global = client.getSourceExternalAddress();
+			} catch (RuntimeException _) {}
+			String ip = "";
+			if (local != null){
+			    ip += "Local ip: ";
+			    String s = local.toString();
+			    if (s.charAt(0) == '/')
+				ip += s.substring(1);
+			}
+			if (global != null){
+			    if (ip.length() > 0)
+				ip += ", ";
+			    ip += "Global ip: ";
+			    String s = global.toString();
+			    if (s.charAt(0) == '/')
+				ip += s.substring(1);
+			}
+			ips = ip;
 	                //FIXME: get ip from server
 	                SwingUtilities.invokeLater( new Runnable() {
 	                    public void run() {
-	                        updateClientInfoDisplay("", client_geoip_info);
+	                        updateClientInfoDisplay(ips, client_geoip_info);
 	                    }
 	                });
 	            }

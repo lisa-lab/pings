@@ -283,7 +283,15 @@ public class PingsClient extends Observable implements Runnable {
         public GeoipInfo getSourceGeoip() {
             return PingsClient.this.getSourceGeoip();
         }
-        
+
+	public InetAddress getSourceAddress() {
+	    return PingsClient.this.getSourceAddress();
+	}
+
+	public InetAddress getSourceExternalAddress() {
+	    return PingsClient.this.getSourceExternalAddress();
+	}
+
         public void destroy() {
             sucide = true;
         }
@@ -537,6 +545,14 @@ public class PingsClient extends Observable implements Runnable {
         return m_source_geoip.get();
     }
     
+    public InetAddress getSourceAddress() {
+	return m_client_info.getAddress();
+    }
+
+    public InetAddress getSourceExternalAddress() {
+	return m_client_info.getExternalAddress();
+    }
+
     public int getErrorCount() {
         return m_total_error_count.get();
     }

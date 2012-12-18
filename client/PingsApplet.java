@@ -22,7 +22,7 @@ public class PingsApplet extends JApplet {
 	public PingsClient[] pings_clients;
 	
 	//Store the GUI, essentially to be able to stop it
-	private PingsGUI pings_gui;
+	private PingsGUI pings_gui = null;
 	
 	//Is the applet running in simulation mode
 	private boolean simulation;
@@ -80,8 +80,11 @@ public class PingsApplet extends JApplet {
 			    pings_clients[i].addObserver(new ConnectErrorObserver());
 			}
 		}
-		
-		pings_gui = new PingsGUI(this);
+		if (pings_gui == null)
+		    pings_gui = new PingsGUI(this, 0);
+		else{
+		    pings_gui = new PingsGUI(this, pings_gui.getPingsCount());
+		}
 		
 		for (int i = 0; i < nb_clients; i++) {
 			pings_clients[i].run();
@@ -118,8 +121,9 @@ public class PingsApplet extends JApplet {
 			for (int i = 0; i < nb_clients; i++) {
 				pings_clients[i].destroy();
 			}
+			// Why do we need the following if?
 			if (pings_gui == null) {
-				pings_gui = new PingsGUI(this);
+			    pings_gui = new PingsGUI(this, 0);
 			}
 			pings_gui.destroy();
 			pings_gui.createRetryInterface(message);

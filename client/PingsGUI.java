@@ -65,8 +65,8 @@ public class PingsGUI implements ActionListener {
     * The globe is turnable, zoomable and show an effect for pings
     * The buttons comes with tooltips and shortcuts.
     */
-    PingsGUI (PingsApplet parent) {
-	pings_counter = new AtomicInteger();
+    PingsGUI (PingsApplet parent, int old_pings_counter) {
+	pings_counter = new AtomicInteger(old_pings_counter);
 
         applet = parent;
         applet.setBackground(background_color);
@@ -267,7 +267,10 @@ public class PingsGUI implements ActionListener {
             rename_button.setEnabled(true);
         }
     }
-    
+
+    public int getPingsCount() {
+	return pings_counter.get();
+    }
     class clientThreadObserver implements Observer {
         
         private PingsGlobe.PingGUI gui_effect = null;

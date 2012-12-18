@@ -96,6 +96,8 @@ def submit_ping_results(request):
     # probably caused by a server problem, not people trying to push
     # wrong results.
     token = request.json_body.get('token')
+    nick = request.json_body.get('userid')
+    uuid = request.json_body.get('uuid')
     bad_token = resources.check_token(token)
 
     # Store results.
@@ -103,15 +105,17 @@ def submit_ping_results(request):
     if results is None:
         # FB: should return 400 client error
         raise HTTPBadRequest('No "results" field.')
+
     results.insert(0, client_addr)
     results.append("TOKEN=" + token)
     results.append("TOKEN_VALID=" + str(bad_token))
+    results.append("NICK=" + nick)
+    results.append("UUID=" + uuid)
     resources.store_results(results)
 
-    # Update leaderboards if userid was passed.
-    userid = request.json_body.get('userid')
-    if userid is not None:
-        resources.update_leaderboards(userid, results)
+    # Update leaderboards if nick was passed.
+    if nick is not None:
+        resources.update_leaderboards(nick, results)
 
     return {'success': True}
 

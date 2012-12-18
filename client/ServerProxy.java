@@ -128,8 +128,11 @@ public class ServerProxy {
         results.addAll(Arrays.asList(pings.results));
         json_request.put("results", results);
         String nick = client_info.getNickname();
+	String uuid = client_info.getUUID();
         if (nick != null && nick.length() != 0)
             json_request.put("userid", nick);
+        if (uuid != null && uuid.length() != 0)
+            json_request.put("uuid", uuid);
         
         // Send request to server. Returns a constant (at least for now).
         Object json_result = doJsonRequest("/submit_ping_results", json_request);

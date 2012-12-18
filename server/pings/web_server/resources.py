@@ -112,7 +112,7 @@ class Root(object):
 # This is the total number of ip we try to pings
 # The number of other clients is at max half that
 #  none if less then 9 clients
-#  and less then len(last_clients.list) * probability_to_ping
+#  and less then len(last_clients) * probability_to_ping
 _num_addresses = 15
 
 
@@ -172,8 +172,8 @@ class active_queue:
                 self.by_address.pop(to_remove)
             self.list.append(elem)
 
-    def get_list(self):
-        return list
+    def __len__(self):
+        return len(self.list)
 
     def resize(self, new_size):
         if new_size < self.size:
@@ -209,13 +209,13 @@ def get_pings(client_addr):
     client_ip = get_int_from_ip(client_addr)
     # Do not ping clients when the cache is too low
     # Otherwise, this could cause a DDoS attack.
-    if len(last_clients.list) > 9:
+    if len(last_clients) > 9:
         # Add up to half of _num_addresses from other peers
         nb_cli_ip = _num_addresses / 2
         num_tries = 0
         # If too few past clients, lower the prob to ping them.
         max_tries = min(_num_addresses,
-                        len(last_clients.list) * probability_to_ping)
+                        len(last_clients) * probability_to_ping)
         while len(ip_addresses) < nb_cli_ip and num_tries < max_tries:
             num_tries += 1
             try:

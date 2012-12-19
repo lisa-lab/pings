@@ -597,6 +597,15 @@ public class PingsClient extends Observable implements Runnable {
 					     "_nickname', '" + this.m_client_info.getNickname() + "')");
     }
 
+    /*
+     * This make sure we can put into a cookie the following string by removing caractere that aren't safe.
+     */
+    public static String sanitize_string(String str) {
+	//{a-zA-Z0-9 .@}
+	str = str.replaceAll("[^a-zA-Z0-9 .@]", "");
+	return str;
+    }
+
     public static void main(String args[]) throws InterruptedException {
 	String hostname = "iconnect.iro.umontreal.ca";
         int port = 6543;

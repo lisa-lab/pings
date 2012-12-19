@@ -71,10 +71,18 @@ public class PingsApplet extends JApplet {
 			    if (nick == null || nick.length() == 0)
 				nick = (String)JSObject.getWindow(this).eval("javascript:get_cookie('" +
 									     PingsClient.m_cookie_name + "_nickname', '')");
-			    if (nick == null || nick.length() == 0)
-				nick = initial_nickname;
 			    System.out.println("got uuid " + uuid);
 			    System.out.println("got nickname " + nick);
+			    if (uuid != null && uuid.length() != 36) {
+				System.out.println("Bad UUID(" + uuid + "), will generate a new one.");
+				uuid = "";
+			    }
+			    nick = PingsClient.sanitize_string(nick);
+			    System.out.println("got nickname " + nick);
+			    if (nick == null || nick.length() == 0) {
+				nick = initial_nickname;
+				System.out.println("No nickname, use the default one.");
+			    }
 
 			    pings_clients[i] = new PingsClient(SERVER_HOSTNAME, SERVER_PORT, this, uuid, nick);
 			    pings_clients[i].addObserver(new ConnectErrorObserver());

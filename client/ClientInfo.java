@@ -339,7 +339,7 @@ public class ClientInfo {
 	m_nickname=nickname;
 	m_uuid=uuid;
 
-        if (uuid.length() == 0 || uuid == null)
+        if (uuid == null || uuid.length() == 0)
 	    this.setUUID();
 
         LOGGER.info("nick is " + m_nickname);

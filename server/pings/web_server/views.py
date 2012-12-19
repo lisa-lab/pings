@@ -45,6 +45,13 @@ def get_pings(request):
     logger.debug('get_pings request client address: %s', client_addr)
 
     ip_addresses = resources.get_pings(client_addr)
+    token = resources.get_token()
+    uuid = request.json_body.get("uuid")
+    nick = request.json_body.get('userid')
+    info = ["GET_PINGS", "TOKEN=" + token, "UUID=" + uuid,
+            "NICK=" + nick, ip_addresses]
+
+    resources.store_results(info)
     nb_get_pings += 1
 
     if (nb_get_pings % (5 * expected_get_pings_process_seconds)) == 0:
@@ -76,7 +83,7 @@ def get_pings(request):
 
         last_time = now
         last_nb_get_pings = nb_get_pings
-    return {'token': resources.get_token(),
+    return {'token': token,
             'pings': ip_addresses,
             'geoip': resources.get_geoip_data(ip_addresses),
             'client_geoip': resources.get_geoip_data([client_addr])[0],

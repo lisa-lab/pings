@@ -62,10 +62,19 @@ public class ServerProxy {
     /** Retrieves and returns a list of addresses to ping. Also updates
         the ClientInfo object with the geoip data for the client address. */
     public Pings getPings(ClientInfo client_info) throws IOException {
+	//Create the request to the server
+	String uuid = client_info.getUUID();
+        String nick = client_info.getNickname();
+        HashMap<String, Object> json_request = new HashMap<String, Object>();
+        if (nick != null && nick.length() != 0)
+            json_request.put("userid", nick);
+        if (uuid != null && uuid.length() != 0)
+            json_request.put("uuid", uuid);
+
         // Send request to server. Returns a dict with the following keys
         // and values: "token" (a string), "pings" (a list of IP addresses),
         // "geoip" (a list of dicts, one per IP address).
-        JSONObject json_result = (JSONObject)doJsonRequest("/get_pings", null);
+        JSONObject json_result = (JSONObject)doJsonRequest("/get_pings", json_request);
 
         // Update client_info with new client-related information.
         JSONObject client_geoip = (JSONObject)json_result.get("client_geoip");

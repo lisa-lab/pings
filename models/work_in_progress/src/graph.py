@@ -19,11 +19,15 @@ names = 'country1', 'region1', 'city1', 'type1', 'country2', 'region2', 'city2',
 TARGET = names.index('latency')
 
 terms = [((), 0), ((8,), 0), ((3,), -1), ((7,), -1), ((3, 7), -1), ((0,), -1), ((4,), -1), ((10,), -1), ((0, 4), -1), ((0, 4, 3, 7), -1), ((1,), -1), ((5,), -1), ((11,), -1), ((1, 5), -1), ((2,), -1), ((6,), -1), ((12,), -1), ((2, 6), -1), ((13,), -1), ((14,), -1), ((13, 14), -1)]
-#terms = [((), 0), ((0, 4), -1)]  # country-country only
+#terms = [((), 0)]  # constant (average) only
+terms = [((), 0), ((0, 4), -1)]  # country-country only
 
 residuals = [s[:, TARGET].astype(float) for s in sets]
 print [numpy.mean(r**2)**0.5 for r in residuals]
 sys.stdout.flush()
+
+#bottom = sets[0][:, TARGET].min()  # never allow predictions lower than this
+
 
 for feature_indices, regularization in terms:
   feature_indices = list(feature_indices)
@@ -101,9 +105,9 @@ for feature_indices, regularization in terms:
 
 a = numpy.array([sets[2][:, TARGET], sets[2][:, TARGET] - residuals[2]])
 numpy.random.shuffle(a.T)
-b = a.shape[1]
-print numpy.mean(abs(a[0, :] - sets[0][:, TARGET].mean())), numpy.mean(abs(residuals[2]))  # L1 error
-print numpy.mean([(lambda i, j : (a[0, i] > a[0, j]) == (a[1, i] > a[1, j]))(numpy.random.randint(b), numpy.random.randint(b)) for k in xrange(500000)])  # ordering error
+num_examples = a.shape[1]
+correct_order = lambda i, j : (a[0, i] > a[0, j]) == (a[1, i] > a[1, j])
+
 examples = a[:, :200].T
 #examples = sorted(examples, key=lambda x: x[1])
 pylab.plot(examples)
@@ -111,6 +115,23 @@ pylab.legend(('target', 'prediction'))
 pylab.xlabel('test example')
 pylab.ylabel('latency (ms)')
 pylab.show()
+
+# more stats
+ranges = [0, 100, 200, 300, 500, 1000, 5001]
+classes = numpy.array([[bisect.bisect_right(ranges, j) - 1 for j in i] for i in a])
+num_classes = len(ranges) - 1
+
+print 'L1, L2 errors', numpy.mean(abs(residuals[2])), numpy.mean(residuals[2]**2)**0.5
+print 'class-wise:\n', numpy.array([numpy.mean([[abs(r), r**2] for r, c in zip(residuals[2], classes[0, :]) if c==k], axis=0)**[1, 0.5] for k in xrange(num_classes)])
+
+print 'classification accuracy', (classes[0, :] == classes[1, :]).mean()
+print 'confusion matrix:\n', numpy.array([[((classes[0, :]==c1) & (classes[1, :]==c2)).sum() for c2 in xrange(num_classes)] for c1 in xrange(num_classes)])  # row = target, column = prediction
+
+print 'ordering accuracy', numpy.mean([correct_order(*numpy.random.randint(num_examples, size=2)) for k in xrange(500000)])
+choices = [(classes[0, :]==c).nonzero()[0] for c in xrange(num_classes)]
+choice = lambda x: x[numpy.random.randint(len(x))]
+symmetrize = lambda A: (A + A.T) * 0.5
+print 'class-wise:\n', symmetrize(numpy.array([[numpy.mean([correct_order(choice(choices[c1]), choice(choices[c2])) for k in xrange(100000)]) for c2 in xrange(num_classes)] for c1 in xrange(num_classes)]))
 
 
 def export_datasets():

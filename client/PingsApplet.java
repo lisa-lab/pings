@@ -42,9 +42,11 @@ public class PingsApplet extends JApplet {
 
 		/* Get hostname and port from the html file.*/
 		String s = getParameter("ping_hostname");
+		System.out.println("ping_hostname " + s);
 		if (s != null)
 		    SERVER_HOSTNAME = s;
 		s = getParameter("ping_port");
+		System.out.println("ping_port " + s);
 		if (s != null)
 		    SERVER_PORT = Integer.parseInt(s);
 		String uuid = getParameter("ping_uuid");

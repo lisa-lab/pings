@@ -67,6 +67,8 @@ public class PingsApplet extends JApplet {
 			else {
 			    System.out.println("got uuid " + uuid);
 			    System.out.println("got nickname " + nick);
+			    /* Do not try to get the cookie this way. It don't work well on Chrome.
+			       Chrome append garbage to the end of the cookie!
 			    if (uuid == null || uuid.length() == 0)
 				uuid = (String)JSObject.getWindow(this).eval("javascript:get_cookie('" +
 									     PingsClient.m_cookie_name + "_uuid', '')");
@@ -75,6 +77,7 @@ public class PingsApplet extends JApplet {
 									     PingsClient.m_cookie_name + "_nickname', '')");
 			    System.out.println("got uuid " + uuid);
 			    System.out.println("got nickname " + nick);
+			    */
 			    if (uuid != null && uuid.length() != 36) {
 				System.out.println("Bad UUID(" + uuid + "), will generate a new one.");
 				uuid = "";

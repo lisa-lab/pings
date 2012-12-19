@@ -64,6 +64,9 @@ class RedisLeaderboard:
         self.redis_server.zincrby(self.leaderboard_name, userid,
              score_increment)
 
+    def rem_nick(self, userid):
+        self.redis_server.zrem(self.leaderboard_name, userid)
+
     def get_top_scores(self, num_top_entries):
         if num_top_entries == 0:
             return []
@@ -114,6 +117,10 @@ class MultiLeaderboard:
         self._reset_if_needed()
         for name in self.names:
             self.leaderboards[name].incr_score(userid, score_increment)
+
+    def rem_nick(self, userid):
+        for name in self.names:
+            self.leaderboards[name].rem_nick(userid)
 
     def get_top_scores(self, num_top_entries):
         self._reset_if_needed()

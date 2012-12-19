@@ -602,7 +602,8 @@ public class PingsClient extends Observable implements Runnable {
      */
     public static String sanitize_string(String str) {
 	//{a-zA-Z0-9 .@}
-	str = str.replaceAll("[^a-zA-Z0-9 .@]", "");
+	if (str != null)
+	    str = str.replaceAll("[^a-zA-Z0-9 .@]", "");
 	return str;
     }
 

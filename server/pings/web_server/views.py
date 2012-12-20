@@ -18,8 +18,6 @@ cpu_goal = 0.75  # We try to use 75% of a core for this process
 # the / 2 is that we need to support get_pings and submit_* call.
 expected_get_pings_process_seconds = (target_get_pings_seconds / nb_process /
                                       2 * cpu_goal)
-default_round_time = 61
-min_round_time = default_round_time
 
 nb_get_pings = 0
 last_time = time()
@@ -29,6 +27,7 @@ last_nb_get_pings = 0
 time_table = [i * 60 for i in range(1, 6) +
               range(7, 16, 2) + range(20, 241, 5)]
 time_table_idx = 0
+min_round_time = time_table[0]
 
 #We will store stats information in that file.
 hostname = socket.gethostname()

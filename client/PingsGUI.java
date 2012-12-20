@@ -65,7 +65,7 @@ public class PingsGUI implements ActionListener {
     * The globe is turnable, zoomable and show an effect for pings
     * The buttons comes with tooltips and shortcuts.
     */
-    PingsGUI (PingsApplet parent, int old_pings_counter) {
+    PingsGUI(PingsApplet parent, int old_pings_counter) {
 	pings_counter = new AtomicInteger(old_pings_counter);
 
         applet = parent;
@@ -73,25 +73,25 @@ public class PingsGUI implements ActionListener {
         
         //Recover the content and background of the applet to add components
         button_container = applet.getContentPane();
-        button_container.setBackground (background_color);
+        button_container.setBackground(background_color);
         button_container.setLayout(null);
         
         //Add the pause/resume button to the applet
-        pause_button = new JButton ("Pause");
+        pause_button = new JButton("Pause");
         pause_button.setMnemonic(KeyEvent.VK_P);
         pause_button.setToolTipText(pause_tooltip);
         pause_button.setActionCommand("pause");
         pause_button.addActionListener(this);
-        button_container.add (pause_button);
+        button_container.add(pause_button);
         
         //Add the button to change the nickname
-        rename_button = new JButton ("Change");
+        rename_button = new JButton("Change");
         rename_button.setMnemonic(KeyEvent.VK_U);
         rename_button.setToolTipText("Update your name for the leaderboard");
         rename_button.setActionCommand("rename");
         rename_button.addActionListener(this);
         rename_button.setEnabled(false);
-        button_container.add (rename_button);
+        button_container.add(rename_button);
         
         //Add the field to change the nickname
         nickname_field = new JTextField(15);
@@ -121,18 +121,18 @@ public class PingsGUI implements ActionListener {
                     }
                 }
             });
-        button_container.add (nickname_field);
+        button_container.add(nickname_field);
         
         
         //Add the display for the number of pings done
         pings_counter_display = new JLabel("No ping sent yet");
         pings_counter_display.setForeground(text_color);
-        button_container.add (pings_counter_display);
+        button_container.add(pings_counter_display);
         
         //Add the display for the client info
         client_info_display = new JLabel("");
         client_info_display.setForeground(text_color);
-        button_container.add (client_info_display);
+        button_container.add(client_info_display);
         
         //Add the globe
         ping_globe = new PingsGlobe();
@@ -508,7 +508,7 @@ public class PingsGUI implements ActionListener {
         
         public void run() {
             button_container = applet.getContentPane();
-            button_container.setBackground (background_color);
+            button_container.setBackground(background_color);
             button_container.setLayout(null);
             
             retry_message.setText(message);
@@ -516,14 +516,14 @@ public class PingsGUI implements ActionListener {
             retry_message.setBackground(background_color);
             retry_message.setLineWrap(true);
             retry_message.setEditable(false);
-            button_container.add (retry_message);
+            button_container.add(retry_message);
             
             retry_button.setText("Retry");
             retry_button.setMnemonic(KeyEvent.VK_R);
             retry_button.setToolTipText("Try to relaunch the application");
             retry_button.setActionCommand("retry_connect");
             retry_button.addActionListener(this);
-            button_container.add (retry_button);
+            button_container.add(retry_button);
             
             setLayout();
             

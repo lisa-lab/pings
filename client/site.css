@@ -160,3 +160,47 @@ h2 {
   background: #eee;
 }
 
+
+/* feedback (analysis) related */
+
+.analysis.main_div {
+  -moz-border-radius: 15px;
+  border-radius: 15px;
+  width: 500px;
+  height: 100%;
+  padding-top: 7px;
+  padding-bottom: 10px;
+}
+.analysis h2 {
+  margin-top: 15px;
+}
+.analysis .title {
+  height: 41px;
+  padding-top: 3px;
+  text-align: center;
+  float: none;
+  width: 100%;
+  font-weight: bold;
+}
+.analysis .subtitle {
+  padding-top: 5px;
+  text-align: center; 
+  text-transform: uppercase;
+}
+.analysis table {
+  width: 98%;
+  padding-bottom: 8px;
+}
+.analysis td {
+  padding: 3px 4px;
+  text-align: left;
+  border-bottom: 1px dotted #ccc;
+}
+/*.analysis tr:nth-child(even) {
+  background: #fff;
+}
+.analysis tr:nth-child(odd) {
+  background: #eee;
+}*/
+
+

@@ -83,7 +83,7 @@ public class PingsApplet extends JApplet {
 				uuid = "";
 			    }
 			    nick = PingsClient.sanitize_string(nick);
-			    System.out.println("got nickname " + nick);
+			    System.out.println("sanitized nickname " + nick);
 			    if (nick == null || nick.length() == 0) {
 				nick = initial_nickname;
 				System.out.println("No nickname, use the default one.");

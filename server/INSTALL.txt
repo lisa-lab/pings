@@ -88,3 +88,9 @@ pip install .
 #sudo iptables -A INPUT -p tcp --dport 11211 -j ACCEPT -s IP
 #sudo iptables -A INPUT -p tcp --dport 11211 -j ACCEPT -s LOCALHOSTIP
 #sudo iptables -A INPUT -p tcp --dport 11211 -j REJECT
+
+#List all current rules
+sudo iptables -L
+
+# Some Fedora version, to make permanent the current iptables do this:
+[root@bigboy tmp]# iptables-save > /etc/sysconfig/iptables

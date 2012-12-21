@@ -153,20 +153,27 @@ probability_to_ping = 0.1
 
 class active_queue:
     """Maintain a queue of a given maximum size s registering the last s
-    elements that were added.Duplicates are automatically destroyed. Can be
-    resized. Non thread-safe."""
+    elements that were added. We keep only the last entry of duplicates. Can be
+    resized. Non thread-safe. Can remove older entry then a
+    specified timeout  when asked."""
     #A better implementation would use doubly linked list
-    def __init__(self, size):
-        self.by_address = {}
-        self.list = []
+    def __init__(self, size, timeout=60 * 60):
+        """
+        :param timeout: the timeout of the element in seconds
+                        default 1h.
+        """
+        self.by_address = {}  # ip -> time
+        self.list = []  # in the order of addition.
         self.max_size = size
+        self.timeout = timeout
 
-    def add(self, elem):
+    def add(self, elem, now):
         if elem in self.by_address:
             self.list.remove(elem)
             self.list.append(elem)
+            self.by_address[elem] = now
         else:
-            self.by_address[elem] = None
+            self.by_address[elem] = now
             if len(self.list) >= self.max_size:
                 to_remove = self.list.pop(0)
                 self.by_address.pop(to_remove)
@@ -177,11 +184,29 @@ class active_queue:
 
     def resize(self, new_size):
         if new_size < self.size:
-            self.list = self.list[len(self.list) - new_size:len(self.list)]
+            # Remove the begigging of the list from self.by_address
+            for elem in self.list[:-new_size]:
+                del self.by_address[elem]
+            # Keep the end of the list
+            self.list = self.list[-new_size:]
         self.size = new_size
 
     def get_random(self):
         return random.choice(self.list)
+
+    def remove_old(self, now):
+        """
+        Remove ip older then self.timeout
+        """
+        nb_removed = 0
+        while len(self.list) > 0:
+            if (self.by_address[self.list[0]] + self.timeout) < now:
+                del self.by_address[self.list[0]]
+                self.list.pop(0)
+                nb_removed += 1
+            else:
+                break
+        return nb_removed
 
 #Should larger than the current number of client connected but decreases
 #efficiency if is too large
@@ -232,7 +257,8 @@ def get_pings(client_addr):
     # TODO: test for other ip that we do not have geo ip.
     #       and this cause a crash.
     if client_ip != 2130706433:
-        last_clients.add(client_ip)
+        now = time.time()
+        last_clients.add(client_ip, now)
 
     # The num_tries < max_tries part of the loop is to guarantee that
     # this function executes in a bounded time.

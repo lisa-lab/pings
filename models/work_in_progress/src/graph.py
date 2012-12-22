@@ -10,128 +10,273 @@ import cPickle
 from collections import defaultdict
 import scipy.optimize
 import pylab
+from scipy.special import erf
 
 
-sets = [cPickle.load(file('../data/sandbox2/' + t)) for t in 'train', 'valid', 'test']
+# load data
+data = numpy.concatenate([cPickle.load(file('../data/sandbox2/' + t)) for t in 'train', 'valid', 'test'])
+sizes = data.max(axis=0) + 1
+names = cPickle.load(file('../data/sandbox2/names'))
+params, terms = cPickle.load(file('../data/sandbox2/params'))
+TARGET = 9
 
-sizes = numpy.maximum(*[s.max(axis=0) for s in sets]) + 1
-names = 'country1', 'region1', 'city1', 'type1', 'country2', 'region2', 'city2', 'type2', 'distance', 'latency', 'same_country', 'same_region', 'same_city', 'ip1', 'ip2'
-TARGET = names.index('latency')
+# compute stats (mean, var) for each location (country, region, city)
+world_stats = data[:, TARGET].mean(), data[:, TARGET].var()**0.5
+stats = []
+for i, n in enumerate(names):
+  stats_location = [[] for k in xrange(len(n))]
+  for d in data:
+    stats_location[d[i]].append(d[TARGET])
+  for j, l in enumerate(stats_location):
+    if len(l) >= 4:  # minimum number of examples for reliability
+      stats_location[j] = numpy.mean(l), numpy.var(l)**0.5
+    elif i > 0:
+      parent = n[j][0] if i==1 else n[j][:-1]  # "parent" location
+      index = bisect.bisect_left(names[i-1], parent)
+      stats_location[j] = stats[-1][index]
+    else:
+      stats_location[j] = world_stats
+  stats.append(stats_location)
 
-terms = [((), 0), ((8,), 0), ((3,), -1), ((7,), -1), ((3, 7), -1), ((0,), -1), ((4,), -1), ((10,), -1), ((0, 4), -1), ((0, 4, 3, 7), -1), ((1,), -1), ((5,), -1), ((11,), -1), ((1, 5), -1), ((2,), -1), ((6,), -1), ((12,), -1), ((2, 6), -1), ((13,), -1), ((14,), -1), ((13, 14), -1)]
-#terms = [((), 0)]  # constant (average) only
-terms = [((), 0), ((0, 4), -1)]  # country-country only
+# compute ranks for each location i within each ancestor location j
+# order[i, j<=i]: i=0,1,2 (country, region, city) j=0,1,2 (world, country, region) => tuple(rank, out_of_N)
+order = []
+for i in xrange(3):
+  order.append([])
+  for j in xrange(i+1):
+    order[i].append([None]*len(names[i]))
+    last_index = 0
+    while last_index < len(names[i]):  # 1 iteration = 1 j-location
+      ancestor = names[i][last_index][:j]
+      index = last_index + 1
+      while index < len(names[i]) and names[i][index][:j] == ancestor:
+        index += 1
+      indices = numpy.argsort([s[0] for s in stats[i][last_index:index]])
+      for k, l in enumerate(indices):
+        order[i][j][last_index + l] = k+1, len(indices)
+      last_index = index
 
-residuals = [s[:, TARGET].astype(float) for s in sets]
-print [numpy.mean(r**2)**0.5 for r in residuals]
-sys.stdout.flush()
 
-#bottom = sets[0][:, TARGET].min()  # never allow predictions lower than this
+# fake input
+ip = '203.201.132.74'  # '70.82.10.129'
+one = lambda : '.'.join(map(str, numpy.random.randint(256, size=4))) + ',' + str(max(51.0, numpy.random.normal(loc=400.0, scale=200.0)))
+measurements = ';'.join([one() for i in xrange(20)])
 
 
-for feature_indices, regularization in terms:
+# compute stats for request
+ip_int = utils.get_int_from_ip(ip)
+d = utils.get_geoip_data(ip)
+t = d['country_code'], d['region_name'], d['city']
+r = [bisect.bisect_left(names[i], t[:i+1] if i else t[0]) for i in xrange(3)]
+
+all_measurements = measurements.split(';')
+formatted = numpy.empty((len(all_measurements), 15), dtype=int)
+for j, m in enumerate(all_measurements):
+  ip2, latency = m.split(',')
+  latency = float(latency)
+  ip2_int = utils.get_int_from_ip(ip2)
+  d2 = utils.get_geoip_data(ip2)
+  if d2 is not None:
+    t2 = d2['country_code'], d2['region_name'], d2['city']
+    r2 = [bisect.bisect_left(names[i], t2[:i+1] if i else t2[0]) for i in xrange(3)]
+    distance = utils.geoip_distance(d, d2)
+  else:
+    t2 = '', '', ''
+    r2 = -1, -1, -1
+    distance = -1
+  formatted[j, :] = r[0], r[1], r[2], -1, r2[0], r2[1], r2[2], -1, distance, latency, r[0]==r2[0], r[1]==r2[1], r[2]==r2[2], ip_int, ip2_int
+
+
+predictions = numpy.zeros(len(formatted))
+for (feature_indices, _), (p, n, _) in zip(terms, params):
   feature_indices = list(feature_indices)
   strides = numpy.array([numpy.prod(sizes[feature_indices[:i]]) for i in xrange(len(feature_indices) + 1)], dtype='uint64')
-  features = [numpy.sum(s[:, feature_indices] * strides[:-1], axis=1) for s in sets]
-  regression = 8 in feature_indices  # hardcoded (only on distance)
+  features = formatted[:, feature_indices]
+  known = (features != -1).all(axis=1)
+  features = numpy.sum(features.astype('uint32') * strides[:-1], axis=1)
+  regression = 8 in feature_indices  # hardcoded
   
-  if regression:  # ridge regression
-    floats = features[0].astype(float)
-    
-    ATA = numpy.empty((2, 2))
-    ATA[0, 0] = (floats**2).sum()
-    ATA[1, 1] = len(floats)
-    ATA[0, 1] = ATA[1, 0] = floats.sum()
-    ATb = numpy.empty((2, 1))
-    ATb[0, 0] = (floats*residuals[0]).sum()
-    ATb[1, 0] = residuals[0].sum()
+  if regression:
+    predictions[known] += p * features[known].astype(float) + n
+  elif isinstance(p, numpy.ndarray):
+    predictions[known] += p[features[known]]
+  else:
+    for j, f in enumerate(features):
+      if known[j] and p.has_key(f):
+        predictions[j] -= p[f]
 
-    def regularize(coefficient, update=False):
-      m, b = numpy.linalg.solve(ATA + numpy.diag([float(coefficient)]*2), ATb)
-      result = residuals[1] - m * features[1] - b
-      if update:
-        for i, f in enumerate(features):
-          residuals[i] -= m * f + b
-      return result
-  
-  elif strides[-1] < 5000:  # dense
-    params = numpy.zeros(strides[-1], dtype='float32')
-    number = numpy.zeros(strides[-1], dtype='int32')
-    for i, f in enumerate(features[0]):  # training set
-      params[f] += residuals[0][i]
-      number[f] += 1
-    def regularize(coefficient, update=False):
-      params_adjusted = params / (number + coefficient)
-      result = residuals[1] - params_adjusted[features[1]]
-      if update:
-        for i, f in enumerate(features):
-          residuals[i] -= params_adjusted[f]
-      return result
 
-  else:  # sparse
-    params = defaultdict(float)
-    number = defaultdict(int)
-    for i, f in enumerate(features[0]):
-      params[f] += residuals[0][i]
-      number[f] += 1
-    def regularize(coefficient, update=False):
-      params_adjusted = params.copy()
-      for f, n in number.iteritems():
-        params_adjusted[f] /= n + coefficient
-      residual_valid = residuals[1].copy()
-      for j, ff in enumerate(features[1]):
-        if params_adjusted.has_key(ff):
-          residual_valid[j] -= params_adjusted[ff]
-      if update:
-        for i, f in enumerate(features):
-          for j, ff in enumerate(f):
-            if params_adjusted.has_key(ff):
-              residuals[i][j] -= params_adjusted[ff]
-      return residual_valid
+# online learning (adjust predictions)
+targets = formatted[:, TARGET]
+error = 0.0
+for i, (t, p) in enumerate(zip(targets, predictions)):
+  if i > 0:
+    predictions[i] += error / (i + 5.0)  # ad-hoc regularization
+  error += t - p
 
-  if regularization == -1:
-    def minimize(coefficient):
-      residual = regularize(coefficient)
-      error = numpy.mean(residual**2)**0.5
-      #print coefficient, error
-      #sys.stdout.flush()
-      return error      
-    regularization = scipy.optimize.fmin(minimize, 1.0, xtol=1e-1, ftol=1e-3, disp=False)[0]
-  regularize(regularization, update=True)
 
-  print [numpy.mean(r**2)**0.5 for r in residuals], numpy.array(names)[feature_indices], regularization
+# show stats for request
+def rank(i, n):
+  return 50 * (n-i+1) / n
+print d['country_name'], stats[0][r[0]], order[0][0][r[0]], rank(*order[0][0][r[0]])
+print d['region_name'], stats[1][r[1]], order[1][0][r[1]], order[1][1][r[1]], rank(*order[1][0][r[1]])
+print d['city'], stats[2][r[2]], order[2][0][r[2]], order[2][1][r[2]], order[2][2][r[2]], rank(*order[2][0][r[2]])
+
+def percentile(value, mean, std):
+  best_than = -erf((value-mean) / std)*0.5 + 0.5
+  return best_than, int(50*best_than)
+you_mean = targets.mean()
+print 'you', percentile(you_mean, *world_stats), '*', percentile(you_mean, *stats[0][r[0]]), percentile(you_mean, *stats[1][r[1]]), percentile(you_mean, *stats[2][r[2]])
+
+print 'average latency (predicted)', predictions.mean()
+print 'average latency (measured)', you_mean
+print 'accuracy of predictions', abs(targets-predictions).mean()
+
+# shuffle for display
+indices = (formatted[:, 6] != -1).nonzero()[0]  # must have resolved city name to be displayed
+numpy.random.shuffle(indices)
+targets = targets[indices]
+formatted = formatted[indices]
+predictions = predictions[indices]
+
+for i in xrange(min(5, len(targets))):
+  print names[2][formatted[i, 6]][2], names[0][formatted[i, 4]], int(numpy.round(predictions[i])), '(pred)', targets[i], '(measured)'
+
+
+
+
+
+###########################
+def train_model(save=False):
+  sets = [cPickle.load(file('../data/sandbox2/' + t)) for t in 'train', 'valid', 'test']
+
+  sizes = numpy.maximum(*[s.max(axis=0) for s in sets]) + 1
+  names = 'country1', 'region1', 'city1', 'type1', 'country2', 'region2', 'city2', 'type2', 'distance', 'latency', 'same_country', 'same_region', 'same_city', 'ip1', 'ip2'
+  TARGET = names.index('latency')
+
+  terms = [((), 0), ((8,), 0), ((3,), -1), ((7,), -1), ((3, 7), -1), ((0,), -1), ((4,), -1), ((10,), -1), ((0, 4), -1), ((0, 4, 3, 7), -1), ((1,), -1), ((5,), -1), ((11,), -1), ((1, 5), -1), ((2,), -1), ((6,), -1), ((12,), -1), ((2, 6), -1), ((13,), -1), ((14,), -1), ((13, 14), -1)]
+  #terms = [((), 0)]  # constant (average) only
+  #terms = [((), 0), ((0, 4), -1)]  # country-country only
+
+  residuals = [s[:, TARGET].astype(float) for s in sets]
+  print [numpy.mean(r**2)**0.5 for r in residuals]
   sys.stdout.flush()
 
+  #bottom = sets[0][:, TARGET].min()  # never allow predictions lower than this
+  saved_params = []
 
-a = numpy.array([sets[2][:, TARGET], sets[2][:, TARGET] - residuals[2]])
-numpy.random.shuffle(a.T)
-num_examples = a.shape[1]
-correct_order = lambda i, j : (a[0, i] > a[0, j]) == (a[1, i] > a[1, j])
+  for feature_indices, regularization in terms:
+    feature_indices = list(feature_indices)
+    strides = numpy.array([numpy.prod(sizes[feature_indices[:i]]) for i in xrange(len(feature_indices) + 1)], dtype='uint64')
+    features = [numpy.sum(s[:, feature_indices] * strides[:-1], axis=1) for s in sets]
+    regression = 8 in feature_indices  # hardcoded (only on distance)
+    
+    if regression:  # ridge regression
+      floats = features[0].astype(float)
+      
+      ATA = numpy.empty((2, 2))
+      ATA[0, 0] = (floats**2).sum()
+      ATA[1, 1] = len(floats)
+      ATA[0, 1] = ATA[1, 0] = floats.sum()
+      ATb = numpy.empty((2, 1))
+      ATb[0, 0] = (floats*residuals[0]).sum()
+      ATb[1, 0] = residuals[0].sum()
 
-examples = a[:, :200].T
-#examples = sorted(examples, key=lambda x: x[1])
-pylab.plot(examples)
-pylab.legend(('target', 'prediction'))
-pylab.xlabel('test example')
-pylab.ylabel('latency (ms)')
-pylab.show()
+      def regularize(coefficient, update=False):
+        m, b = numpy.linalg.solve(ATA + numpy.diag([float(coefficient)]*2), ATb)
+        result = residuals[1] - m * features[1] - b
+        if update:
+          saved_params.append((m, b, coefficient))
+          for i, f in enumerate(features):
+            residuals[i] -= m * f + b
+        return result
+    
+    elif strides[-1] < 2000:  # dense
+      params = numpy.zeros(strides[-1], dtype='float32')
+      number = numpy.zeros(strides[-1], dtype='int32')
+      for i, f in enumerate(features[0]):  # training set
+        params[f] += residuals[0][i]
+        number[f] += 1
+      def regularize(coefficient, update=False):
+        params_adjusted = params / (number + coefficient)
+        result = residuals[1] - params_adjusted[features[1]]
+        if update:
+          saved_params.append((params_adjusted, number, coefficient))
+          for i, f in enumerate(features):
+            residuals[i] -= params_adjusted[f]
+        return result
 
-# more stats
-ranges = [0, 100, 200, 300, 500, 1000, 5001]
-classes = numpy.array([[bisect.bisect_right(ranges, j) - 1 for j in i] for i in a])
-num_classes = len(ranges) - 1
+    else:  # sparse
+      params = defaultdict(float)
+      number = defaultdict(int)
+      for i, f in enumerate(features[0]):
+        params[f] += residuals[0][i]
+        number[f] += 1
+      def regularize(coefficient, update=False):
+        params_adjusted = params.copy()
+        for f, n in number.iteritems():
+          params_adjusted[f] /= n + coefficient
+        residual_valid = residuals[1].copy()
+        for j, ff in enumerate(features[1]):
+          if params_adjusted.has_key(ff):
+            residual_valid[j] -= params_adjusted[ff]
+        if update:
+          saved_params.append((params_adjusted, number, coefficient))
+          for i, f in enumerate(features):
+            for j, ff in enumerate(f):
+              if params_adjusted.has_key(ff):
+                residuals[i][j] -= params_adjusted[ff]
+        return residual_valid
 
-print 'L1, L2 errors', numpy.mean(abs(residuals[2])), numpy.mean(residuals[2]**2)**0.5
-print 'class-wise:\n', numpy.array([numpy.mean([[abs(r), r**2] for r, c in zip(residuals[2], classes[0, :]) if c==k], axis=0)**[1, 0.5] for k in xrange(num_classes)])
+    if regularization == -1:
+      def minimize(coefficient):
+        if coefficient <= 1e-5: return 1e100
+        residual = regularize(coefficient)
+        error = numpy.mean(residual**2)**0.5
+        #print coefficient, error
+        #sys.stdout.flush()
+        return error      
+      regularization = scipy.optimize.fmin(minimize, 10.0, xtol=1e-1, ftol=1e-3, disp=False)[0]
+    regularize(regularization, update=True)
 
-print 'classification accuracy', (classes[0, :] == classes[1, :]).mean()
-print 'confusion matrix:\n', numpy.array([[((classes[0, :]==c1) & (classes[1, :]==c2)).sum() for c2 in xrange(num_classes)] for c1 in xrange(num_classes)])  # row = target, column = prediction
+    print [numpy.mean(r**2)**0.5 for r in residuals], numpy.array(names)[feature_indices], regularization
+    sys.stdout.flush()
 
-print 'ordering accuracy', numpy.mean([correct_order(*numpy.random.randint(num_examples, size=2)) for k in xrange(500000)])
-choices = [(classes[0, :]==c).nonzero()[0] for c in xrange(num_classes)]
-choice = lambda x: x[numpy.random.randint(len(x))]
-symmetrize = lambda A: (A + A.T) * 0.5
-print 'class-wise:\n', symmetrize(numpy.array([[numpy.mean([correct_order(choice(choices[c1]), choice(choices[c2])) for k in xrange(100000)]) for c2 in xrange(num_classes)] for c1 in xrange(num_classes)]))
+
+  if save:
+    filename = os.path.join(os.path.dirname(__file__), '..', 'data', 'sandbox2', 'params')
+    cPickle.dump((saved_params, terms), file(filename, 'w'), cPickle.HIGHEST_PROTOCOL)
+
+  a = numpy.array([sets[2][:, TARGET], sets[2][:, TARGET] - residuals[2]])
+  numpy.random.shuffle(a.T)
+  num_examples = a.shape[1]
+  correct_order = lambda i, j : (a[0, i] > a[0, j]) == (a[1, i] > a[1, j])
+
+  examples = a[:, :200].T
+  #examples = sorted(examples, key=lambda x: x[0])
+  pylab.plot(examples)
+  pylab.legend(('target', 'prediction'))
+  pylab.xlabel('test example')
+  pylab.ylabel('latency (ms)')
+  pylab.show()
+
+  # more stats
+  ranges = [0, 100, 200, 300, 500, 1000, 5001]
+  classes = numpy.array([[bisect.bisect_right(ranges, j) - 1 for j in i] for i in a])
+  num_classes = len(ranges) - 1
+
+  print 'L1, L2 errors', numpy.mean(abs(residuals[2])), numpy.mean(residuals[2]**2)**0.5
+  print 'class-wise:\n', numpy.array([numpy.mean([[abs(r), r**2] for r, c in zip(residuals[2], classes[0, :]) if c==k], axis=0)**[1, 0.5] for k in xrange(num_classes)])
+
+  print 'classification accuracy', (classes[0, :] == classes[1, :]).mean()
+  print 'confusion matrix:\n', numpy.array([[((classes[0, :]==c1) & (classes[1, :]==c2)).sum() for c2 in xrange(num_classes)] for c1 in xrange(num_classes)])  # row = target, column = prediction
+
+  print 'ordering accuracy', numpy.mean([correct_order(*numpy.random.randint(num_examples, size=2)) for k in xrange(500000)])
+  choices = [(classes[0, :]==c).nonzero()[0] for c in xrange(num_classes)]
+  choice = lambda x: x[numpy.random.randint(len(x))]
+  symmetrize = lambda A: (A + A.T) * 0.5
+  print 'class-wise:\n', symmetrize(numpy.array([[numpy.mean([correct_order(choice(choices[c1]), choice(choices[c2])) for k in xrange(100000)]) for c2 in xrange(num_classes)] for c1 in xrange(num_classes)]))
+
 
 
 def export_datasets():
@@ -160,6 +305,8 @@ def export_datasets():
     cities.add(t[4:7])
 
   countries, regions, cities = map(sorted, (countries, regions, cities))
+  filename = os.path.join(os.path.dirname(__file__), '..', 'data', 'sandbox2', 'names')
+  cPickle.dump((countries, regions, cities), file(filename, 'w'), cPickle.HIGHEST_PROTOCOL)
 
   for i, r in enumerate(rows):
     print '\r%i/%i' % (i+1, len(rows)),

@@ -6,15 +6,9 @@ body {
   font-family: "Times New Roman", Times, serif;
   font-size: 11pt;
   background-image: linear-gradient(bottom, #e7e7f7 78%, #f2f2ff 35%);
-  background-image: -o-linear-gradient(bottom, #e7e7f7 78%, #f2f2ff 35%);
-  background-image: -moz-linear-gradient(bottom, #e7e7f7 78%, #f2f2ff 35%);
-  background-image: -webkit-linear-gradient(bottom, #e7e7f7 78%, #f2f2ff 35%);
-  background-image: -ms-linear-gradient(bottom, #e7e7f7 78%, #f2f2ff 35%);
-  background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0.78, #e7e7f7), color-stop(0.35, #f2f2ff));
 }
 
 applet {
-  align: center;
   width: 800px;
   height: 450px
 }
@@ -183,6 +177,10 @@ h2 {
   width: 100%;
   font-weight: bold;
 }
+.analysis img {
+  position: relative;
+  top: -2px;
+}
 .analysis .subtitle {
   padding-top: 5px;
   text-align: center; 
@@ -195,13 +193,51 @@ h2 {
 .analysis td {
   padding: 3px 4px;
   text-align: left;
-  border-bottom: 1px dotted #ccc;
+  border-top: 1px dotted #ccc;
 }
-/*.analysis tr:nth-child(even) {
-  background: #fff;
+.analysis th {
+  font-weight: normal;
+  font-size: 0.8em;
+  color: #777;
+  padding: 0px 5px;
 }
-.analysis tr:nth-child(odd) {
-  background: #eee;
-}*/
+.analysis td.left_column {
+  font-size: 1.2em;
+  min-width: 120px;
+}
+.analysis td.middle_column {
+  font-size: 1.2em;
+  font-weight: bold;
+  width: 90px;
+  text-align: center;
+}
+.analysis .tooltip {
+  border: 1px solid #000;
+  position: absolute;
+  padding: 10px;
+  background: #fcfcfc;
+  z-index: 999999;
+  display: none;
+}
+
+.analysis .bar {
+  height: 5px;
+  background: #E35A00;
+  float: left;
+  margin-right: 5px;
+}
+.analysis .bar.top {
+  background: #6D7D57;
+  margin-top: 5px;
+}
+.analysis .label {
+  font-size: 0.75em;
+  color: #888;
+}
+.analysis .label.bottom {
+  position: relative;
+  top: -5px;
+}
+
 
 

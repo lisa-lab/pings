@@ -7,6 +7,22 @@
   <title>Analysis Results - The Internet Connectome project</title>
   <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
   <link href="site.css" media="all" type="text/css" rel="stylesheet">
+  <script type="text/javascript" src="http://code.jquery.com/jquery-1.8.3.min.js"></script>
+
+<script>
+function show(index, self) {
+  tooltip = $('#tooltip' + index);
+  tooltip.show();
+  position = $(self).position();
+  position.top += 42;
+  position.left += 14;
+  tooltip.offset(position);
+}
+function hide(index) {
+  $('#tooltip' + index).hide();
+}
+</script>
+
  </head>
 
  <body>
@@ -18,59 +34,66 @@
 
 <div class="subtitle">Thank you for your participation !</div>
 
-<h2>Your network location<sup>&dagger;</sup></h2>
+<h2>Your network location</h2>
 
-<center><table cellspacing="0" cellpadding="0" style="font-size: 1.2em;">
-<tr><td style="min-width: 120px;">Canada</td>
-<td style="width: 50px; font-size: 1.4em; font-weight: bold;">3.6</td>
-<td style="min-width: 200px;"><img src="images/star2.png"><img src="images/star2.png"><img src="images/star2.png"><img src="images/star1.png"><img src="images/star0.png"></td>
-</tr>
+<center><table cellspacing="0" cellpadding="0">
 
-<tr><td>Québec</td>
-<td style="font-size: 1.4em; font-weight: bold;">2.2</td>
-<td><img src="images/star2.png"><img src="images/star2.png"><img src="images/star0.png"><img src="images/star0.png"><img src="images/star0.png"></td>
-</tr>
+<tr><th style="text-align: left;">location</th>
+<th>average<br />latency (ms) &dagger;</th>
+<th></th></tr>
 
-<tr><td>Montréal</td>
-<td style="font-size: 1.4em; font-weight: bold;">4.9</td>
-<td><img src="images/star2.png"><img src="images/star2.png"><img src="images/star2.png"><img src="images/star2.png"><img src="images/star1.png"></td>
-</tr>
+<tr onmouseover="show(1,this)" onmouseout="hide(1)" ><td class="left_column">Canada</td>
+<td class="middle_column">360</td>
+<td style="min-width: 200px;"><img src="images/star2.png"><img src="images/star2.png"><img src="images/star2.png"><img src="images/star1.png"><img src="images/star0.png"></td></tr>
 
-<tr style="background: #fec;"><td>Overall</td>
-<td style="font-size: 1.4em; font-weight: bold;">5.0</td>
-<td><img src="images/star2.png"><img src="images/star2.png"><img src="images/star2.png"><img src="images/star2.png"><img src="images/star2.png"></td>
-</tr>
+<tr onmouseover="show(2,this)" onmouseout="hide(2)" ><td class="left_column">Québec</td>
+<td class="middle_column">350</td>
+<td><img src="images/star2.png"><img src="images/star2.png"><img src="images/star0.png"><img src="images/star0.png"><img src="images/star0.png"></td></tr>
+
+<tr onmouseover="show(3,this)" onmouseout="hide(3)" ><td class="left_column">Montréal</td>
+<td class="middle_column">335</td>
+<td><img src="images/star2.png"><img src="images/star2.png"><img src="images/star2.png"><img src="images/star2.png"><img src="images/star1.png"></td></tr>
+
+<tr onmouseover="show(4,this)" onmouseout="hide(4)" style="background: #fec;"><td class="left_column">Overall</td>
+<td class="middle_column">267</td>
+<td><img src="images/star2.png"><img src="images/star2.png"><img src="images/star2.png"><img src="images/star2.png"><img src="images/star2.png"></td></tr>
 
 </table></center>
 
-<p style="font-size: 0.9em;">&dagger;Scores are determined in relation to the network average (441 ms).</p>
+<p style="font-size: 0.9em;">&dagger; World average is estimated at 440 ms.</p>
+
+<div id="tooltip1" class="tooltip"><u>Canada</u> is:<br />Ranked 32<sup>nd</sup> of 195 countries.</div>
+<div id="tooltip2" class="tooltip"><u>Québec</u> is:<br />Ranked 4<sup>th</sup> province in Canada.</div>
+<div id="tooltip3" class="tooltip"><u>Montréal</u> is:<br />Ranked 3<sup>rd</sup> of 44 cities in Québec.<br />Ranked 5<sup>th</sup> of 130 cities in Canada.<br />Ranked 120<sup>th</sup> of 390432 cities in our database.</div>
+<div id="tooltip4" class="tooltip"><u>YOU</u> have an average latency of 240 ms which is:<br />Faster than 78% of the world.<br />Faster than 67% of people in Canada.<br />Faster than 64% of people in Québec.<br />Faster than 55% of people in Montréal.</div>
+
 
 <h2>Latency measurements</h2>
 
 <center><table cellspacing="0" cellpadding="0">
-<tr><td>Average latency (anticipated)</td><td><b>270 ms</b></td></tr>
+<tr><td>Average latency (predicted)</td><td><b>270 ms</b></td></tr>
 <tr><td>Average latency (measured)</td><td><b>245 ms</b></td></tr>
 <tr><td style="width: 205px;">Accuracy of prediction</td><td><b>40 ms</b></td></tr>
 
 <tr><td>Sao Paulo, Brazil</td><td>
-<div style="width: 144px; height: 5px; background: #6D7D57; float: left; margin-right: 5px; margin-top: 5px;"></div><div style="font-size: 0.75em; color: #888;">144 ms</div><div style="clear: both;"></div>
-<div style="width: 124px; height: 5px; background: #E35A00; float: left; margin-right: 5px;"></div><div style="font-size: 0.75em; color: #888; position: relative; top: -5px;">124 ms</div><div style="clear: both;"></div>
+<div style="width: 144px;" class="bar top"></div><div class="label">144 ms</div><div style="clear: both;"></div>
+<div style="width: 124px;" class="bar"></div><div class="label bottom">124 ms</div><div style="clear: both;"></div>
 </td></tr>
 <tr><td>Springfield, Virginia, United States</td><td>
-<div style="width: 114px; height: 5px; background: #6D7D57; float: left; margin-right: 5px; margin-top: 5px;"></div><div style="font-size: 0.75em; color: #888;">114 ms</div><div style="clear: both;"></div>
-<div style="width: 124px; height: 5px; background: #E35A00; float: left; margin-right: 5px;"></div><div style="font-size: 0.75em; color: #888; position: relative; top: -5px;">124 ms</div><div style="clear: both;"></div>
+<div style="width: 114px;" class="bar top"></div><div class="label">114 ms</div><div style="clear: both;"></div>
+<div style="width: 124px;" class="bar"></div><div class="label bottom">124 ms</div><div style="clear: both;"></div>
 </td></tr>
 <tr><td>Sydney, Australia</td><td>
-<div style="width: 104px; height: 5px; background: #6D7D57; float: left; margin-right: 5px; margin-top: 5px;"></div><div style="font-size: 0.75em; color: #888;">104 ms</div><div style="clear: both;"></div>
-<div style="width: 105px; height: 5px; background: #E35A00; float: left; margin-right: 5px;"></div><div style="font-size: 0.75em; color: #888; position: relative; top: -5px;">105 ms</div><div style="clear: both;"></div>
+<div style="width: 104px;" class="bar top"></div><div class="label">104 ms</div><div style="clear: both;"></div>
+<div style="width: 105px;" class="bar"></div><div class="label bottom">105 ms</div><div style="clear: both;"></div>
 </td></tr>
 <tr><td>Tokyo, Japan</td><td>
-<div style="width: 84px; height: 5px; background: #6D7D57; float: left; margin-right: 5px; margin-top: 5px;"></div><div style="font-size: 0.75em; color: #888;">84 ms</div><div style="clear: both;"></div>
-<div style="width: 184px; height: 5px; background: #E35A00; float: left; margin-right: 5px;"></div><div style="font-size: 0.75em; color: #888; position: relative; top: -5px;">184 ms</div><div style="clear: both;"></div>
+<div style="width: 84px;" class="bar top"></div><div class="label">84 ms</div><div style="clear: both;"></div>
+<div style="width: 184px;" class="bar"></div><div class="label bottom">184 ms</div><div style="clear: both;"></div>
 </td></tr>
 <tr><td>Paris, France</td><td>
-<div style="width: 144px; height: 5px; background: #6D7D57; float: left; margin-right: 5px; margin-top: 5px;"></div><div style="font-size: 0.75em; color: #888;">144 ms</div><div style="clear: both;"></div>
-<div style="width: 166px; height: 5px; background: #E35A00; float: left; margin-right: 5px;"></div><div style="font-size: 0.75em; color: #888; position: relative; top: -5px;">166 ms</div><div style="clear: both;"></div>
+<div style="width: 144px;" class="bar top"></div><div class="label">144 ms</div><div style="clear: both;"></div>
+<div style="width: 166px;" class="bar"></div><div class="label bottom">166 ms</div><div style="clear: both;"></div>
 </td></tr>
 
 <tr style="background: #fec;"><td colspan="2">

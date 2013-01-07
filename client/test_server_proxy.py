@@ -50,7 +50,11 @@ if True:
         #print 'Token', pings.token
         #print 'First address', pings.addresses[0]
         #print 'Geoip for first address', pings.geoip_info[0]
-    print "dict(min_round_time -> nd round", d
+    print "list(min_round_time: nd round):",
+    keys = d.keys()
+    keys.sort()
+    for key in keys:
+        print "(%d: %d)" % (key, d[key]),
 
 # Fill in results.
 for it in range(len(pings_queue)):

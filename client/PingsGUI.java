@@ -171,31 +171,31 @@ public class PingsGUI implements ActionListener {
         //Set the globe to use the full space available
         ping_globe.setBounds(0, 0, applet.getWidth(), applet.getHeight());
         
-        //First raw of display
+        //First row of display
         Dimension name_size = nickname_field.getPreferredSize();
         Dimension update_name_size =  rename_button.getPreferredSize();
-        Dimension client_info_size = client_info_display.getPreferredSize();
-        
-        int row_height = name_size.height;
-        
-        nickname_field.setBounds(5,5,
-                name_size.width,row_height);
-        
-        rename_button.setBounds(8 + name_size.width, 5,
-                update_name_size.width, row_height);
-        
-        client_info_display.setBounds(11 + name_size.width + update_name_size.width, 5,
-                client_info_size.width,row_height );
-        
-        //Second raw of display
         Dimension counter_size = pings_counter_display.getPreferredSize();
         Dimension pause_size = pause_button.getMinimumSize();
         
-        pings_counter_display.setBounds(5, 8 + row_height,
-                counter_size.width, row_height);
+        int row_height = name_size.height;
         
-        pause_button.setBounds(8 + counter_size.width,8 + row_height,
-                pause_size.width, row_height);
+        nickname_field.setBounds(5, 5,
+				 name_size.width, row_height);
+        
+        rename_button.setBounds(8 + name_size.width, 5,
+				update_name_size.width, row_height);
+        
+        pause_button.setBounds(11 + name_size.width + update_name_size.width, 5,
+			       pause_size.width, row_height);
+        
+        pings_counter_display.setBounds(applet.getWidth() - counter_size.width, 5,
+					counter_size.width, row_height);
+        //Second row of display
+        Dimension client_info_size = client_info_display.getPreferredSize();
+        
+        client_info_display.setBounds(5, 8 + row_height,
+				      client_info_size.width, row_height);
+        
         
         retry_message.setBounds((applet.getWidth()/2)-200, (applet.getHeight()/2)-50, 400, 100);
         retry_button.setBounds((applet.getWidth()/2)-100, (applet.getHeight()/2)+50, 200, 50);

@@ -38,8 +38,8 @@ public class PingsGUI implements ActionListener {
     private JTextField nickname_field;
     private PingsGlobe ping_globe;
     private Container button_container;
-    private Color text_color = new Color(70,70,70);
-    private Color background_color = new Color(0,0,0);
+    private Color text_color = new Color(227, 90, 0); //orange
+    private Color background_color = Color.white;
     
     //GUI component for the retry
     private JTextArea retry_message;

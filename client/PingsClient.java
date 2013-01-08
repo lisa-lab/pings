@@ -62,13 +62,13 @@ public class PingsClient extends Observable implements Runnable {
     protected AtomicInteger m_total_error_count;
     
     //The number of subClient(s) to run simultaneously
-    protected int subClient_number = 8;
+    protected int subClient_number = 6;
     //The subClients
     protected subClient[] subClients_pool;
     protected Thread[] subClients_threads_pool;
     
     //The queue of ServerProxy.Pings
-    private int pings_queue_size = 2;
+    private int pings_queue_size = 1;
     private ServerProxy.Pings[] pings_queue;
     
     //The index in the queue of the next Pings to look into to find new addresses

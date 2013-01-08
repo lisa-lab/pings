@@ -36,7 +36,7 @@ public class PingsGlobe extends Globe {
     private static final float[] timed_out_color = {131, 13, 44};    
     private static final float[] connection_refused_color = {20, 20, 20};
     private static final float[] unknown_error_color = {255, 255, 255};
-    private float prefered_font_size = 7f; //13.5f;
+    private float prefered_font_size = 10f; //13.5f;
     private float circle_radius_scale=1.5f;
     private BasicStroke link_stroke = new BasicStroke(2.5f);
     

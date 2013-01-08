@@ -253,10 +253,14 @@ def get_pings(client_addr):
     ip_addresses = [str(ipaddr.IPv4Address(ip)) for ip in ip_addresses]
 
     # Add current client to the list of pingable clients.
-    # Do not accept 127.0.0.1 as we can't get geo data
-    # TODO: test for other ip that we do not have geo ip.
-    #       and this cause a crash.
-    if client_ip != 2130706433:
+    if (client_ip != 2130706433 and  # don't accept 127.0.0.1
+        not (2851995648 <= client_ip <= 28520611830) or  # is_link_local
+        (2130706432 <= client_ip <= 2147483647) or  # is_loopback
+        (3758096384 <= client_ip <= 4026531839) or  # is_multicast
+        ((167772160 <= client_ip <= 184549375) or
+         (2886729728 <= client_ip <= 2887778303) or
+         (3232235520 <= client_ip <= 3232301055)) or  # is_private
+        (4026531840 <= client_ip <= 4294967295)):
         now = time.time()
         last_clients.add(client_ip, now)
 

@@ -443,7 +443,7 @@ public class Globe extends JComponent {
         pp.drawPath( g2, gc, null, day_color );
     }
     
-    public void forceRefresh () {
+    public void forceRefresh() {
         quality_image_buffered = false;
         buffered_image = null;
         this.repaint();
@@ -465,7 +465,7 @@ public class Globe extends JComponent {
     
     private void paintQuality( Graphics g ) {
         createG2(g);
-        setQualityGraphics (g2);
+        setQualityGraphics(g2);
         
         MapGraphics mg = MapGraphics.getGraphics( g2, new Rectangle( getSize() ) );
         seaLayer.setVisible( showSea );

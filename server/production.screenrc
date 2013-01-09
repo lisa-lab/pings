@@ -5,7 +5,7 @@
 # in different screen windows!
 
 # Start all the processes
-screen -t Redis redis-server
+screen -t Redis redis-server redis.conf
 #started by the os.
 #screen -t Memcache memcached -v -p 11211
 screen -t Storage ./storage_server production.ini

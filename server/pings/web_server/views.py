@@ -22,6 +22,9 @@ expected_get_pings_process_seconds = (target_get_pings_seconds / nb_process /
 nb_get_pings = 0
 last_time = time()
 last_nb_get_pings = 0
+nb_submited_requests = 0
+nb_submited_results = 0
+last_nb_submited_requests = 0
 
 # The round delay table. We change of index when we go over/under the threshold
 time_table = [i * 60 for i in range(1, 6) +
@@ -40,6 +43,7 @@ def get_pings(request):
     """Called by the client to get a list of addresses to ping."""
     global nb_get_pings, min_round_time
     global last_time, last_nb_get_pings, time_table_idx
+    global nb_submited_requests, nb_submited_results, last_nb_submited_requests
     client_addr = request.client_addr
     logger.debug('get_pings request client address: %s', client_addr)
 
@@ -58,6 +62,7 @@ def get_pings(request):
         removed = resources.last_clients.remove_old(now)
         #number of pings per second since the last check
         p_s = (nb_get_pings - last_nb_get_pings) / (now - last_time)
+        submit_s = (nb_submited_requests - last_nb_submited_requests) / (now - last_time)
         ratio_pings_on_expected = p_s / expected_get_pings_process_seconds
 
         if ratio_pings_on_expected > 1:
@@ -72,17 +77,23 @@ def get_pings(request):
         print >>stats, ("nb_get_pings=%d, new_pings=%d,"
                         " time=%.2f, elapsed_time(s)=%.2f,"
                         " ping_per_second=%f, ratio_pings_on_expected=%f,"
-                        " time_table_index=%d, min_round_time=%d"
-                        " size_clients_list=%d, removed=%d"% (
+                        " time_table_index=%d, min_round_time=%d,"
+                        " size_clients_list=%d, removed=%d,"
+                        " nb_submit_requests=%d, nb_submit_results=%d,"
+                        " submit_req_per_second=%d" % (
                             nb_get_pings, nb_get_pings - last_nb_get_pings,
                             now, now - last_time,
                             p_s, ratio_pings_on_expected,
                             time_table_idx, min_round_time,
-                            size_clients_list, removed))
+                            size_clients_list, removed,
+                            nb_submited_requests, nb_submited_results,
+                            submit_s))
         stats.flush()
 
         last_time = now
         last_nb_get_pings = nb_get_pings
+        last_nb_submited_requests = nb_submited_requests
+
     return {'token': token,
             'pings': ip_addresses,
             'geoip': resources.get_geoip_data(ip_addresses),
@@ -95,6 +106,8 @@ def get_pings(request):
              renderer='json', request_method='POST')
 def submit_ping_results(request):
     """Called by the client to submit the results of the addresses pinged."""
+    global nb_submited_requests, nb_submited_results
+
     client_addr = request.client_addr
     logger.debug('submit_ping_results request: %s', request.json_body)
 
@@ -119,6 +132,8 @@ def submit_ping_results(request):
     results.append("NICK=" + nick)
     results.append("UUID=" + uuid)
     resources.store_results(results)
+    nb_submited_requests += 1
+    nb_submited_results += len(results)
 
     # Update leaderboards if nick was passed.
     if nick is not None:

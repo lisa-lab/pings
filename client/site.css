@@ -238,6 +238,8 @@ h2 {
   position: relative;
   top: -5px;
 }
-
+.analysis .close_button {
+  float: right;
+}
 
 

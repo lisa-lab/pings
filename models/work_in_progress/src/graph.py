@@ -15,7 +15,15 @@ from scipy.special import erf
 from wsgiref.simple_server import make_server
 from cgi import parse_qs
 import json
+from substitutions import all_substitutions
 
+
+# prettier names
+def prettify(record):
+  for k, l in zip(['city', 'region_name', 'country_name'], ['City', 'Region', 'Country']):
+    record[k] = all_substitutions.get(record[k], record[k])
+    if record[k] == '':
+      record[k] = '<i>Unknown %s</i>' % l
 
 
 # load data
@@ -84,6 +92,11 @@ def stars_html(score):  # score from 0 to 50
     code += '<img src="http://iconnect.iro.umontreal.ca/images/star%i.png">' % c
   return code
 
+def bisect_find(array, what):  # search what in array assuming array is sorted, -1 if not found
+  index = bisect.bisect_left(array, what)
+  if array[index] == what: return index
+  return -1
+
 
 def display_stats(ip, measurements, html=True, full_page=True):
   # fake input for testing
@@ -104,14 +117,18 @@ def display_stats(ip, measurements, html=True, full_page=True):
   formatted = numpy.empty((len(all_measurements), 15), dtype=int)
   saved_geo_data = []
   for j, m in enumerate(all_measurements):
-    ip2, latency = m.split(',')
-    latency = float(latency)
-    ip2_int = utils.get_int_from_ip(ip2)
+    try:
+      ip2, latency = m.split(',')
+      latency = float(latency)
+      ip2_int = utils.get_int_from_ip(ip2)
+    except:
+      formatted = formatted[:j]
+      break  # may be due to truncated URLs, stop here
     d2 = utils.get_geoip_data(ip2)
     saved_geo_data.append(d2)
     if d2 is not None:
       t2 = d2['country_code'], d2['region_name'], d2['city']
-      r2 = [bisect.bisect_left(names[i], t2[:i+1] if i else t2[0]) for i in xrange(3)]
+      r2 = [bisect_find(names[i], t2[:i+1] if i else t2[0]) for i in xrange(3)]
       distance = utils.geoip_distance(d, d2)
     else:
       t2 = '', '', ''
@@ -172,6 +189,7 @@ def display_stats(ip, measurements, html=True, full_page=True):
 
   # show stats (html)
   region_term = {'CA': 'province', 'US': 'state'}.get(d['country_code'], 'region')
+  prettify(d)
   
   response = u''
 
@@ -190,7 +208,7 @@ def display_stats(ip, measurements, html=True, full_page=True):
 function show(index, self) {
   tooltip = $('#tooltip' + index);
   tooltip.show();
-  position = $(self).position();
+  position = $(self).offset();
   position.top += 42;
   position.left += 14;
   tooltip.offset(position);
@@ -207,9 +225,11 @@ function hide(index) {
 <center>
 """
 
+  response += u"""<div class="main_div analysis">"""
+  if not full_page:
+    response += u"""<div class="close_button"><a target="_self" href="javascript: hide_analysis();">[X]</a></div>"""
+  
   response += u"""
-<div class="main_div analysis">
-
 <div class="title">Analysis Results</div>
 
 <div class="subtitle">Thank you for your participation !</div>
@@ -256,8 +276,9 @@ function hide(index) {
 <tr><td style="width: 205px;">Accuracy of prediction</td><td><b>%i ms</b></td></tr>""" % (int(numpy.round(predictions.mean())), int(numpy.round(you_mean)), int(numpy.round(abs(targets-predictions).mean())))
 
   max_width = 220
-  max_seen = max([max(int(numpy.round(predictions[i])), indices[i]) for i in indices])
+  max_seen = max([max(int(numpy.round(predictions[i])), targets[i]) for i in indices])
   for i in indices:
+    prettify(saved_geo_data[i])
     width_prediction = int(max_width * numpy.round(predictions[i]) / max_seen)
     width_target = int(max_width * float(targets[i]) / max_seen)
     response += u"""  
@@ -295,8 +316,9 @@ def application(environment, start_response):
     start_response('404 Not Found', [])
     return []
   
-  ip = environment['REMOTE_ADDR']
   parameters = parse_qs(environment['QUERY_STRING'])
+  ip = environment['REMOTE_ADDR']
+  ip = parameters.get('ip', [ip])[0]  # override real IP for testing
   measurements = parameters.get('measurements', [''])[0]
   html = not bool(parameters.get('text_only', [''])[0])
   full_page = bool(parameters.get('full_page', [''])[0])
@@ -306,6 +328,7 @@ def application(environment, start_response):
     content_type = 'text/html' if html else 'text/plain'
   else:
     response = json.dumps({'content': response})  # already utf-8 encoded
+    response = parameters.get('jsoncallback', ['jsoncallback'])[0] + '(' + response + ')'  # JSONP in fact
     content_type = 'application/json'
   headers = [('Content-Type', content_type), ('Content-Length', str(len(response))), ('charset', 'utf-8')]
   start_response('200 OK', headers)

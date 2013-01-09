@@ -255,10 +255,9 @@ public class PingsGUI implements ActionListener {
 	    info_str += "No geographic information";
 	}
         client_info_display.setText(info_str);
+        client_info_display.repaint();
 	if (client_info != null)
 	    ping_globe.setOrigin(client_info);
-        setLayout();
-        applet.repaint();
     }
     
     public void check_enable_button() {

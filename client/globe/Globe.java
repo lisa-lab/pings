@@ -485,7 +485,7 @@ public class Globe extends JComponent {
             if (buffered_image == null) {
                 //Initialize the bufferdImage
                 Dimension size = this.getSize();                
-                buffered_image = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_RGB);
+                buffered_image = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
                 
                 //Paint the map fast and store it
                 Graphics2D ng = buffered_image.createGraphics();

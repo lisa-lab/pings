@@ -136,7 +136,9 @@ public class PingsGUI implements ActionListener {
         
         //Add the globe
         ping_globe = new PingsGlobe();
-        ping_globe.resizeGlobe(Math.min(applet.getWidth(),applet.getHeight()));
+        int lines_size = 10 + nickname_field.getPreferredSize().height;
+        ping_globe.resizeGlobe(Math.min(applet.getWidth(), applet.getHeight()) - lines_size);
+        ping_globe.setBackground(background_color);
         applet.getContentPane().add(ping_globe);
         
         //Create the component for the "retry view" but don't hook them to the applet
@@ -168,9 +170,6 @@ public class PingsGUI implements ActionListener {
      * top-left corner.
      */
     private void setLayout() {
-        //Set the globe to use the full space available
-        ping_globe.setBounds(0, 0, applet.getWidth(), applet.getHeight());
-        
         //First row of display
         Dimension name_size = nickname_field.getPreferredSize();
         Dimension update_name_size =  rename_button.getPreferredSize();
@@ -196,6 +195,9 @@ public class PingsGUI implements ActionListener {
         client_info_display.setBounds(5, 8 + row_height,
 				      client_info_size.width, row_height);
         
+        //Set the globe to use the full space available - the 2 lines
+        ping_globe.setBounds(0, 10 + 2 * row_height,
+			     applet.getWidth(), applet.getHeight());
         
         retry_message.setBounds((applet.getWidth()/2)-200, (applet.getHeight()/2)-50, 400, 100);
         retry_button.setBounds((applet.getWidth()/2)-100, (applet.getHeight()/2)+50, 200, 50);

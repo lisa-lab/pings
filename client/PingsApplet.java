@@ -17,7 +17,7 @@ public class PingsApplet extends JApplet {
 	//All the variables related to the PingsClient
 	private String SERVER_HOSTNAME = "iconnect.iro.umontreal.ca";
 	private int SERVER_PORT = 6543;
-	private final String initial_nickname = "No Name";
+	private final String initial_nickname = "Put Your Nickname Here";
 	public final int nb_clients = 1;
 	public PingsClient[] pings_clients;
 	

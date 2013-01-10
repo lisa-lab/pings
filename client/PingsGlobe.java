@@ -65,7 +65,7 @@ public class PingsGlobe extends Globe {
         super.setShowGraticule(false);
         super.setShowTissot(false);
         super.setShowSea(true);
-        super.setShowDay(true);
+        super.setShowDay(false);
         
         stored_pings = new PingGUI[stored_pings_size];
     }

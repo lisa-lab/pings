@@ -101,7 +101,7 @@ def bisect_find(array, what):  # search what in array assuming array is sorted, 
 def display_stats(ip, measurements, html=True, full_page=True):
   # fake input for testing
   if ip is None:
-    ip = '203.201.132.74'  # '70.82.10.129'
+    ip = '132.204.22.30'  # tikuanyin
   if measurements == '':
     one = lambda : '.'.join(map(str, numpy.random.randint(256, size=4))) + ',' + str(max(51.0, numpy.random.normal(loc=400.0, scale=200.0)))
     measurements = '-'.join([one() for i in xrange(20)])
@@ -110,6 +110,8 @@ def display_stats(ip, measurements, html=True, full_page=True):
   # compute stats for request
   ip_int = utils.get_int_from_ip(ip)
   d = utils.get_geoip_data(ip)
+  if d is None:
+    d = defaultdict(str)
   t = d['country_code'], d['region_name'], d['city']
   r = [bisect.bisect_left(names[i], t[:i+1] if i else t[0]) for i in xrange(3)]
 

@@ -600,7 +600,7 @@ public class PingsClient extends Observable implements Runnable {
         boolean ok = last.substring(last.length() - 2).equals("ms");
         last = last.substring(0, last.length() - 2);
         float value = Float.parseFloat(last);
-        ok &= value >= 10 && value < 2000;
+        ok &= value >= 10 && value < 1900;
         if (ok) {
             String measurement = current_ping_dest.getHostAddress() + "," + last;
             if (num_measurements > 0) measurements += "-";

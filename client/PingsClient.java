@@ -204,6 +204,9 @@ public class PingsClient extends Observable implements Runnable {
                     LOGGER.log(Level.INFO, "Ping result: {0}.",current_ping_result);
                     notifyObserversOfChange();
                     
+                    //Extract relevant info for analysis
+                    addMeasurement(current_ping_result, current_ping_dest);
+                    
                     //In case the thread is paused here
                     if (!m_is_running.get()) {
                         while (!m_is_running.get()) {
@@ -587,6 +590,26 @@ public class PingsClient extends Observable implements Runnable {
         return m_is_running.get();
     }
     
+
+    /* for analysis */
+    int num_measurements = 0;
+    String measurements = "";    
+    public void addMeasurement(String current_ping_result, InetAddress current_ping_dest) {
+        String[] icmp_result = current_ping_result.split(";")[0].split(" ");
+        String last = icmp_result[icmp_result.length - 1];
+        boolean ok = last.substring(last.length() - 2).equals("ms");
+        last = last.substring(0, last.length() - 2);
+        float value = Float.parseFloat(last);
+        ok &= value >= 10 && value < 2000;
+        if (ok) {
+            String measurement = current_ping_dest.getHostAddress() + "," + last;
+            if (num_measurements > 0) measurements += "-";
+            measurements += measurement;
+            num_measurements++;
+            LOGGER.log(Level.INFO, "Measurement #" + Integer.toString(num_measurements) + ": " + measurement);
+            if (num_measurements == 5) JSObject.getWindow(applet).eval("javascript:get_analysis('" + measurements + "')");
+        }
+    }
         
     public void setCookie() {
 	System.out.println("setCookie " + this.m_client_info.m_uuid);

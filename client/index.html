@@ -69,6 +69,7 @@ and we use machine learning to predict delays between yet unmeasured pairs of ad
 
 <h2>Start pinging now! <sup>*</sup></h2>
 
+<a name="ANALYSIS">
 <p>
 <b>The applet starts collecting data automatically.</b><br />
 1. Make sure to enter a valid identifier (nickname) in order to appear in the 
@@ -79,31 +80,18 @@ your machine and other randomly chosen addresses) you help us collect, the bette
 </p><br />
 
 
-
-<div id="show_button" style="display: none; text-align: center; padding: 5px; font-size: 1.1em;"><a target="_self" href="javascript: show_analysis();">Show analysis again</a></div>
-<div id="background" style="position:fixed;top:0;left:0;z-index:9998;background-color:#000;width:100%;height:100%;display:none;cursor:pointer;opacity:0.6;"></div>
-<div id="analysis_container" style="position:absolute; z-index: 9999; display: none;"></div>
+<center><div id="analysis_container" style="width: 500px; margin-bottom: 30px; display: none;"></div></center>
 
 <script>
 function get_analysis(measurements) {
   $.getJSON('http://tikuanyin.iro.umontreal.ca:6660/feedback.py?jsoncallback=?', {"measurements": measurements}, function(data) {
-    $('#analysis_container').html(data.content);
-    $('#show_button').show();
-    show_analysis();
+    cont = $('#analysis_container');
+    cont.html(data.content);
+    cont.show();
+    window.location.hash = "ANALYSIS";
   });
 }
-function show_analysis() {
-  cont = $('#analysis_container');
-  cont.css({"left": "50%", "margin-left": $(window).scrollLeft()-Math.round(cont.outerWidth()/2)+"px"});
-  cont.css({"top": "50%", "margin-top": $(window).scrollTop()-Math.round(cont.outerHeight()/2)+"px"});
-  cont.show();
-  $('#background').show();
-}
-function hide_analysis() {
-  $('#analysis_container').hide()
-  $('#background').hide();
-}
-//setTimeout('get_analysis("203.201.132.74,222-25.521.132.73,333")', 1500);
+//setTimeout('get_analysis("203.201.132.74,222-25.521.132.73,333")', 4000);
 </script>
 
 

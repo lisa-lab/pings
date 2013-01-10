@@ -166,6 +166,11 @@ h2 {
   padding-top: 7px;
   padding-bottom: 10px;
 }
+.main_div .analysis.main_div {
+  border: 2px dotted #aaa;
+  /border-radius: 0px;
+  -moz-border-radius: 0px;
+}
 .analysis h2 {
   margin-top: 15px;
 }
@@ -237,9 +242,6 @@ h2 {
 .analysis .label.bottom {
   position: relative;
   top: -5px;
-}
-.analysis .close_button {
-  float: right;
 }
 
 

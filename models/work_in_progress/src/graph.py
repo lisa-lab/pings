@@ -225,11 +225,8 @@ function hide(index) {
 <center>
 """
 
-  response += u"""<div class="main_div analysis">"""
-  if not full_page:
-    response += u"""<div class="close_button"><a target="_self" href="javascript: hide_analysis();">[X]</a></div>"""
-  
-  response += u"""
+  response += u"""<div class="main_div analysis">
+
 <div class="title">Analysis Results</div>
 
 <div class="subtitle">Thank you for your participation !</div>

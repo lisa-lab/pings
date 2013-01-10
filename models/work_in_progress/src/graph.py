@@ -161,7 +161,8 @@ def display_stats(ip, measurements, html=True, full_page=True):
   error = 0.0
   for i, (t, p) in enumerate(zip(targets, predictions)):
     if i > 0:
-      predictions[i] += error / (i + 5.0)  # ad-hoc regularization
+      #predictions[i] += error / (i + 5.0)  # ad-hoc regularization
+      predictions[i] = max(30, predictions[i])
     error += t - p
 
 

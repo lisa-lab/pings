@@ -111,7 +111,11 @@ def display_stats(ip, measurements, html=True, full_page=True):
   ip_int = utils.get_int_from_ip(ip)
   d = utils.get_geoip_data(ip)
   if d is None:
-    d = defaultdict(str)
+    d = defaultdict(unicode)
+    d['area_code'] = 0
+    d['dma_code'] = 0
+    d['latitude'] = 0
+    d['longitude'] = 0
   t = d['country_code'], d['region_name'], d['city']
   r = [bisect.bisect_left(names[i], t[:i+1] if i else t[0]) for i in xrange(3)]
 

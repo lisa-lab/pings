@@ -83,15 +83,16 @@ your machine and other randomly chosen addresses) you help us collect, the bette
 <center><div id="analysis_container" style="width: 500px; margin-bottom: 30px; display: none;"></div></center>
 
 <script>
+var cont = $('#analysis_container');
 function get_analysis(measurements) {
+  if (cont.is(':visible')) return;
   $.getJSON('http://tikuanyin.iro.umontreal.ca:6660/feedback.py?jsoncallback=?', {"measurements": measurements}, function(data) {
-    cont = $('#analysis_container');
     cont.html(data.content);
     cont.show();
     window.location.hash = "ANALYSIS";
   });
+  setTimeout(function() {get_analysis(measurements);}, 10000);
 }
-//setTimeout('get_analysis("203.201.132.74,222-25.521.132.73,333")', 4000);
 </script>
 
 

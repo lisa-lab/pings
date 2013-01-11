@@ -1,12 +1,24 @@
+import json
 import logging
 import os
 import socket
+import sys
 from time import time
 
 from pyramid.view import view_config
 from pyramid.httpexceptions import HTTPForbidden, HTTPBadRequest
+from pyramid.response import Response
 
 from pings.web_server import resources
+
+try:
+    sys.path[0:0] = [os.path.join(os.path.dirname(__file__),
+                                  '../../../models/work_in_progress/src')]
+    from graph import display_stats
+except Exception, e:
+    print "Exception was caught during the import of the graph module."
+    print "This will make the feedback part of the system not work"
+    print e
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +46,7 @@ min_round_time = time_table[0]
 
 #We will store stats information in that file.
 hostname = socket.gethostname()
+server_ip = socket.gethostbyname(socket.gethostname())
 stats = open("ip_server_stats.%s.%d.txt" % (hostname, os.getpid()), "a")
 
 
@@ -142,7 +155,6 @@ def submit_ping_results(request):
     return {'success': True}
 
 
-from pyramid.response import Response
 @view_config(route_name='hello')
 def hello_world(request):
     return Response('Hello %(name)s!' % request.matchdict)
@@ -151,3 +163,42 @@ def hello_world(request):
 @view_config(route_name='main', renderer='main.jinja2')
 def main(request):
     return resources.get_leaderboards()
+
+
+@view_config(route_name='feedback')
+def feedback(request):
+    if not request.path_qs.startswith("/feedback.py?jsoncallback="):
+        raise HTTPBadRequest('Malformed input')
+
+    parameters = request.params
+    # override real IP for testing
+    ip = parameters.get('ip', request.client_addr)
+
+    # If the client have a private ip, it is on the same network as
+    # the server. So we use the server ip as there isn't have geoip
+    # info for private ip.
+    int_ip = resources.get_int_from_ip(ip)
+    if ((167772160 <= int_ip <= 184549375) or
+        (2886729728 <= int_ip <= 2887778303) or
+        (3232235520 <= int_ip <= 3232301055)):  # is_private
+        ip = server_ip
+
+    measurements = parameters.get('measurements', '')
+    html = not bool(parameters.get('text_only', ''))
+    full_page = bool(parameters.get('full_page', ''))
+
+    response = display_stats(ip, measurements, html, full_page)
+    if False and full_page:
+        response = response.encode('utf-8')
+        content_type = 'text/html' if html else 'text/plain'
+    else:
+        response = json.dumps({'content': response})  # already utf-8 encoded
+        # wrap the reponse in jsonp
+        response = parameters.get('jsoncallback',
+                                  'jsoncallback') + '(' + response + ')'
+        content_type = 'application/json'
+    res = Response(response,
+                   content_type=content_type,
+                   charset='utf-8')
+
+    return res

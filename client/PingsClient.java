@@ -601,7 +601,6 @@ public class PingsClient extends Observable implements Runnable {
         last = last.substring(0, last.length() - 2);
         float value = Float.parseFloat(last);
         ok &= value >= 10 && value < 1900;
-	ok = true;
 	if (ok) {
 	    synchronized(measurements) {
 		String measurement = current_ping_dest.getHostAddress() + "," + last;

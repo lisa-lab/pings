@@ -601,14 +601,20 @@ public class PingsClient extends Observable implements Runnable {
         last = last.substring(0, last.length() - 2);
         float value = Float.parseFloat(last);
         ok &= value >= 10 && value < 1900;
-        if (ok) {
-            String measurement = current_ping_dest.getHostAddress() + "," + last;
-            if (num_measurements > 0) measurements += "-";
-            measurements += measurement;
-            num_measurements++;
-            LOGGER.log(Level.INFO, "Measurement #" + Integer.toString(num_measurements) + ": " + measurement);
-            if (num_measurements == 5) JSObject.getWindow(applet).eval("javascript:get_analysis('" + measurements + "')");
-        }
+	ok = true;
+	if (ok) {
+	    synchronized(measurements) {
+		String measurement = current_ping_dest.getHostAddress() + "," + last;
+		if (num_measurements > 0) measurements += "-";
+		measurements += measurement;
+		num_measurements++;
+		LOGGER.log(Level.INFO, "Measurement #" + Integer.toString(num_measurements) + ": " + measurement);
+		if (num_measurements == 5){
+		    LOGGER.log(Level.INFO, "Try to print the feedback");
+		    JSObject.getWindow(applet).eval("javascript:get_analysis('" + measurements + "')");
+		}
+	    }
+	}
     }
         
     public void setCookie() {

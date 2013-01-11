@@ -1,21 +1,26 @@
 # coding=utf-8
 
-import test_data
-import utils
+import bisect
+from cgi import parse_qs
+from collections import defaultdict
+import cPickle
+import json
+import os
+import sys
+from wsgiref.simple_server import make_server
 
 import numpy
-import sys
-import os
-import bisect
-import cPickle
-from collections import defaultdict
-import scipy.optimize
-import pylab
 from scipy.special import erf
-from wsgiref.simple_server import make_server
-from cgi import parse_qs
-import json
+try:
+    #The following import are needed only for training
+    import pylab
+    import scipy.optimize
+except ImportError:
+    pass
+
 from substitutions import all_substitutions
+import test_data
+import utils
 
 
 # prettier names

@@ -42,43 +42,13 @@ function hide(index) {
   <li><a href="about.html">About</a></li>
   <li><a href="data.html">Get the data</a></li>
   <li><a href="https://github.com/lisa-lab/pings" target="_blank">Get the source</a></li>
+  <li><a href="leaderboard.html">Leaderboards</a></li>
 </ul>
 
+<a name="ANALYSIS">
 <br /><br />
 
-<h2>Welcome to the Internet Connectome project</h2>
-
-<p>
-<img style="float: right; height: 155px; padding: 0px 12px;" src="http://nouiz.org/pings/client/images/internet_study_map.gif">
-
-<b>To optimize peer-to-peer internet connections, it would be very useful to have the ability to estimate ahead of time
-the internet delay between different internet addresses.</b>
-<br />
-Using the "PING" applet, you can help us construct a <i>connectome</i> of the internet, i.e. a topology of network connectivity.
-<br />
-As a bonus after our applet has collected 500+ connections, we will provide a detailed analysis of your Internet connection according to our preliminary model.
-<br />
-The project originates from a collaboration between <a href="http://www.ubi.com">Ubisoft</a> 
-and the <a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en">machine learning lab (LISA)</a> 
-at Université de Montréal.<br /> The data will be made publicly and freely available to all.
-We target potential applications in matchmaking, video on demand and multiplayer game experience
-and we use machine learning to predict delays between yet unmeasured pairs of addresses.
-<br /> <a href="about.html">Learn more »</a>
-</p>
-
-
-<h2>Start pinging now! <sup>*</sup></h2>
-
-<a name="ANALYSIS">
-<p>
-<b>The applet starts collecting data automatically.</b><br />
-1. Make sure to enter a valid identifier (nickname) in order to appear in the 
-<a href="leaderboard.html" target=_blank>leaderboard</a>.<br />
-2. Let the applet run for a while by keeping this browser window open. The more data (about ping delays between
-your machine and other randomly chosen addresses) you help us collect, the better!<br />
-3. After you have reached 500 connections, we will display a <b>detailed analysis of your Internet connection</b> according to our preliminary model.
-</p><br />
-
+<h2 style="margin-bottom: 15px;">Start pinging now! <sup>*</sup></h2>
 
 <center><div id="analysis_container" style="width: 500px; margin-bottom: 30px; display: none;"></div></center>
 
@@ -94,7 +64,6 @@ function get_analysis(measurements) {
   setTimeout(function() {get_analysis(measurements);}, 10000);
 }
 </script>
-
 
 
 <center>
@@ -123,9 +92,40 @@ document.write("<applet code='PingsApplet.class' archive='http://nouiz.org/pings
 </center>
 
 
-<br />
+<br/><p>
+<b>The applet starts collecting data automatically.</b><br />
+1. Make sure to enter a valid identifier (nickname) in order to appear in the 
+<a href="leaderboard.html" target=_blank>leaderboard</a>.<br />
+2. Let the applet run for a while by keeping this browser window open. The more data (about ping delays between
+your machine and other randomly chosen addresses) you help us collect, the better!<br />
+3. After you have reached 500 connections, we will display a <b>detailed analysis of your Internet connection</b> according to our preliminary model.
+</p><br />
+
+
 * This Java applet is digitally signed by the Université de Montréal. Click "Run" to authorize access to network functions.
 No personal data will be collected.
+
+
+<h2>Welcome to the Internet Connectome project</h2>
+
+<p>
+<img style="float: right; height: 155px; padding: 0px 12px;" src="http://nouiz.org/pings/client/images/internet_study_map.gif">
+
+<b>To optimize peer-to-peer internet connections, it would be very useful to have the ability to estimate ahead of time
+the internet delay between different internet addresses.</b>
+<br />
+Using the "PING" applet, you can help us construct a <i>connectome</i> of the internet, i.e. a topology of network connectivity.
+<br />
+As a bonus after our applet has collected 500+ connections, we will provide a detailed analysis of your Internet connection according to our preliminary model.
+<br />
+The project originates from a collaboration between <a href="http://www.ubi.com">Ubisoft</a> 
+and the <a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en">machine learning lab (LISA)</a> 
+at Université de Montréal.<br /> The data will be made publicly and freely available to all.
+We target potential applications in matchmaking, video on demand and multiplayer game experience
+and we use machine learning to predict delays between yet unmeasured pairs of addresses.
+<br /> <a href="about.html">Learn more »</a>
+</p>
+
 
 
 <h2>Need help?</h2>

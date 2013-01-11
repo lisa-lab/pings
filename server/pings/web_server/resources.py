@@ -288,7 +288,11 @@ def get_pings(client_addr):
                  (3232235520 <= ip._ip <= 3232301055)) or  # is_private
                 (4026531840 <= ip._ip <= 4294967295) or  # is_reserved
                 (ip._ip == 0) or  # is_unspecified
-                ip.packed[0] == '\x00'):
+                ip.packed[0] == '\x00' or
+                # 143.93.75.67 This ip was used by a virus. People
+                # that connection to it to detect infested virus. We
+                # don't use it to don't have false alert.
+                ip._ip == 2405256003):
             ip_addresses.append(str(ip))
 
     return ip_addresses

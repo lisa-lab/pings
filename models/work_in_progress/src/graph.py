@@ -32,10 +32,13 @@ def prettify(record):
 
 
 # load data
-data = numpy.concatenate([cPickle.load(file('../data/sandbox2/' + t)) for t in 'train', 'valid', 'test'])
+dataf = os.path.join(os.path.dirname(__file__), '../data/sandbox2/')
+data = numpy.concatenate([cPickle.load(file(os.path.join(dataf, t))) for t in 'train', 'valid', 'test'])
 sizes = data.max(axis=0) + 1
-names = cPickle.load(file('../data/sandbox2/names'))
-params, terms = cPickle.load(file('../data/sandbox2/params'))
+namesf = os.path.join(os.path.dirname(__file__), '../data/sandbox2/names')
+names = cPickle.load(file(namesf))
+paramsf = os.path.join(os.path.dirname(__file__), '../data/sandbox2/params')
+params, terms = cPickle.load(file(paramsf))
 TARGET = 9
 
 # compute stats (mean, var) for each location (country, region, city)

@@ -167,7 +167,7 @@ def main(request):
 
 @view_config(route_name='feedback')
 def feedback(request):
-    if not request.path_qs.startswith("/feedback.py?jsoncallback="):
+    if not request.path_qs.startswith("/feedback.py"):
         raise HTTPBadRequest('Malformed input')
 
     parameters = request.params

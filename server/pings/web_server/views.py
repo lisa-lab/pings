@@ -188,7 +188,7 @@ def feedback(request):
     full_page = bool(parameters.get('full_page', ''))
 
     response = display_stats(ip, measurements, html, full_page)
-    if False and full_page:
+    if full_page:
         response = response.encode('utf-8')
         content_type = 'text/html' if html else 'text/plain'
     else:

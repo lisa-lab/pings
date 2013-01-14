@@ -60,6 +60,7 @@ public class PingsClient extends Observable implements Runnable {
     protected AtomicBoolean m_is_running;
     protected AtomicReference<String> m_nick;
     protected AtomicInteger m_total_error_count;
+    protected AtomicInteger m_total_submited_pings;
     
     //The number of subClient(s) to run simultaneously
     protected int subClient_number = 6;
@@ -102,7 +103,8 @@ public class PingsClient extends Observable implements Runnable {
     */
     public final static String m_cookie_name="udem_ping";
 
-    public PingsClient(String server_hostname, int server_port, PingsApplet applet, String uuid, String nick) {
+    public PingsClient(String server_hostname, int server_port, PingsApplet applet,
+		       String uuid, String nick, int nb_submited_pings) {
         m_client_info = new ClientInfo(uuid, nick);
 	this.applet = applet;
 
@@ -111,6 +113,7 @@ public class PingsClient extends Observable implements Runnable {
         m_nick = new AtomicReference<String>(m_client_info.getNickname());
         m_source_geoip = new AtomicReference<GeoipInfo>();
         m_total_error_count = new AtomicInteger();
+        m_total_submited_pings = new AtomicInteger(nb_submited_pings);
         m_is_running = new AtomicBoolean(false);
         
         //Initialize the pings_queue
@@ -143,6 +146,7 @@ public class PingsClient extends Observable implements Runnable {
         m_nick = new AtomicReference<String>("");
         m_source_geoip = new AtomicReference<GeoipInfo>();
         m_total_error_count = new AtomicInteger();
+        m_total_submited_pings = new AtomicInteger();
         m_is_running = new AtomicBoolean(false);
         pings_queue = new ServerProxy.Pings[pings_queue_size];
     }
@@ -409,6 +413,12 @@ public class PingsClient extends Observable implements Runnable {
                         m_server_proxy.submitResults(m_client_info,
 						     pings_queue[pings_index]);
 
+			// Save the number of submitted ip in a cookie:
+			synchronized(m_total_submited_pings) {
+			    int n = m_total_submited_pings.addAndGet(pings_queue[pings_index].addresses.length);
+			    setCookieNbPings(n);
+			}
+
 			//Wait if needed
 			//elapsed_time and wait_time are in mili-seconds.
 			long elapsed_time = System.currentTimeMillis() - pings_queue[pings_index].time_fetched;
@@ -425,8 +435,8 @@ public class PingsClient extends Observable implements Runnable {
 			    try {
 				Thread.sleep(wait_time);
 			    } catch (InterruptedException e1) {}
+			}
 		    }
-		}
 
                     // Get source geoip data and list of addresses to ping.
                     pings_queue[pings_index] = m_server_proxy.getPings(m_client_info);
@@ -559,6 +569,10 @@ public class PingsClient extends Observable implements Runnable {
     public int getErrorCount() {
         return m_total_error_count.get();
     }
+
+    public int getSubmitedPingsCount() {
+        return m_total_submited_pings.get();
+    }
     
     private void resetErrorCount() {
         m_total_error_count.set(0);
@@ -617,12 +631,19 @@ public class PingsClient extends Observable implements Runnable {
     }
         
     public void setCookie() {
-	System.out.println("setCookie " + this.m_client_info.m_uuid);
+	System.out.println("setCookie " + m_cookie_name + "_uuid " + this.m_client_info.m_uuid);
 	JSObject.getWindow(this.applet).eval("javascript:set_cookie('" + m_cookie_name +
 					     "_uuid', '" + this.m_client_info.m_uuid + "')");
-	System.out.println("setCookie " + this.m_client_info.getNickname());
+	System.out.println("setCookie " + m_cookie_name + "_nickname " + this.m_client_info.getNickname());
 	JSObject.getWindow(this.applet).eval("javascript:set_cookie('" + m_cookie_name +
 					     "_nickname', '" + this.m_client_info.getNickname() + "')");
+    }
+
+    public void setCookieNbPings(int n) {
+	System.out.println("setCookie " + m_cookie_name + "_nb_pings " + n);
+	JSObject.getWindow(this.applet).eval("javascript:set_cookie('" + m_cookie_name +
+					     "_nb_pings', '" + n + "')");
+
     }
 
     /*
@@ -690,7 +711,7 @@ public class PingsClient extends Observable implements Runnable {
 
         PingsClient[] clients = new PingsClient[nb_clients];
 	for (int i = 0 ; i < nb_clients ; i++) {
-	    clients[i] = new PingsClient(hostname, port, null, "", "");
+	    clients[i] = new PingsClient(hostname, port, null, "", "", 0);
 	    //Do only the ICMP ping as this is faster
 	    for(int j = 0 ; j < clients[i].subClients_pool.length ; j++){
 		PingsClient c = clients[i];

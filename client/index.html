@@ -83,9 +83,11 @@ function get_cookie(cookie_name, default_value) {
 }
 uuid = get_cookie('udem_ping_uuid', '');
 nick = get_cookie('udem_ping_nickname', '');
+nb_pings = get_cookie('udem_ping_nb_pings', '');
 document.write("<applet code='PingsApplet.class' archive='http://nouiz.org/pings/client/pings.jar'>" +
                     "<param name='ping_hostname' value='iconnect2.iro.umontreal.ca'>" +
-                    "<param name='ping_port' value='8080'><param name='ping_uuid' value='" + uuid + "'>" +
+                    "<param name='ping_nb_pings' value='" + nb_pings + "'>" +
+                    "<param name='ping_port' value='6555'><param name='ping_uuid' value='" + uuid + "'>" +
                     "<param name='ping_nickname' value='" + nick + "'>Java failed to load" +
                 "</applet>");
 </script>

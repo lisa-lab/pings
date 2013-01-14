@@ -51,6 +51,10 @@ public class PingsApplet extends JApplet {
 		    SERVER_PORT = Integer.parseInt(s);
 		String uuid = getParameter("ping_uuid");
 		String nick = getParameter("ping_nickname");
+		String nb_pings = getParameter("ping_nb_pings");
+		int nb_pings_int = 0;
+		if (nb_pings != null)
+		    nb_pings_int = Integer.parseInt(nb_pings);
 
 		//Setup the simulation mode if the argument 'simulation' was set to true
 		try {
@@ -67,6 +71,7 @@ public class PingsApplet extends JApplet {
 			else {
 			    System.out.println("ping_uuid " + uuid);
 			    System.out.println("ping_nickname " + nick);
+			    System.out.println("ping_nb_pings " + nb_pings);
 			    /* Do not try to get the cookie this way. It don't work well on Chrome.
 			       Chrome append garbage to the end of the cookie!
 			    if (uuid == null || uuid.length() == 0)
@@ -88,14 +93,18 @@ public class PingsApplet extends JApplet {
 				nick = initial_nickname;
 				System.out.println("No nickname, use the default one.");
 			    }
-
-			    pings_clients[i] = new PingsClient(SERVER_HOSTNAME, SERVER_PORT, this, uuid, nick);
+			    int old_nb = 0;
+			    if(pings_clients[i] != null)
+				old_nb = pings_clients[i].getSubmitedPingsCount();
+			    else
+				old_nb = nb_pings_int;
+			    pings_clients[i] = new PingsClient(SERVER_HOSTNAME, SERVER_PORT, this, uuid, nick, old_nb);
 			    pings_clients[i].addObserver(new ConnectErrorObserver());
 			}
 		}
 		if (pings_gui == null)
-		    pings_gui = new PingsGUI(this, 0);
-		else{
+		    pings_gui = new PingsGUI(this, nb_pings_int);
+		else {
 		    pings_gui = new PingsGUI(this, pings_gui.getPingsCount());
 		}
 		

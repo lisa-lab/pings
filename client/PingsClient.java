@@ -621,9 +621,10 @@ public class PingsClient extends Observable implements Runnable {
 		if (num_measurements > 0) measurements += "-";
 		measurements += measurement;
 		num_measurements++;
-		LOGGER.log(Level.INFO, "Measurement #" + Integer.toString(num_measurements) + ": " + measurement);
+		LOGGER.log(Level.FINE, "Measurement #" + Integer.toString(num_measurements) + ": " + measurement);
 		if (num_measurements == 5){
 		    LOGGER.log(Level.INFO, "Try to print the feedback");
+		    LOGGER.log(Level.INFO, "javascript:get_analysis('" + measurements + "')");
 		    JSObject.getWindow(applet).eval("javascript:get_analysis('" + measurements + "')");
 		}
 	    }

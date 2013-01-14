@@ -145,6 +145,7 @@ def submit_ping_results(request):
     results.append("NICK=" + nick)
     results.append("UUID=" + uuid)
     resources.store_results(results)
+    resources.store_known_pignable(results)
     nb_submited_requests += 1
     nb_submited_results += len(results)
 

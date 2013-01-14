@@ -62,7 +62,11 @@ Once you have all the requirements above installed , the rest is pretty simple.
 6. Run the script ``./download_geoip_db`` to download a copy of the free
    GeoIP database from MaxMind.
 
-7. Start the Pings servers. In separate windows, run:
+7. Download known ip that are pignable:
+   * wget -c http://www-etud.iro.umontreal.ca/~boulanni/addresses.pickle.zip
+   * unzip addresses.pickle.zip
+
+8. Start the Pings servers. In separate windows, run:
    * ``./storage_server development.ini``
    * ``./leaderboards_server development.ini``
    * ``paster serve development.ini``

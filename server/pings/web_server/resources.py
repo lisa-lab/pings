@@ -1,3 +1,4 @@
+import cPickle
 import logging
 import os
 import time
@@ -213,6 +214,23 @@ class active_queue:
 queue_size = 100
 last_clients = active_queue(queue_size)
 
+# Init the list of know ip that are pignable
+try:
+    f = open("addresses.pickle")
+    d = cPickle.load(f)
+    f.close()
+    known_pignable = active_queue(len(d))
+    now = time.time()
+    for ip in d:
+        known_pignable.add(ip, now)
+except Exception, e:
+    print ("We got an exception while reading the list of valid ip."
+           " Did you download and unzip the file 'addresses.pickle.zip'?")
+    print e
+    print "We will init an empty list"
+
+    known_pignable = active_queue(1000)
+
 
 def get_int_from_ip(ip):
     int_parts = [int(str_) for str_ in ip.split('.')]
@@ -236,7 +254,7 @@ def get_pings(client_addr):
     # Otherwise, this could cause a DDoS attack.
     if len(last_clients) > 9:
         # Add up to half of _num_addresses from other peers
-        nb_cli_ip = _num_addresses / 2
+        nb_cli_ip = _num_addresses / 3
         num_tries = 0
         # If too few past clients, lower the prob to ping them.
         max_tries = min(_num_addresses,
@@ -251,6 +269,16 @@ def get_pings(client_addr):
             except Exception:
                 pass
     ip_addresses = [str(ipaddr.IPv4Address(ip)) for ip in ip_addresses]
+
+    # Get ip from the list of know good ip. If we know enough client,
+    # 1/3 ip are clients, 1/3 are known pignable and 1/3 are random.
+    n = (_num_addresses - len(ip_addresses)) / 2
+    if len(known_pignable) > (2 * n):
+        for i in range(n):
+            random_ip = known_pignable.get_random()
+            # Don't ping ourself and don't ping twice the same ip
+            if random_ip != client_ip and random_ip not in ip_addresses:
+                ip_addresses.append(random_ip)
 
     # Add current client to the list of pingable clients.
     if (client_ip != 2130706433 and  # don't accept 127.0.0.1
@@ -362,6 +390,19 @@ def store_results(results):
     storage_server instance."""
     logger.debug('Storing ping results: %s', results)
     zmq_send_results_socket.send_json(results)
+
+def store_known_pignable(results):
+    # Store in the known_pignable variable:
+    now = time.time()
+    for res in results:
+        if res.startswith("ICMP"):
+            sp = res.split()
+            t = sp[4]
+            if t.endswith("ms;"):
+                t = int(t[:-3])
+                if t > 10 and t < 2000:
+                    known_pignable.add(sp[1], now)
+
 
 if __name__ == "__main__":
     if True:  # False:

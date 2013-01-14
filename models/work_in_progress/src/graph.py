@@ -290,8 +290,11 @@ function hide(index) {
 <tr><td>Average latency (measured)</td><td><b>%i ms</b></td></tr>
 <tr><td style="width: 205px;">Accuracy of prediction</td><td><b>%i ms</b></td></tr>""" % (int(numpy.round(predictions.mean())), int(numpy.round(you_mean)), int(numpy.round(abs(targets-predictions).mean())))
 
-  max_width = 220
-  max_seen = max([max(int(numpy.round(predictions[i])), targets[i]) for i in indices])
+#  print predictions, targets, indices
+  if len(indices) > 0:
+      # This can happen if all ip can't be resolved
+      max_width = 220
+      max_seen = max([max(int(numpy.round(predictions[i])), targets[i]) for i in indices])
   for i in indices:
     prettify(saved_geo_data[i])
     width_prediction = int(max_width * numpy.round(predictions[i]) / max_seen)

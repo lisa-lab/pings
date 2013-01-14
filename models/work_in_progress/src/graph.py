@@ -128,6 +128,7 @@ def display_stats(ip, measurements, html=True, full_page=True):
   r = [bisect.bisect_left(names[i], t[:i+1] if i else t[0]) for i in xrange(3)]
 
   all_measurements = measurements.split('-')
+  all_measurements = [m for m in all_measurements if m]  # remove empty section.
   formatted = numpy.empty((len(all_measurements), 15), dtype=int)
   saved_geo_data = []
   for j, m in enumerate(all_measurements):

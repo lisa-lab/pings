@@ -135,7 +135,9 @@ def display_stats(ip, measurements, html=True, full_page=True):
       ip2, latency = m.split(',')
       latency = float(latency)
       ip2_int = utils.get_int_from_ip(ip2)
-    except:
+    except Exception, e:
+      print "In display_stats, skip the measurements '%s' and following as we got this error:" % m
+      print e
       formatted = formatted[:j]
       break  # may be due to truncated URLs, stop here
     d2 = utils.get_geoip_data(ip2)

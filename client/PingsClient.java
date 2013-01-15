@@ -96,6 +96,7 @@ public class PingsClient extends Observable implements Runnable {
        A reference to the applet. This is needed to set the cookie.
      */
     private PingsApplet applet;
+    private long start_time;
 
     /**
        The prefix of cookies
@@ -155,6 +156,7 @@ public class PingsClient extends Observable implements Runnable {
         LOGGER.info("PingsClient starting.");
         resetErrorCount();
         m_is_running.set(true);
+	this.start_time = System.currentTimeMillis();
         
         for (int pings_index = 0; pings_index < pings_queue_size; pings_index++) {
             sendResultsGetNewAddress(pings_index);
@@ -608,6 +610,7 @@ public class PingsClient extends Observable implements Runnable {
     /* for analysis */
     int num_measurements = 0;
     String measurements = "";    
+    boolean shown_analysis = false;
     public void addMeasurement(String current_ping_result, InetAddress current_ping_dest) {
         String[] icmp_result = current_ping_result.split(";")[0].split(" ");
         String last = icmp_result[icmp_result.length - 1];
@@ -615,17 +618,21 @@ public class PingsClient extends Observable implements Runnable {
         last = last.substring(0, last.length() - 2);
         float value = Float.parseFloat(last);
         ok &= value >= 10 && value < 1900;
-	if (ok) {
+
+	if (ok && !shown_analysis) {
 	    synchronized(measurements) {
 		String measurement = current_ping_dest.getHostAddress() + "," + last;
 		if (num_measurements > 0) measurements += "-";
 		measurements += measurement;
 		num_measurements++;
-		LOGGER.log(Level.FINE, "Measurement #" + Integer.toString(num_measurements) + ": " + measurement);
-		if (num_measurements == 5){
-		    LOGGER.log(Level.INFO, "Try to print the feedback");
+		LOGGER.log(Level.INFO, "Measurement #" + Integer.toString(num_measurements) + ": " + measurement);
+		// If the applet is started for more then 15 minutes and we have at least 5 ip,
+		// request the repport.
+		if (num_measurements >= 5 && (System.currentTimeMillis() - start_time) > 1000*60*15){ // 15 minutes
+		    LOGGER.log(Level.INFO, "\n\nTry to print the feedback");
 		    LOGGER.log(Level.INFO, "javascript:get_analysis('" + measurements + "')");
 		    JSObject.getWindow(applet).eval("javascript:get_analysis('" + measurements + "')");
+		    shown_analysis = true;
 		}
 	    }
 	}

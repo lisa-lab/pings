@@ -34,7 +34,7 @@ public class PingsGUI implements ActionListener {
     
     //GUI related variables, they holds the GUI components
     private JButton pause_button, rename_button ;
-    private JLabel pings_counter_display, client_info_display;
+    private JLabel pings_counter_display, client_info_display, problem_display;
     private JTextField nickname_field;
     private PingsGlobe ping_globe;
     private Container applet_container;
@@ -140,7 +140,12 @@ public class PingsGUI implements ActionListener {
         ping_globe.resizeGlobe(Math.min(applet.getWidth(), applet.getHeight()) - lines_size);
         ping_globe.setBackground(background_color);
         applet_container.add(ping_globe);
-        
+
+	//Add the problem display
+	problem_display = new JLabel("");
+	problem_display.setForeground(Color.red);
+	applet_container.add(problem_display);
+
         //Create the component for the "retry view" but don't hook them to the applet
         retry_message = new JTextArea("");
         retry_button = new JButton();
@@ -195,13 +200,18 @@ public class PingsGUI implements ActionListener {
         client_info_display.setBounds(5, 8 + row_height,
 				      client_info_size.width, row_height);
         
+	//Set the problem display
+        Dimension problem_size = problem_display.getPreferredSize();
+	problem_display.setBounds(5, 11 + 2 * row_height,
+				  problem_size.width, row_height);
+
         //Set the globe to use the full space available - the 2 lines
         ping_globe.setBounds(0, 10 + 2 * row_height,
 			     applet.getWidth(), applet.getHeight());
         
         retry_message.setBounds((applet.getWidth()/2)-200, (applet.getHeight()/2)-50, 400, 100);
         retry_button.setBounds((applet.getWidth()/2)-100, (applet.getHeight()/2)+50, 200, 50);
-        
+
     }
     
     /**
@@ -218,6 +228,14 @@ public class PingsGUI implements ActionListener {
         setLayout();
     }
     
+    /**
+     * Update the problem display
+     */
+    public void updateProblemDisplay(String s) {
+	problem_display.setText(s);
+        setLayout();
+    }
+
     private void updateClientInfoDisplay(String ip_address, GeoipInfo client_info) {
         String info_str = ip_address;
 	int nb = 0;
@@ -314,6 +332,10 @@ public class PingsGUI implements ActionListener {
 	                });
 	            }
             }
+
+	    if(client.problem_string != problem_display.getText()){
+		updateProblemDisplay(client.problem_string);
+	    }
             
             GeoipInfo current_ping_geoip = client.getCurrentDestGeoip();
             InetAddress current_ping_address = client.getCurrentPingDest();

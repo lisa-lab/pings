@@ -62,6 +62,12 @@ public class PingsClient extends Observable implements Runnable {
     protected AtomicInteger m_total_error_count;
     protected AtomicInteger m_total_submited_pings;
     
+    // For analysis
+    protected AtomicInteger m_measurements_failed;
+    int num_measurements = 0;
+    String measurements = "";
+    boolean shown_analysis = false;
+
     //The number of subClient(s) to run simultaneously
     protected int subClient_number = 6;
     //The subClients
@@ -115,6 +121,7 @@ public class PingsClient extends Observable implements Runnable {
         m_source_geoip = new AtomicReference<GeoipInfo>();
         m_total_error_count = new AtomicInteger();
         m_total_submited_pings = new AtomicInteger(nb_submited_pings);
+        m_measurements_failed = new AtomicInteger();
         m_is_running = new AtomicBoolean(false);
         
         //Initialize the pings_queue
@@ -148,6 +155,7 @@ public class PingsClient extends Observable implements Runnable {
         m_source_geoip = new AtomicReference<GeoipInfo>();
         m_total_error_count = new AtomicInteger();
         m_total_submited_pings = new AtomicInteger();
+        m_measurements_failed = new AtomicInteger();
         m_is_running = new AtomicBoolean(false);
         pings_queue = new ServerProxy.Pings[pings_queue_size];
     }
@@ -191,6 +199,8 @@ public class PingsClient extends Observable implements Runnable {
         
         private boolean sucide;
         
+	String problem_string = "";
+
         public subClient () {
             prober = new CompositeProber(m_client_info);
         }
@@ -208,10 +218,11 @@ public class PingsClient extends Observable implements Runnable {
                     prober.probe(current_ping_dest);
                     current_ping_result = prober.getLastProbe();
                     LOGGER.log(Level.INFO, "Ping result: {0}.",current_ping_result);
-                    notifyObserversOfChange();
                     
                     //Extract relevant info for analysis
-                    addMeasurement(current_ping_result, current_ping_dest);
+                    problem_string = addMeasurement(current_ping_result, current_ping_dest);
+
+                    notifyObserversOfChange();
                     
                     //In case the thread is paused here
                     if (!m_is_running.get()) {
@@ -428,6 +439,10 @@ public class PingsClient extends Observable implements Runnable {
 			min_round_time += 0.1 * this.rand.nextInt((int)min_round_time);
 			long wait_time = (min_round_time * pings_queue_size * 1000) - elapsed_time ;
 			wait_time = (long)(wait_time * WAIT_TIME_BOOST);
+
+			// In case the submit succeed, but the get fail, if we don't null it, it will get resubmitted.
+			pings_queue[pings_index] = null;
+
 			if (wait_time > 0){
 			    LOGGER.info("\nWaiting before the next round for pings_index=" + pings_index +
 					" elapsed_time(ms)=" + elapsed_time +
@@ -605,22 +620,30 @@ public class PingsClient extends Observable implements Runnable {
     public boolean isRunning() {
         return m_is_running.get();
     }
-    
 
-    /* for analysis */
-    int num_measurements = 0;
-    String measurements = "";    
-    boolean shown_analysis = false;
-    public void addMeasurement(String current_ping_result, InetAddress current_ping_dest) {
+    // Return a string of problem detected.
+    // If we have more then 15 pings failed and none succeded, we return a string problem.
+    // Otherwise, we return an empty string.
+    public String addMeasurement(String current_ping_result, InetAddress current_ping_dest) {
+	if(shown_analysis)
+	    return "";
         String[] icmp_result = current_ping_result.split(";")[0].split(" ");
         String last = icmp_result[icmp_result.length - 1];
         boolean ok = last.substring(last.length() - 2).equals("ms");
         last = last.substring(0, last.length() - 2);
         float value = Float.parseFloat(last);
         ok &= value >= 10 && value < 1900;
+	String ret = "";
 
-	if (ok && !shown_analysis) {
-	    synchronized(measurements) {
+	synchronized(measurements) {
+	    if(!ok && num_measurements == 0){
+		int n_fail = m_measurements_failed.incrementAndGet();
+		if(n_fail > 15){
+		    ret = "All pings failed. Are pings blocked by a firewall? Your institution's firewall?";
+		}
+	    }
+
+	    if (ok) {
 		String measurement = current_ping_dest.getHostAddress() + "," + last;
 		if (num_measurements > 0) measurements += "-";
 		measurements += measurement;
@@ -636,6 +659,7 @@ public class PingsClient extends Observable implements Runnable {
 		}
 	    }
 	}
+	return ret;
     }
         
     public void setCookie() {

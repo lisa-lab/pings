@@ -37,7 +37,7 @@ public class PingsGUI implements ActionListener {
     private JLabel pings_counter_display, client_info_display;
     private JTextField nickname_field;
     private PingsGlobe ping_globe;
-    private Container button_container;
+    private Container applet_container;
     private Color text_color = new Color(227, 90, 0); //orange
     private Color background_color = Color.white;
     
@@ -72,9 +72,9 @@ public class PingsGUI implements ActionListener {
         applet.setBackground(background_color);
         
         //Recover the content and background of the applet to add components
-        button_container = applet.getContentPane();
-        button_container.setBackground(background_color);
-        button_container.setLayout(null);
+        applet_container = applet.getContentPane();
+        applet_container.setBackground(background_color);
+        applet_container.setLayout(null);
         
         //Add the pause/resume button to the applet
         pause_button = new JButton("Pause");
@@ -82,7 +82,7 @@ public class PingsGUI implements ActionListener {
         pause_button.setToolTipText(pause_tooltip);
         pause_button.setActionCommand("pause");
         pause_button.addActionListener(this);
-        button_container.add(pause_button);
+        applet_container.add(pause_button);
         
         //Add the button to change the nickname
         rename_button = new JButton("Change");
@@ -91,7 +91,7 @@ public class PingsGUI implements ActionListener {
         rename_button.setActionCommand("rename");
         rename_button.addActionListener(this);
         rename_button.setEnabled(false);
-        button_container.add(rename_button);
+        applet_container.add(rename_button);
         
         //Add the field to change the nickname
         nickname_field = new JTextField(15);
@@ -121,25 +121,25 @@ public class PingsGUI implements ActionListener {
                     }
                 }
             });
-        button_container.add(nickname_field);
+        applet_container.add(nickname_field);
         
         
         //Add the display for the number of pings done
         pings_counter_display = new JLabel("No ping sent yet");
         pings_counter_display.setForeground(text_color);
-        button_container.add(pings_counter_display);
+        applet_container.add(pings_counter_display);
         
         //Add the display for the client info
         client_info_display = new JLabel("");
         client_info_display.setForeground(text_color);
-        button_container.add(client_info_display);
+        applet_container.add(client_info_display);
         
         //Add the globe
         ping_globe = new PingsGlobe();
         int lines_size = 10 + nickname_field.getPreferredSize().height;
         ping_globe.resizeGlobe(Math.min(applet.getWidth(), applet.getHeight()) - lines_size);
         ping_globe.setBackground(background_color);
-        applet.getContentPane().add(ping_globe);
+        applet_container.add(ping_globe);
         
         //Create the component for the "retry view" but don't hook them to the applet
         retry_message = new JTextArea("");
@@ -477,7 +477,7 @@ public class PingsGUI implements ActionListener {
     public void destroy() {
         try {
             ping_globe.removeAll();
-            button_container.removeAll();
+            applet_container.removeAll();
             
             for (int i = 0; i < applet.nb_clients; i++) {
                 PingsClient.subClient[] subClientsPool = applet.pings_clients[i].getSubClientsPoolCopy();
@@ -501,30 +501,30 @@ public class PingsGUI implements ActionListener {
         public void actionPerformed(ActionEvent e) {
             SwingUtilities.invokeLater( new Runnable() {
                 public void run() {
-                    button_container.removeAll();
+                    applet_container.removeAll();
                     applet.restartApplet();
                 }
             });
         }
         
         public void run() {
-            button_container = applet.getContentPane();
-            button_container.setBackground(background_color);
-            button_container.setLayout(null);
+            applet_container = applet.getContentPane();
+            applet_container.setBackground(background_color);
+            applet_container.setLayout(null);
             
             retry_message.setText(message);
             retry_message.setForeground(text_color);
             retry_message.setBackground(background_color);
             retry_message.setLineWrap(true);
             retry_message.setEditable(false);
-            button_container.add(retry_message);
+            applet_container.add(retry_message);
             
             retry_button.setText("Retry");
             retry_button.setMnemonic(KeyEvent.VK_R);
             retry_button.setToolTipText("Try to relaunch the application");
             retry_button.setActionCommand("retry_connect");
             retry_button.addActionListener(this);
-            button_container.add(retry_button);
+            applet_container.add(retry_button);
             
             setLayout();
             

@@ -142,11 +142,16 @@ public class ClientInfo {
 
                     if (good) {
                         // find a v4 address
-                        for (InetAddress addr : Collections.list(interf.getInetAddresses()))
-                            if (addr instanceof Inet4Address) {
-                                m_local_addr = addr;
-                                break;
-                            }
+			// The try..catch is needed as some version of java generate an exception here.
+			try{
+			    for (InetAddress addr : Collections.list(interf.getInetAddresses()))
+				if (addr instanceof Inet4Address) {
+				    m_local_addr = addr;
+				    break;
+				}
+			}catch(NullPointerException e) {
+			    continue;
+			}
                         m_adapter = interf.getDisplayName();
                         break;
                     }

@@ -662,20 +662,25 @@ public class PingsClient extends Observable implements Runnable {
 	return ret;
     }
         
+    private void setOneCookie(String name, String value){
+	System.out.println("setCookie " + name + " " + value);
+	// The try..catch work around some browser bugs. This could make some cookie not saved
+	// but having something working without cookie is better then nothing working!
+	try{
+	    JSObject.getWindow(this.applet).eval("javascript:set_cookie('" + name +
+						 "', '" + value + "')");
+	}catch(NullPointerException e){
+	    LOGGER.log(Level.INFO, "Cannot set cookie due to NullPointerException");
+	}
+
+    }
     public void setCookie() {
-	System.out.println("setCookie " + m_cookie_name + "_uuid " + this.m_client_info.m_uuid);
-	JSObject.getWindow(this.applet).eval("javascript:set_cookie('" + m_cookie_name +
-					     "_uuid', '" + this.m_client_info.m_uuid + "')");
-	System.out.println("setCookie " + m_cookie_name + "_nickname " + this.m_client_info.getNickname());
-	JSObject.getWindow(this.applet).eval("javascript:set_cookie('" + m_cookie_name +
-					     "_nickname', '" + this.m_client_info.getNickname() + "')");
+	setOneCookie(m_cookie_name + "_uuid", this.m_client_info.m_uuid);
+	setOneCookie(m_cookie_name + "_nickname", this.m_client_info.getNickname());
     }
 
     public void setCookieNbPings(int n) {
-	System.out.println("setCookie " + m_cookie_name + "_nb_pings " + n);
-	JSObject.getWindow(this.applet).eval("javascript:set_cookie('" + m_cookie_name +
-					     "_nb_pings', '" + n + "')");
-
+	setOneCookie(m_cookie_name + "_nb_pings", Integer.toString(n));
     }
 
     /*

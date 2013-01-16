@@ -100,6 +100,7 @@ public class PingsApplet extends JApplet {
 				old_nb = nb_pings_int;
 			    pings_clients[i] = new PingsClient(SERVER_HOSTNAME, SERVER_PORT, this, uuid, nick, old_nb);
 			    pings_clients[i].addObserver(new ConnectErrorObserver());
+			    pings_clients[i].addObserver(new ConnectProblemObserver());
 			}
 		}
 		if (pings_gui == null)
@@ -170,6 +171,14 @@ public class PingsApplet extends JApplet {
 			if (client.connect_error) {
 				PingsApplet.this.errorConnectingServer(client.error_reason);
 			}
+		}
+	}
+
+	private class ConnectProblemObserver implements Observer {
+
+		public void update(Observable arg0, Object arg1) {
+			PingsClient client = (PingsClient) arg0;
+			PingsApplet.this.pings_gui.updateProblemDisplay(client.error_reason);
 		}
 	}
 }

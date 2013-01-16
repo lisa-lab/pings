@@ -94,7 +94,8 @@ public class PingsClient extends Observable implements Runnable {
     private int next_available_address[];
 
     //Variables used to notify the applet that there was a connection problem with
-    //the server
+    //the server. The error_reason is also set when there is a problem,
+    //but this is not yet an error.
     public boolean connect_error;
     public String error_reason;
     
@@ -453,6 +454,8 @@ public class PingsClient extends Observable implements Runnable {
 				Thread.sleep(wait_time);
 			    } catch (InterruptedException e1) {}
 			}
+			if(consecutive_error_count >= 6)
+			    PingsClient.this.displayProblem("");
 		    }
 
                     // Get source geoip data and list of addresses to ping.
@@ -466,8 +469,11 @@ public class PingsClient extends Observable implements Runnable {
                     //Wake up threads that might wait for new addresses
                     synchronized(pings_queue){
                             pings_queue.notify();
-                        }
+		    }
                     
+		    if(consecutive_error_count >= 6)
+			PingsClient.this.displayProblem("");
+		    //consecutive_error_count = 0; useless as a new thread will be created for the next fetch.
                     break;
                 }
                 catch (UnknownHostException _) {
@@ -515,6 +521,11 @@ public class PingsClient extends Observable implements Runnable {
                         break;
                     }
                     else {
+			//If we wait for more then 1 minutes, display the error messages.
+			//subClient thread will remove this when fixed.
+			if (wait_time >= 60)
+			    PingsClient.this.displayProblem(err_msg);
+
                         // Exponential backoff for consecutive errors. Also
                         // avoid thread busy-loop if IOException keeps getting
                         // raised in call to getPings.
@@ -545,6 +556,16 @@ public class PingsClient extends Observable implements Runnable {
     public void errorConnectingToServer(String reason) {
         this.connect_error = true;
         this.error_reason = reason;
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                PingsClient.this.setChanged();
+                notifyObservers();
+            }
+        });
+    }
+
+    public void displayProblem(String prob){
+	this.error_reason = prob;
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 PingsClient.this.setChanged();

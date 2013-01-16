@@ -34,13 +34,16 @@ public class PingsGUI implements ActionListener {
     
     //GUI related variables, they holds the GUI components
     private JButton pause_button, rename_button ;
-    private JLabel pings_counter_display, client_info_display, problem_display;
+    private JLabel pings_counter_display, client_info_display;
     private JTextField nickname_field;
     private PingsGlobe ping_globe;
     private Container applet_container;
     private Color text_color = new Color(227, 90, 0); //orange
     private Color background_color = Color.white;
-    
+
+    //GUI related to printing problem while we continue to work.
+    private JTextArea problem_display;
+
     //GUI component for the retry
     private JTextArea retry_message;
     private JButton retry_button;
@@ -142,8 +145,11 @@ public class PingsGUI implements ActionListener {
         applet_container.add(ping_globe);
 
 	//Add the problem display
-	problem_display = new JLabel("");
+	problem_display = new JTextArea("");
 	problem_display.setForeground(Color.red);
+	problem_display.setBackground(background_color);
+	//problem_display.setLineWrap(true);//Enabling this make problem_display being hided
+	problem_display.setEditable(false);
 	applet_container.add(problem_display);
 
         //Create the component for the "retry view" but don't hook them to the applet
@@ -202,11 +208,17 @@ public class PingsGUI implements ActionListener {
         
 	//Set the problem display
         Dimension problem_size = problem_display.getPreferredSize();
+	int n_lines = 0;
+	String prob_text = problem_display.getText();
+	if (prob_text.length() > 0) n_lines++;
+	for(int i=0; i < prob_text.length(); i++){
+	    if(prob_text.charAt(i) == '\n') n_lines++;
+	}
 	problem_display.setBounds(5, 11 + 2 * row_height,
-				  problem_size.width, row_height);
+				  problem_size.width, n_lines * row_height);
 
         //Set the globe to use the full space available - the 2 lines
-        ping_globe.setBounds(0, 10 + 2 * row_height,
+        ping_globe.setBounds(0, 10 + (2 + n_lines) * row_height,
 			     applet.getWidth(), applet.getHeight());
         
         retry_message.setBounds((applet.getWidth()/2)-200, (applet.getHeight()/2)-50, 400, 100);
@@ -382,6 +394,16 @@ public class PingsGUI implements ActionListener {
         }
     }
     
+    class clientObserver implements Observer {
+        private PingsGlobe.PingGUI gui_effect = null;
+        private InetAddress last_address = null ;
+
+        public void update(Observable o, Object arg) {
+            PingsClient client = (PingsClient) o;
+	    updateProblemDisplay(client.error_reason);
+	}
+    }
+
     /**
      * This method is used to refresh the Pause/Resume button to make it show
      * 'Pause' or 'Resume' and act accordingly depending on the client state 

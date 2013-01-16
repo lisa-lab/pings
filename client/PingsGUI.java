@@ -345,8 +345,7 @@ public class PingsGUI implements ActionListener {
 	                });
 	            }
             }
-
-	    if(client.problem_string != problem_display.getText()){
+	    if(!client.problem_string.equals(problem_display.getText())){
 		updateProblemDisplay(client.problem_string);
 	    }
             

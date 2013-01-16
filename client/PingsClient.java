@@ -638,7 +638,7 @@ public class PingsClient extends Observable implements Runnable {
 	synchronized(measurements) {
 	    if(!ok && num_measurements == 0){
 		int n_fail = m_measurements_failed.incrementAndGet();
-		if(n_fail > 15){
+		if(n_fail >= 15){
 		    ret = "All pings failed. Are pings blocked by a firewall? Your institution's firewall?";
 		}
 	    }

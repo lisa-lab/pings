@@ -290,6 +290,7 @@ public class PingsGUI implements ActionListener {
     public int getPingsCount() {
 	return pings_counter.get();
     }
+
     class clientThreadObserver implements Observer {
         
         private PingsGlobe.PingGUI gui_effect = null;

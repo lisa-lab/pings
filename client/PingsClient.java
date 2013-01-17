@@ -651,11 +651,15 @@ public class PingsClient extends Observable implements Runnable {
         String[] icmp_result = current_ping_result.split(";")[0].split(" ");
         String last = icmp_result[icmp_result.length - 1];
         boolean ok = last.substring(last.length() - 2).equals("ms");
-        last = last.substring(0, last.length() - 2);
-        float value = Float.parseFloat(last);
-        ok &= value >= 10 && value < 1900;
+	float value = -999f;
 	String ret = "";
-
+	if(!ok){
+	    LOGGER.log(Level.INFO, "Bad measurements: " + current_ping_result);
+	}else{
+	    last = last.substring(0, last.length() - 2);
+	    value = Float.parseFloat(last);
+	    ok &= value >= 10 && value < 1900;
+	}
 	synchronized(measurements) {
 	    if(!ok && num_measurements == 0){
 		int n_fail = m_measurements_failed.incrementAndGet();

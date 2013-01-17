@@ -391,18 +391,21 @@ def store_results(results):
     logger.debug('Storing ping results: %s', results)
     zmq_send_results_socket.send_json(results)
 
+
 def store_known_pignable(results):
     # Store in the known_pignable variable:
     now = time.time()
-    for res in results:
-        if res.startswith("ICMP"):
-            sp = res.split()
-            t = sp[4]
-            if t.endswith("ms;"):
-                t = int(t[:-3])
-                if t > 10 and t < 2000:
-                    known_pignable.add(sp[1], now)
-
+    try:
+        for res in results:
+            if res.startswith("ICMP"):
+                sp = res.split()
+                t = sp[4]
+                if t.endswith("ms;"):
+                    t = int(t[:-3])
+                    if t > 10 and t < 2000:
+                        known_pignable.add(sp[1], now)
+    except Exception, e:
+        print "Skip exception", e
 
 if __name__ == "__main__":
     if True:  # False:

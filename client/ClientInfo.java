@@ -334,7 +334,7 @@ public class ClientInfo {
         m_adapter = null;
         m_nickname = null;
         m_uuid = null;
-        m_number_of_pings = 10;
+        m_number_of_pings = 5;
         m_number_of_traces = 3;
         m_tcp_timeout = 1000; // In milliseconds
 

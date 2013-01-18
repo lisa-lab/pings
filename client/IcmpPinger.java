@@ -33,8 +33,10 @@ public class IcmpPinger implements Prober {
         // On *nixes: "7 packets transmitted, 6 received, 14% packet loss, time 6014ms"
         {"(([0-9]+)\\s[\\w|\\s]+),\\s(([0-9]+)\\s[\\w|\\s]+),.*(time)\\s(.*)", "$2 $4 $6"},
 
-        // On Windows XP: " Packets: Sent = 10, Received = 9, Lost = 1 (10% loss)"
-        {"[\\s|\\w|:]+=\\s([0-9]+),[\\s|\\w]+=\\s([0-9]+),.*", "$1 $2 ?ms"}
+        // On English Windows XP: " Packets: Sent = 10, Received = 9, Lost = 1 (10% loss)"
+	// On French Windows 7: "     Paquets : envoyés = 3, reçus = 0, perdus = 3 (perte 100%),"
+	// To be resistent to language, we make a very generic pattern. Hopefully, they don't swap numbers!
+        {"[^=]+=\\s+(\\d+), [^=]+=\\s+(\\d+),.*", "$1 $2 ?ms"}
     };
 
     public String getLastProbe() { return m_icmp_times; }
@@ -49,7 +51,7 @@ public class IcmpPinger implements Prober {
     */
     public static String getSummary(String[] summary_regex,
                                     List<String> stdout_lines) {
-        Pattern summary = Pattern.compile(".*(r|R)eceived.*");
+	Pattern summary = Pattern.compile(summary_regex[0]);
         for (String s : stdout_lines)
             if (summary.matcher(s).matches())
                 return s.replaceAll(summary_regex[0], summary_regex[1]);
@@ -137,5 +139,22 @@ public class IcmpPinger implements Prober {
     public IcmpPinger(ClientInfo this_info) {
         m_icmp_times = "";
         m_info = this_info;
+    }
+
+    public static void main(String args[]) throws InterruptedException {
+	// Here we tests the windows regex as there is difference in output depending of the OS language.
+	String[] to_test= {" Packets: Sent = 10, Received = 9, Lost = 1 (10% loss)",
+			   "     Paquets : envoyes = 10, recus = 9, perdus = 1 (perte 10%),",
+			   "     Paquets : envoyés = 10, recus = 9, perdus = 1 (perte 10%),",
+			   "     Paquets : envoyes = 10, reçus = 9, perdus = 1 (perte 10%),",
+			   "     Paquets : envoyés = 10, reçus = 9, perdus = 1 (perte 10%),",
+	};
+        ArrayList<String> out = new ArrayList<String>();
+	for (int i = 0; i < to_test.length; i++){
+	    out.add(to_test[i]);
+	    System.out.println(IcmpPinger.getSummary(OS_SPECIFIC_SUMMARY_REGEX[1], out));
+	    out.remove(0);
+	}
+	return;
     }
 }

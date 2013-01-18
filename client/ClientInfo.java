@@ -225,6 +225,10 @@ public class ClientInfo {
         }
     }
 
+    public boolean hasExternalAddress() {
+	return m_global_addr != null;
+    }
+
     /**
        Return the global address (as seen from
        the outside world)

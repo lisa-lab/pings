@@ -83,7 +83,24 @@ public class ServerProxy {
 	}
         String client_ip = (String)json_result.get("client_ip");
 	if (client_ip != null && !client_ip.equals("")){
-            client_info.setExternalAddress(InetAddress.getByName(client_ip));
+		InetAddress ip = InetAddress.getByName(client_ip);
+		if(!ip.isSiteLocalAddress()){
+		    client_info.setExternalAddress(ip);
+		}else if(!client_info.hasExternalAddress()){
+		    // This can happen if the server and the client are on the same network.
+		    System.out.println("the global ip is private. Trying to get another one from a different server." +
+				       client_ip);
+
+		    //http://checkip.dyndns.org/
+		    //<html><head><title>Current IP Check</title></head><body>Current IP Address: 132.204.251.254</body></html>
+		    URL server_url = new URL("http", "checkip.dyndns.org", 80, "index.html");
+		    HttpURLConnection connection = (HttpURLConnection)server_url.openConnection();
+		    BufferedReader breader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+		    String line = breader.readLine();
+		    String ip2 = line.replaceAll("[\\D]*([\\d]+.[\\d]+.[\\d]+.[\\d]+)[\\D]*", "$1");
+		    System.out.println("Got global ip from 2nd server: " + ip2);
+		    client_info.setExternalAddress(InetAddress.getByName(ip2));
+		}
 	}
 
         // Fill Pings instance from JSON results of our request.

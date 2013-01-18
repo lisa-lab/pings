@@ -52,6 +52,7 @@ public class PingsGUI implements ActionListener {
     private AtomicInteger pings_counter;
     private GeoipInfo client_geoip_info = null;
     private String ips = "";
+    private String problem_string = "";
     
     //The observers of the subclients that add pings effect on the globe
     // see ClientThreadObserver for more details
@@ -345,8 +346,15 @@ public class PingsGUI implements ActionListener {
 	                });
 	            }
             }
-	    if(!client.problem_string.equals(problem_display.getText())){
-		updateProblemDisplay(client.problem_string);
+	    if(!client.problem_string.equals(problem_string)){
+		problem_string = client.problem_string;
+		System.out.println("New problem string: " + problem_string);
+                SwingUtilities.invokeLater( new Runnable() {
+                    public void run() {
+			System.out.println("Will call updateProblemDisplay with " + problem_string);
+                        updateProblemDisplay(problem_string);
+                    }
+                });
 	    }
             
             GeoipInfo current_ping_geoip = client.getCurrentDestGeoip();

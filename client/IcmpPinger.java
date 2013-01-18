@@ -56,7 +56,18 @@ public class IcmpPinger implements Prober {
             if (summary.matcher(s).matches())
                 return s.replaceAll(summary_regex[0], summary_regex[1]);
 
-        return "invalid syntax"; // If something bad happens?
+	if(stdout_lines.size() == 0){
+	    return "ping have no output";
+	}
+
+	String str = stdout_lines.get(0);
+        for (String s : stdout_lines){
+	    if (s.length() > 0 && s.charAt(0) == ' ' && s.contains("=")){
+		str = s;
+		break;
+	    }
+	}
+        return "ping summary not found. The closest output line is : '" + str + "'";
     }
 
     public int probe(InetAddress addr) throws InterruptedException {

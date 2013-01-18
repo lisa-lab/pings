@@ -50,6 +50,29 @@ server_ip = socket.gethostbyname(socket.gethostname())
 stats = open("ip_server_stats.%s.%d.txt" % (hostname, os.getpid()), "a")
 
 
+def get_client_ip(request):
+    """
+    This fct return the client ip. If not private in the request use it.
+    Otherwise, use the ip provided by the client itself.
+    """
+
+    client_addr = request.client_addr
+    # If the ip_addresses is private, check if the client provided one.
+    int_ip = resources.get_int_from_ip(client_addr)
+    if ((167772160 <= int_ip <= 184549375) or
+        (2886729728 <= int_ip <= 2887778303) or
+        (3232235520 <= int_ip <= 3232301055)):  # is_private
+        ip = request.json_body.get("ip", "")
+        if ip:
+            int_ip = resources.get_int_from_ip(ip)
+            if not ((167772160 <= int_ip <= 184549375) or
+                    (2886729728 <= int_ip <= 2887778303) or
+                    (3232235520 <= int_ip <= 3232301055)):  # is_private
+                client_addr = ip
+                print "Use global ip provided by the client."
+    return client_addr
+
+
 @view_config(route_name='get_pings',
              renderer='json', request_method='POST')
 def get_pings(request):
@@ -57,7 +80,7 @@ def get_pings(request):
     global nb_get_pings, min_round_time
     global last_time, last_nb_get_pings, time_table_idx
     global nb_submited_requests, nb_submited_results, last_nb_submited_requests
-    client_addr = request.client_addr
+    client_addr = get_client_ip(request)
     logger.debug('get_pings request client address: %s', client_addr)
 
     ip_addresses = resources.get_pings(client_addr)
@@ -121,7 +144,7 @@ def submit_ping_results(request):
     """Called by the client to submit the results of the addresses pinged."""
     global nb_submited_requests, nb_submited_results
 
-    client_addr = request.client_addr
+    client_addr = get_client_ip(request)
     logger.debug('submit_ping_results request: %s', request.json_body)
 
     # Check that token is valid.  Always accept it even if it is bad

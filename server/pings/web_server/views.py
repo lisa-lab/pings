@@ -184,9 +184,22 @@ def feedback(request):
         (3232235520 <= int_ip <= 3232301055)):  # is_private
         ip = server_ip
 
+    # Get parameters
     measurements = parameters.get('measurements', '')
     html = not bool(parameters.get('text_only', ''))
     full_page = bool(parameters.get('full_page', ''))
+
+    # Limit the number of ip used in the analysis to limit the time.
+    if len(measurements) == '':
+        raise HTTPBadRequest('Malformed input. No measurements received.')
+    ms = [m for m in measurements.split('-') if m]
+    if time_table_idx == 0:
+        nb = 20
+    elif time_table_idx == 1:
+        nb = 15
+    else:
+        nb = 10
+    measurements = '-'.join(ms[-nb:])
 
     response = display_stats(ip, measurements, html, full_page)
     if full_page:

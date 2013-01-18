@@ -223,6 +223,7 @@ try:
     now = time.time()
     for ip in d:
         known_pignable.add(ip, now)
+    del d, f
 except Exception, e:
     print ("We got an exception while reading the list of valid ip."
            " Did you download and unzip the file 'addresses.pickle.zip'?")

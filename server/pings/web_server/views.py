@@ -69,7 +69,6 @@ def get_client_ip(request):
                     (2886729728 <= int_ip <= 2887778303) or
                     (3232235520 <= int_ip <= 3232301055)):  # is_private
                 client_addr = ip
-                print "Use global ip provided by the client."
     return client_addr
 
 

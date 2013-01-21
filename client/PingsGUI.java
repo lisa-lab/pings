@@ -50,6 +50,8 @@ public class PingsGUI implements ActionListener {
     
     //State variables
     private AtomicInteger pings_counter;
+    private AtomicInteger pings_failed_counter;
+    private int old_pings_counter;
     private GeoipInfo client_geoip_info = null;
     private String ips = "";
     private String problem_string = "";
@@ -70,7 +72,9 @@ public class PingsGUI implements ActionListener {
     * The buttons comes with tooltips and shortcuts.
     */
     PingsGUI(PingsApplet parent, int old_pings_counter) {
-	pings_counter = new AtomicInteger(old_pings_counter);
+	pings_counter = new AtomicInteger();
+	this.old_pings_counter = old_pings_counter;
+	pings_failed_counter = new AtomicInteger();
 
         applet = parent;
         applet.setBackground(background_color);
@@ -231,7 +235,7 @@ public class PingsGUI implements ActionListener {
      * Update the counter displaying the number of ping sent
      */    
     private void updatePingsCounterDisplay() {
-	int nb = pings_counter.get();
+	int nb = pings_counter.get() + old_pings_counter;
         if (nb == 0) {
             pings_counter_display.setText("No ping sent yet");
         }
@@ -301,13 +305,15 @@ public class PingsGUI implements ActionListener {
     }
 
     public int getPingsCount() {
-	return pings_counter.get();
+	return pings_counter.get() + old_pings_counter;
     }
 
     class clientThreadObserver implements Observer {
         
         private PingsGlobe.PingGUI gui_effect = null;
         private InetAddress last_address = null ;
+	// It work to init it to true as it will bet updated before we read it.
+	private boolean last_pings_success = true;
         
         public void update(Observable o, Object arg) {
             
@@ -346,16 +352,6 @@ public class PingsGUI implements ActionListener {
 	                });
 	            }
             }
-	    if(!client.problem_string.equals(problem_string)){
-		problem_string = client.problem_string;
-		System.out.println("New problem string: " + problem_string);
-                SwingUtilities.invokeLater( new Runnable() {
-                    public void run() {
-			System.out.println("Will call updateProblemDisplay with " + problem_string);
-                        updateProblemDisplay(problem_string);
-                    }
-                });
-	    }
             
             GeoipInfo current_ping_geoip = client.getCurrentDestGeoip();
             InetAddress current_ping_address = client.getCurrentPingDest();
@@ -367,14 +363,41 @@ public class PingsGUI implements ActionListener {
             //If there is a new ping add it to the counter and register an 
             //effect for the globe
             if (gui_effect == null && last_address != current_ping_address) {
-                last_address = current_ping_address;
-		pings_counter.incrementAndGet();
+		int nb_ping;
+		int nb_fail;
+		if (last_address == null)
+		    nb_ping = pings_counter.get();
+		else{
+		    nb_ping = pings_counter.incrementAndGet();
+
+		    if(!client.last_pings_succeded){
+			nb_fail = pings_failed_counter.incrementAndGet();
+			if(nb_fail >= 15 && nb_ping >= (nb_fail - 1)){//-1 for // problem.
+			    String ret = "All pings failed. Are pings blocked by a firewall? Your institution's firewall?";
+
+			    if(!ret.equals(problem_string)){
+				problem_string = ret;
+				SwingUtilities.invokeLater( new Runnable() {
+					public void run() {
+					    System.out.println("Will call updateProblemDisplay with " + problem_string);
+					    updateProblemDisplay(problem_string);
+					}
+				    });
+			    }
+			}
+		    }else
+			nb_fail = pings_failed_counter.get();
+		    System.out.println("Pings finished stats (old pings, new pings, failed new pings): " +
+				       old_pings_counter + " " + nb_ping + " " + nb_fail);
+		}
+
                 SwingUtilities.invokeLater( new Runnable() {
                     public void run() {
                         updatePingsCounterDisplay();
                     }
                 });
                 
+                last_address = current_ping_address;
                 gui_effect = ping_globe.addPing(current_ping_geoip);
             }
             //Else if it's the last ping update it

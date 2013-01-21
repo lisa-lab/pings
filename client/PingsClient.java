@@ -200,7 +200,7 @@ public class PingsClient extends Observable implements Runnable {
         
         private boolean sucide;
         
-	String problem_string = "";
+	protected boolean last_pings_succeded = true;
 
         public subClient () {
             prober = new CompositeProber(m_client_info);
@@ -221,7 +221,7 @@ public class PingsClient extends Observable implements Runnable {
                     LOGGER.log(Level.INFO, "Ping result: {0}.",current_ping_result);
                     
                     //Extract relevant info for analysis
-                    problem_string = addMeasurement(current_ping_result, current_ping_dest);
+                    last_pings_succeded = addMeasurement(current_ping_result, current_ping_dest);
 
                     notifyObserversOfChange();
                     
@@ -642,19 +642,19 @@ public class PingsClient extends Observable implements Runnable {
         return m_is_running.get();
     }
 
-    // Return a string of problem detected.
-    // If we have more then 15 pings failed and none succeded, we return a string problem.
-    // Otherwise, we return an empty string.
-    public String addMeasurement(String current_ping_result, InetAddress current_ping_dest) {
-	if(shown_analysis)
-	    return "";
+    // Return if the last ICMP pings succeded of not
+    // This add the measurement to the list for the feedback as show it when needed.
+    public boolean addMeasurement(String current_ping_result, InetAddress current_ping_dest) {
         String[] icmp_result = current_ping_result.split(";")[0].split(" ");
         String last = icmp_result[icmp_result.length - 1];
         boolean ok = current_ping_result.indexOf("ICMP") != -1 &&
 	    last.length() > 2 &&
 	    last.substring(last.length() - 2).equals("ms");
 	float value = -999f;
-	String ret = "";
+
+	if(shown_analysis)
+	    return ok;
+
 	if(!ok){
 	    LOGGER.log(Level.INFO, "Bad measurements: " + current_ping_result);
 	}else{
@@ -667,14 +667,8 @@ public class PingsClient extends Observable implements Runnable {
 		LOGGER.log(Level.INFO, "addMeasurement: Bad parsing of new ICMP ping: " + current_ping_result);
 	    }
 	}
-	synchronized(measurements) {
-	    if(!ok && num_measurements == 0){
-		int n_fail = m_measurements_failed.incrementAndGet();
-		if(n_fail >= 15){
-		    ret = "All pings failed. Are pings blocked by a firewall? Your institution's firewall?";
-		}
-	    }
 
+	synchronized(measurements) {
 	    if (ok) {
 		String measurement = current_ping_dest.getHostAddress() + "," + last;
 		if (num_measurements > 0) measurements += "-";
@@ -691,7 +685,7 @@ public class PingsClient extends Observable implements Runnable {
 		}
 	    }
 	}
-	return ret;
+	return ok;
     }
         
     private void setOneCookie(String name, String value){

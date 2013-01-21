@@ -235,12 +235,15 @@ public class PingsGUI implements ActionListener {
      * Update the counter displaying the number of ping sent
      */    
     private void updatePingsCounterDisplay() {
-	int nb = pings_counter.get() + old_pings_counter;
+	int session = pings_counter.get();
+	int nb = session + old_pings_counter;
         if (nb == 0) {
             pings_counter_display.setText("No ping sent yet");
         }
         else {
-            pings_counter_display.setText(nb + " ip tested");
+	    int failed = pings_failed_counter.get();
+	    String s = "ip tested: total(cookies) " +nb+ ", session " +session+ ", failed " + failed;
+	    pings_counter_display.setText(s);
         }
         setLayout();
     }

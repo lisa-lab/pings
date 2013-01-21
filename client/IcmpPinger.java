@@ -74,7 +74,7 @@ public class IcmpPinger implements Prober {
     */
     public static String getTimes(List<String> stdout_lines) {
 	String ret = "";
-	Pattern times = Pattern.compile(".*\\s(time|temps)(=|<)[0-9]+.*"); // osx/bsd/nunux/windows?
+	Pattern times = Pattern.compile(".*\\s(time|temps|tiempo|tempo|durata|Zeit)(=|<)[0-9]+.*"); // osx/bsd/nunux/windows?
 	for (String s : stdout_lines){
 	    if (times.matcher(s).matches()){
 		// Regex to match times, probably good for all
@@ -87,12 +87,8 @@ public class IcmpPinger implements Prober {
 		// (\\S+) matches the unit (ms, s, etc) (group 6)
 		// .* matches the trailing crap, if any (group 7)
 		//
-		if (s.contains("time")){//linux, English Windows
-                    ret += " " + s.replaceAll("(.*time(=?))(<?[0-9]+(\\.[0-9]+)?)(\\ ?)(\\S+).*", "$3$6");
-		}else if (s.contains("temps")){//French Windows
-		    ret += " " + s.replaceAll("(.*temps(=?))(<?[0-9]+(\\.[0-9]+)?)(\\ ?)(\\S+).*", "$3$6");
-		}
-	    }else if(s.contains("TTL")){// All known
+		ret += " " + s.replaceAll("(.*(tiempo|tempo|durata|time|temps|Zeit)=?)(<?[0-9]+(\\.[0-9]+)?)(\\ ?)(\\S+).*", "$3$6");
+	    }else if(s.contains("TTL")){// All known(French, English, Espagnol
 		String[] part = s.split(" ");
 		String out = null;
 		for (String p : part){
@@ -102,7 +98,7 @@ public class IcmpPinger implements Prober {
 		    }
 		}
 		if(out!=null)
-		    ret +=  " " + out.substring(0, out.length()-2);
+		    ret +=  " " + out;
 		else
 		    ret += " '" + s + "'";
 	    }
@@ -203,10 +199,26 @@ public class IcmpPinger implements Prober {
 
 	// Test getTimes
 	System.out.println("Test parsing of ICMP individual outputs");
-	String[] to_test2 = {"64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.040 ms", //linux
-			     "Réponse de 173.194.75.94 : octets=32 temps=40 ms TTL=48", //Windows7 French
-			     "Reply from 74.125.224.82: bytes=1500 time=40ms TTL=52", // Windows7 English
-			     "Respuesta desde 192.168.1.104: bytes=32 tiempo=40ms TTL=61"//Windows es
+	String[] to_test2 = {
+	    "64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.040 ms", //linux
+	    "Réponse de 173.194.75.94 : octets=32 temps=40 ms TTL=48", //Windows7 French
+	    "Reply from 74.125.224.82: bytes=1500 time=40ms TTL=52", // Windows7 English
+
+	    // The example bellow come from the translation provided by Microsoft of that page.
+	    // from http://support.microsoft.com/kb/323388
+	    "Respuesta desde 192.168.1.104: bytes=32 tiempo=40ms TTL=61", //Windows es
+	    "Reply from 192.168.1.104: bytes=32 time=40ms TTL=61", //be Nederlands
+	    "Resposta de 192.168.1.104: bytes=32 tempo=40 ms TTL=61",	    //pt Portugues
+	    "Odpověď od 192.168.1.104: bajty = 32 čas = 40ms TTL = 61 Cestina", //cs
+	    "الرد على من 192.168.1.104: بايت = الوقت 32 = 40ms TTL = 61", // ar
+	    "Antwort von 192.168.1.104: Bytes=32 Zeit=40ms TTL=61", // de
+	    "Balasan dari 192.168.1.104: byte = 32 waktu = 40ms TTL = 61", //id
+	    "Risposta da 192.168.1.104: byte=32 durata=40 ms TTL=61", //it
+	    "192.168.1.104 Cevabı: bayt = 32 süre = 40ms TTL = 61 =", // tr
+	    "Thư trả lời từ 192.168.1.104: bytes = 32 time = 40ms TTL = 61", // vi-vn
+	    "Απάντηση από 192.168.1.104: bytes = 32 time = 40ms TTL = 61", //el
+	    "ตอบกลับจาก 192.168.1.104: ไบต์ =เวลา 32 = 40ms TTL = 61", //th
+	    "Respuesta desde 192.168.1.104: bytes=32 tiemp=40 ms TTL=61", //modif Windows es
 	};
 	for (int i = 0; i < to_test2.length; i++){
 	    out.add(to_test2[i]);

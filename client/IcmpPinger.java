@@ -75,7 +75,6 @@ public class IcmpPinger implements Prober {
     public static String getTimes(List<String> stdout_lines) {
 	String ret = "";
 	Pattern times = Pattern.compile(".*\\s(time|temps)(=|<)[0-9]+.*"); // osx/bsd/nunux/windows?
-	System.out.println("getTimes");
 	for (String s : stdout_lines)
 	    if (times.matcher(s).matches())
 		// Regex to match times, probably good for all
@@ -171,7 +170,7 @@ public class IcmpPinger implements Prober {
     }
 
     public static void main(String args[]) throws InterruptedException {
-	
+	System.out.println("Test parsing of ICMP summary");
 	// Tests getSummary on Windows regex as there is difference in output depending of the OS language.
 	String[] to_test= {" Packets: Sent = 10, Received = 9, Lost = 1 (10% loss)",
 			   "     Paquets : envoyes = 10, recus = 9, perdus = 1 (perte 10%),",
@@ -187,6 +186,7 @@ public class IcmpPinger implements Prober {
 	}
 
 	// Test getTimes
+	System.out.println("Test parsing of ICMP individual outputs");
 	String[] to_test2 = {"64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.024 ms", //linux
 			     "Réponse de 173.194.75.94 : octets=32 temps=48 ms TTL=48", //Windows7 French
 			     "Reply from 74.125.224.82: bytes=1500 time=70ms TTL=52"// Windows7 English

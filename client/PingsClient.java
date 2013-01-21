@@ -650,7 +650,9 @@ public class PingsClient extends Observable implements Runnable {
 	    return "";
         String[] icmp_result = current_ping_result.split(";")[0].split(" ");
         String last = icmp_result[icmp_result.length - 1];
-        boolean ok = last.substring(last.length() - 2).equals("ms");
+        boolean ok = current_ping_result.indexOf("ICMP") != -1 &&
+	    last.length() > 2 &&
+	    last.substring(last.length() - 2).equals("ms");
 	float value = -999f;
 	String ret = "";
 	if(!ok){

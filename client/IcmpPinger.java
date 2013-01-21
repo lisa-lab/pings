@@ -69,7 +69,38 @@ public class IcmpPinger implements Prober {
 	}
         return "ping summary not found. The closest output line is : '" + str + "'";
     }
+    /**
+       @return The ping times
+    */
+    public static String getTimes(List<String> stdout_lines) {
+	String ret = "";
+	Pattern times = Pattern.compile(".*\\s(time|temps)(=|<)[0-9]+.*"); // osx/bsd/nunux/windows?
+	System.out.println("getTimes");
+	for (String s : stdout_lines)
+	    if (times.matcher(s).matches())
+		// Regex to match times, probably good for all
+		// variants.
+		//
+		// .* matches stuff before
+		// time= or time< (if time<, it goes in the number) (group 1 and 2)
+		// (<?[0-9]+(\\.[0-9]+)?) matches an int or float  (group 3 and 4)
+		// (\\ ?) matches an optional whitespace (group 5)
+		// (\\S+) matches the unit (ms, s, etc) (group 6)
+		// .* matches the trailing crap, if any (group 7)
+		//
+		if (s.contains("time")){
+                    ret += " " + s.replaceAll("(.*time(=?))(<?[0-9]+(\\.[0-9]+)?)(\\ ?)(\\S+).*", "$3$6");
+		}else if (s.contains("temps")){
+		    ret += " " + s.replaceAll("(.*temps(=?))(<?[0-9]+(\\.[0-9]+)?)(\\ ?)(\\S+).*", "$3$6");
+		}
+	if(ret.length() == 0){
+	    for (String s : stdout_lines){
+		System.out.println(s);
+	    }
+	}
+	return ret;
 
+    }
     public int probe(InetAddress addr) throws InterruptedException {
         String[] specific_command;
         String[] summary_regex;
@@ -116,20 +147,7 @@ public class IcmpPinger implements Prober {
 
             // Scan output for times
             //
-            Pattern times = Pattern.compile(".*\\stime(=|<)[0-9]+.*"); // osx/bsd/nunux/windows?
-            for (String s : stdout_lines)
-                if (times.matcher(s).matches())
-                    // Regex to match times, probably good for all
-                    // variants.
-                    //
-                    // .* matches stuff before
-                    // time= or time< (if time<, it goes in the number) (group 1 and 2)
-                    // (<?[0-9]+(\\.[0-9]+)?) matches an int or float  (group 3 and 4)
-                    // (\\ ?) matches an optional whitespace (group 5)
-                    // (\\S+) matches the unit (ms, s, etc) (group 6)
-                    // .* matches the trailing crap, if any (group 7)
-                    //
-                    m_icmp_times += " " + s.replaceAll("(.*time(=?))(<?[0-9]+(\\.[0-9]+)?)(\\ ?)(\\S+).*", "$3$6");
+	    m_icmp_times += getTimes(stdout_lines);
         }
         else
             // Deal with errors
@@ -153,7 +171,8 @@ public class IcmpPinger implements Prober {
     }
 
     public static void main(String args[]) throws InterruptedException {
-	// Here we tests the windows regex as there is difference in output depending of the OS language.
+	
+	// Tests getSummary on Windows regex as there is difference in output depending of the OS language.
 	String[] to_test= {" Packets: Sent = 10, Received = 9, Lost = 1 (10% loss)",
 			   "     Paquets : envoyes = 10, recus = 9, perdus = 1 (perte 10%),",
 			   "     Paquets : envoyés = 10, recus = 9, perdus = 1 (perte 10%),",
@@ -166,6 +185,18 @@ public class IcmpPinger implements Prober {
 	    System.out.println(IcmpPinger.getSummary(OS_SPECIFIC_SUMMARY_REGEX[1], out));
 	    out.remove(0);
 	}
+
+	// Test getTimes
+	String[] to_test2 = {"64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.024 ms", //linux
+			     "Réponse de 173.194.75.94 : octets=32 temps=48 ms TTL=48", //Windows7 French
+			     "Reply from 74.125.224.82: bytes=1500 time=70ms TTL=52"// Windows7 English
+	};
+	for (int i = 0; i < to_test2.length; i++){
+	    out.add(to_test2[i]);
+	    System.out.println(IcmpPinger.getTimes(out));
+	    out.remove(0);
+	}
+
 	return;
     }
 }

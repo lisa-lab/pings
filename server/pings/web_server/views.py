@@ -36,6 +36,8 @@ last_time = time()
 last_nb_get_pings = 0
 nb_submited_requests = 0
 nb_submited_results = 0
+nb_feedback = 0
+last_nb_feedback = 0
 last_nb_submited_requests = 0
 
 # The round delay table. We change of index when we go over/under the threshold
@@ -79,6 +81,8 @@ def get_pings(request):
     global nb_get_pings, min_round_time
     global last_time, last_nb_get_pings, time_table_idx
     global nb_submited_requests, nb_submited_results, last_nb_submited_requests
+    global nb_feedback, last_nb_feedback
+
     client_addr = get_client_ip(request)
     logger.debug('get_pings request client address: %s', client_addr)
 
@@ -94,10 +98,12 @@ def get_pings(request):
 
     if (nb_get_pings % (5 * expected_get_pings_process_seconds)) == 0:
         now = time()
+        spent = now - last_time
         removed = resources.last_clients.remove_old(now)
         #number of pings per second since the last check
-        p_s = (nb_get_pings - last_nb_get_pings) / (now - last_time)
-        submit_s = (nb_submited_requests - last_nb_submited_requests) / (now - last_time)
+        p_s = (nb_get_pings - last_nb_get_pings) / spent
+        submit_s = (nb_submited_requests - last_nb_submited_requests) / spent
+        feedback_s = (nb_feedback - last_nb_feedback) / spent
         ratio_pings_on_expected = p_s / expected_get_pings_process_seconds
 
         if ratio_pings_on_expected > 1:
@@ -115,19 +121,21 @@ def get_pings(request):
                         " time_table_index=%d, min_round_time=%d,"
                         " size_clients_list=%d, removed=%d,"
                         " nb_submit_requests=%d, nb_submit_results=%d,"
-                        " submit_req_per_second=%d" % (
+                        " submit_req_per_second=%d,"
+                        " nb_feedback=%d, nb_feedback_per_second=%d"% (
                             nb_get_pings, nb_get_pings - last_nb_get_pings,
                             now, now - last_time,
                             p_s, ratio_pings_on_expected,
                             time_table_idx, min_round_time,
                             size_clients_list, removed,
                             nb_submited_requests, nb_submited_results,
-                            submit_s))
+                            submit_s, nb_feedback, feedback_s))
         stats.flush()
 
         last_time = now
         last_nb_get_pings = nb_get_pings
         last_nb_submited_requests = nb_submited_requests
+        last_nb_feedback = nb_feedback
 
     return {'token': token,
             'pings': ip_addresses,
@@ -190,6 +198,8 @@ def main(request):
 
 @view_config(route_name='feedback')
 def feedback(request):
+    global nb_feedback
+
     if not request.path_qs.startswith("/feedback.py"):
         raise HTTPBadRequest('Malformed input')
 
@@ -236,5 +246,5 @@ def feedback(request):
     res = Response(response,
                    content_type=content_type,
                    charset='utf-8')
-
+    nb_feedback += 1
     return res

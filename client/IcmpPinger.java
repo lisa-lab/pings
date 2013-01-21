@@ -75,8 +75,8 @@ public class IcmpPinger implements Prober {
     public static String getTimes(List<String> stdout_lines) {
 	String ret = "";
 	Pattern times = Pattern.compile(".*\\s(time|temps)(=|<)[0-9]+.*"); // osx/bsd/nunux/windows?
-	for (String s : stdout_lines)
-	    if (times.matcher(s).matches())
+	for (String s : stdout_lines){
+	    if (times.matcher(s).matches()){
 		// Regex to match times, probably good for all
 		// variants.
 		//
@@ -87,12 +87,28 @@ public class IcmpPinger implements Prober {
 		// (\\S+) matches the unit (ms, s, etc) (group 6)
 		// .* matches the trailing crap, if any (group 7)
 		//
-		if (s.contains("time")){
+		if (s.contains("time")){//linux, English Windows
                     ret += " " + s.replaceAll("(.*time(=?))(<?[0-9]+(\\.[0-9]+)?)(\\ ?)(\\S+).*", "$3$6");
-		}else if (s.contains("temps")){
+		}else if (s.contains("temps")){//French Windows
 		    ret += " " + s.replaceAll("(.*temps(=?))(<?[0-9]+(\\.[0-9]+)?)(\\ ?)(\\S+).*", "$3$6");
 		}
+	    }else if(s.contains("TTL")){// All known
+		String[] part = s.split(" ");
+		String out = null;
+		for (String p : part){
+		    if(p.length() > 2 && p.endsWith("ms")){
+			out = p;
+			break;
+		    }
+		}
+		if(out!=null)
+		    ret +=  " " + out.substring(0, out.length()-2);
+		else
+		    ret += " '" + s + "'";
+	    }
+	}
 	if(ret.length() == 0){
+	    System.out.println("Pings outputs not parsed: ");
 	    for (String s : stdout_lines){
 		System.out.println(s);
 	    }
@@ -187,9 +203,10 @@ public class IcmpPinger implements Prober {
 
 	// Test getTimes
 	System.out.println("Test parsing of ICMP individual outputs");
-	String[] to_test2 = {"64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.024 ms", //linux
-			     "Réponse de 173.194.75.94 : octets=32 temps=48 ms TTL=48", //Windows7 French
-			     "Reply from 74.125.224.82: bytes=1500 time=70ms TTL=52"// Windows7 English
+	String[] to_test2 = {"64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.040 ms", //linux
+			     "Réponse de 173.194.75.94 : octets=32 temps=40 ms TTL=48", //Windows7 French
+			     "Reply from 74.125.224.82: bytes=1500 time=40ms TTL=52", // Windows7 English
+			     "Respuesta desde 192.168.1.104: bytes=32 tiempo=40ms TTL=61"//Windows es
 	};
 	for (int i = 0; i < to_test2.length; i++){
 	    out.add(to_test2[i]);

@@ -74,7 +74,7 @@ public class IcmpPinger implements Prober {
     */
     public static String getTimes(List<String> stdout_lines) {
 	String ret = "";
-	Pattern times = Pattern.compile(".*\\s(time|temps|tiempo|tempo|durata|Zeit)(=|<)[0-9]+.*"); // osx/bsd/nunux/windows?
+	Pattern times = Pattern.compile(".*\\s(time|temps|tiempo|tempo|durata|Zeit|时间)(=|<)[0-9]+.*"); // osx/bsd/nunux/windows?
 	for (String s : stdout_lines){
 	    if (times.matcher(s).matches()){
 		// Regex to match times, probably good for all
@@ -87,7 +87,7 @@ public class IcmpPinger implements Prober {
 		// (\\S+) matches the unit (ms, s, etc) (group 6)
 		// .* matches the trailing crap, if any (group 7)
 		//
-		ret += " " + s.replaceAll("(.*(tiempo|tempo|durata|time|temps|Zeit)=?)(<?[0-9]+(\\.[0-9]+)?)(\\ ?)(\\S+).*", "$3$6");
+		ret += " " + s.replaceAll("(.*(tiempo|tempo|durata|time|temps|Zeit|时间)=?)(<?[0-9]+(\\.[0-9]+)?)(\\ ?)(\\S+).*", "$3$6");
 	    }else if(s.contains("TTL")){// All known(French, English, Espagnol
 		String[] part = s.split(" ");
 		String out = null;
@@ -189,6 +189,7 @@ public class IcmpPinger implements Prober {
 			   "     Paquets : envoyés = 10, recus = 9, perdus = 1 (perte 10%),",
 			   "     Paquets : envoyes = 10, reçus = 9, perdus = 1 (perte 10%),",
 			   "     Paquets : envoyés = 10, reçus = 9, perdus = 1 (perte 10%),",
+			   "    数据包: 已发送 = 5，已接收 = 5，丢失 = 0 (0% 丢失)，"
 	};
         ArrayList<String> out = new ArrayList<String>();
 	for (int i = 0; i < to_test.length; i++){
@@ -219,7 +220,11 @@ public class IcmpPinger implements Prober {
 	    "Thư trả lời từ 192.168.1.104: bytes = 32 time = 40ms TTL = 61", // vi-vn
 	    "Απάντηση από 192.168.1.104: bytes = 32 time = 40ms TTL = 61", //el
 	    "ตอบกลับจาก 192.168.1.104: ไบต์ =เวลา 32 = 40ms TTL = 61", //th
+
 	    "Respuesta desde 192.168.1.104: bytes=32 tiemp=40 ms TTL=61", //modif Windows es
+	    //Output from a lab member
+	    "来自 74.125.135.94 的回复: 字节=32 时间=40ms TTL=40",
+
 	};
 	for (int i = 0; i < to_test2.length; i++){
 	    out.add(to_test2[i]);

@@ -118,7 +118,8 @@ public class ClientInfo {
 
         @param filter finds the adapter that has this address. If null, it
         will proceed to a complete detection of the (most probable) outbound
-        IP address
+        IP address. This mean, it take the first interface we found but
+	give priority to ipv4 over ipv6 address..
     */
     public void detectInterface(InetAddress filter) {
         // Mostly inspired from Oracle's example
@@ -144,11 +145,19 @@ public class ClientInfo {
                         // find a v4 address
 			// The try..catch is needed as some version of java generate an exception here.
 			try{
-			    for (InetAddress addr : Collections.list(interf.getInetAddresses()))
+			    for (InetAddress addr : Collections.list(interf.getInetAddresses())){
 				if (addr instanceof Inet4Address) {
 				    m_local_addr = addr;
 				    break;
+				} else if(addr instanceof Inet6Address &&
+					  m_local_addr == null){
+				    //We use the ipv6 address, but give priority to ipv4 address. If no local addresse detected, the applet crash in submitResults and other places that use the local address. We hope we have a global ipv4 address, as I don't know if that it supported...
+				    m_local_addr = addr;
+				    System.out.println(
+						       "Detected an ipv6 local address. Will be used only if no ipv4 address are found: " +
+						       addr.getHostAddress());
 				}
+			    }
 			}catch(NullPointerException e) {
 			    continue;
 			}

@@ -168,7 +168,7 @@ h2 {
 }
 .main_div .analysis.main_div {
   border: 2px dotted #aaa;
-  /border-radius: 0px;
+  border-radius: 0px;
   -moz-border-radius: 0px;
 }
 .analysis h2 {

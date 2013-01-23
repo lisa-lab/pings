@@ -368,12 +368,12 @@ public class PingsGUI implements ActionListener {
 		int nb_fail;
 		if (last_address == null)
 		    nb_ping = pings_counter.get();
-		else{
+		else{ // The thread finished testing an ip
 		    nb_ping = pings_counter.incrementAndGet();
 
 		    if(!client.last_pings_succeded){
 			nb_fail = pings_failed_counter.incrementAndGet();
-			if(nb_fail >= 15 && nb_ping >= (nb_fail - 1)){//-1 for // problem.
+			if((nb_fail >= 15) && ((nb_ping - 1) <= nb_fail)){ // -1 as we don't incr counter at the same time with a lock.
 			    String ret = "All pings failed. Are pings blocked by a firewall? Your institution's firewall?";
 
 			    if(!ret.equals(problem_string)){

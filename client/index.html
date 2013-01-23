@@ -8,6 +8,7 @@
   <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
   <link href="site.css" media="all" type="text/css" rel="stylesheet">
   <script type="text/javascript" src="http://code.jquery.com/jquery-1.8.3.min.js"></script>
+  <script src="http://www.java.com/js/deployJava.js"></script>
   <base target="_blank">
 
 <script>
@@ -84,12 +85,10 @@ function get_cookie(cookie_name, default_value) {
 uuid = get_cookie('udem_ping_uuid', '');
 nick = get_cookie('udem_ping_nickname', '');
 nb_pings = get_cookie('udem_ping_nb_pings', '0');
-document.write("<applet code='PingsApplet.class' archive='http://nouiz.org/pings/client/pings.jar'>" +
-                    "<param name='ping_hostname' value='iconnect2.iro.umontreal.ca'>" +
-                    "<param name='ping_nb_pings' value='" + nb_pings + "'>" +
-                    "<param name='ping_port' value='8080'><param name='ping_uuid' value='" + uuid + "'>" +
-                    "<param name='ping_nickname' value='" + nick + "'>Java failed to load" +
-                "</applet>");
+var attributes = {code:'PingsApplet.class', archive:'http://nouiz.org/pings/client/pings.jar', width:800, height:500};
+var parameters = {ping_hostname:'iconnect2.iro.umontreal.ca', ping_nb_pings:nb_pings, ping_port:'8080', ping_uuid:uuid, ping_nickname:nick};
+var version = '1.6';
+deployJava.runApplet(attributes, parameters, version);
 </script>
 </center>
 

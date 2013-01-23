@@ -23,6 +23,8 @@ class CompositeProber implements Prober {
         StringBuilder sb = new StringBuilder();
 
         for (Prober p : m_probers) {
+	    if(p == null)
+		continue;
             if (first_one_done) {
                 sb.append("; ");
             }
@@ -38,7 +40,8 @@ class CompositeProber implements Prober {
 
     public void clearProbe() {
         for (Prober p : m_probers) {
-            p.clearProbe();
+	    if(p != null)
+		p.clearProbe();
         }
     }
 
@@ -46,6 +49,8 @@ class CompositeProber implements Prober {
         boolean succeeded = true;
 
         for (Prober p : m_probers) {
+	    if(p == null)
+		continue;
             succeeded &= (p.probe(addr) == 0);
         }
 

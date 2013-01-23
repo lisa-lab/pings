@@ -315,8 +315,6 @@ public class PingsGUI implements ActionListener {
         
         private PingsGlobe.PingGUI gui_effect = null;
         private InetAddress last_address = null ;
-	// It work to init it to true as it will bet updated before we read it.
-	private boolean last_pings_success = true;
         
         public void update(Observable o, Object arg) {
             

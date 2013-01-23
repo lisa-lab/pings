@@ -201,6 +201,7 @@ public class IcmpPinger implements Prober {
 	System.out.println("Test parsing of ICMP individual outputs");
 	String[] to_test2 = {
 	    "64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.040 ms", //linux
+	    "64 bytes from vb-in-f94.1e100.net (173.194.73.94): icmp_req=1 ttl=48 time=46.0 ms", //Ubuntu 11.10
 	    "Réponse de 173.194.75.94 : octets=32 temps=40 ms TTL=48", //Windows7 French
 	    "Reply from 74.125.224.82: bytes=1500 time=40ms TTL=52", // Windows7 English
 

@@ -422,8 +422,11 @@ public class PingsClient extends Observable implements Runnable {
                 try {
                     // Submit results to server.
                     if (pings_queue[pings_index] != null) {
+			//elapsed_time are in mili-seconds.
+			long elapsed_time = System.currentTimeMillis() - pings_queue[pings_index].time_fetched;
                         LOGGER.info("Submitting results to server for pings_index=" +
-				    pings_index);
+				    pings_index +
+				    ". Round took " + elapsed_time/1000 + "s.");
                         m_server_proxy.submitResults(m_client_info,
 						     pings_queue[pings_index]);
 
@@ -434,10 +437,9 @@ public class PingsClient extends Observable implements Runnable {
 			}
 
 			//Wait if needed
-			//elapsed_time and wait_time are in mili-seconds.
-			long elapsed_time = System.currentTimeMillis() - pings_queue[pings_index].time_fetched;
 			long min_round_time = Math.max(MIN_ROUND_TIME, pings_queue[pings_index].min_round_time);
 			min_round_time += 0.1 * this.rand.nextInt((int)min_round_time);
+			//wait_time are in mili-seconds.
 			long wait_time = (min_round_time * pings_queue_size * 1000) - elapsed_time ;
 			wait_time = (long)(wait_time * WAIT_TIME_BOOST);
 

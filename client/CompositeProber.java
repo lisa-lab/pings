@@ -11,6 +11,10 @@ import java.net.InetAddress;
 class CompositeProber implements Prober {
     private Prober m_probers[];
 
+    public CompositeProber(Prober[] probers){
+	m_probers = probers;
+    }
+
     public CompositeProber(ClientInfo client_info) {
         m_probers = new Prober[3];
         m_probers[0] = new IcmpPinger(client_info);

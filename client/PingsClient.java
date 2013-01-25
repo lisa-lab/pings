@@ -205,6 +205,10 @@ public class PingsClient extends Observable implements Runnable {
         public subClient () {
             prober = new CompositeProber(m_client_info);
         }
+
+        public subClient (Prober p) {
+            prober = p;
+        }
         
         public void run() {
             while (!sucide) {

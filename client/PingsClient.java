@@ -70,6 +70,10 @@ public class PingsClient extends Observable implements Runnable {
 
     //The number of subClient(s) to run simultaneously
     protected int subClient_number = 6;
+    //The maximum number of subClient with TCP prober
+    //This is to help the too small translation table size in some routers
+    protected int max_tcp_subClient_number = 2;
+
     //The subClients
     protected subClient[] subClients_pool;
     protected Thread[] subClients_threads_pool;
@@ -139,7 +143,15 @@ public class PingsClient extends Observable implements Runnable {
         subClients_pool = new subClient[subClient_number];
         subClients_threads_pool = new Thread[subClient_number];
         for (int i = 0; i < subClient_number; i++) {
-            subClients_pool[i] = new subClient();
+	    subClient s;
+	    if (i < max_tcp_subClient_number) {
+		s = new subClient();
+	    } else {
+		Prober[] ps = {new IcmpPinger(m_client_info),
+			       new TraceRouter(m_client_info)};
+		s = new subClient(new CompositeProber(ps));
+	    }
+	    subClients_pool[i] = s;
             subClients_threads_pool[i] = new Thread(subClients_pool[i]);
             subClients_threads_pool[i].setName("SubClient "+ i);
         }

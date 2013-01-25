@@ -21,7 +21,7 @@ public class IcmpPinger implements Prober {
         // appended at run-time using ClientInfo.getNumberOfPings()
         //
         // Linux
-        {"ping", "-w", "30", "-W", "2", "-c"},
+        {"ping", "-w", "15", "-W", "2", "-c"},
         // BSD, OSX ?
         {"ping", "-c"},
         // Windows XP        

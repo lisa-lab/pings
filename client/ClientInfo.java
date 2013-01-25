@@ -57,9 +57,14 @@ public class ClientInfo {
     private String m_adapter;
 
     /**
-       Holds the number of pings to perform
+       Holds the number of ICMP pings to perform
     */
     private int m_number_of_pings;
+
+    /**
+       Holds the number of TCP pings to perform
+    */
+    private int m_number_of_tcp_pings;
 
     /**
        Holds the number of pings per hop in traceroute. Because of the
@@ -311,6 +316,11 @@ public class ClientInfo {
     public int getNumberOfPings() { return m_number_of_pings; }
 
     /**
+       @return the number of pings to perform
+    */
+    public int getNumberOfTcpPings() { return m_number_of_tcp_pings; }
+
+    /**
        The number of pings per hops is, for OS-specific reasons,
        fixed to the default of 3
 
@@ -348,6 +358,7 @@ public class ClientInfo {
         m_nickname = null;
         m_uuid = null;
         m_number_of_pings = 5;
+        m_number_of_tcp_pings = 3;
         m_number_of_traces = 3;
         m_tcp_timeout = 1000; // In milliseconds
 

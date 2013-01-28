@@ -39,7 +39,8 @@ public class IcmpPinger implements Prober {
         // On English Windows XP: " Packets: Sent = 10, Received = 9, Lost = 1 (10% loss)"
 	// On French Windows 7: "     Paquets : envoyés = 3, reçus = 0, perdus = 3 (perte 100%),"
 	// To be resistent to language, we make a very generic pattern. Hopefully, they don't swap numbers!
-        {"[^=]+=\\s+(\\d+), [^=]+=\\s+(\\d+),.*", "$1 $2 ?ms"}
+	// [,，﹐] is the 2 representation of the ',' symbol in Unicode, the second one is the fullwidth vresion
+        {"[^=]+=\\s*(\\d+)[,，﹐][^=]+=\\s*(\\d+)[,，﹐][^=]*=.*", "$1 $2 ?ms"},
     };
 
     public String getLastProbe() { return m_icmp_times; }

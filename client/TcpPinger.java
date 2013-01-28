@@ -73,9 +73,11 @@ public class TcpPinger implements Prober {
             if (p != 0 && fails < p) {
                 // Sleep half a second
                 Thread.sleep(500);
-            } else if (fails == p && fails == 2) {
-		// If the 2 first connection fail, we mark all pings as failed,
+            } else if (fails >= 1) {
+		// If the 1 first connection fail, we mark all pings as failed,
 		// but they won't appear in the results.
+		// We do this to lower the problem with some router that have
+		// a connection table too small.
             	fails = m_info.getNumberOfPings();
             	break;
             }

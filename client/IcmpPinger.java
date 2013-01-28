@@ -33,6 +33,9 @@ public class IcmpPinger implements Prober {
         // On *nixes: "7 packets transmitted, 6 received, 14% packet loss, time 6014ms"
         {"(([0-9]+)\\s[\\w|\\s]+),\\s(([0-9]+)\\s[\\w|\\s]+),.*(time)\\s(.*)", "$2 $4 $6"},
 
+        // On OSX: "7 packets transmitted, 6 received, 14% packet loss"
+        {"(([0-9]+)\\s[\\w|\\s]+),\\s(([0-9]+)\\s[\\w|\\s]+).*", "$2 $4 ?ms"},
+
         // On English Windows XP: " Packets: Sent = 10, Received = 9, Lost = 1 (10% loss)"
 	// On French Windows 7: "     Paquets : envoyés = 3, reçus = 0, perdus = 3 (perte 100%),"
 	// To be resistent to language, we make a very generic pattern. Hopefully, they don't swap numbers!
@@ -121,14 +124,14 @@ public class IcmpPinger implements Prober {
         case BSD:
         case OSX:
             specific_command = OS_SPECIFIC_COMMAND[1];
-            summary_regex = OS_SPECIFIC_SUMMARY_REGEX[0]; // FIXME: cross-check
+            summary_regex = OS_SPECIFIC_SUMMARY_REGEX[1];
             break;
 
         case WinXP:
         case Win7:
         case WinOther:
             specific_command = OS_SPECIFIC_COMMAND[2];
-            summary_regex = OS_SPECIFIC_SUMMARY_REGEX[1];
+            summary_regex = OS_SPECIFIC_SUMMARY_REGEX[2];
             break;
 
         case Linux:
@@ -182,29 +185,55 @@ public class IcmpPinger implements Prober {
     }
 
     public static void main(String args[]) throws InterruptedException {
-	System.out.println("Test parsing of ICMP summary");
+	System.out.println("Test parsing of ICMP summary on windows");
 	// Tests getSummary on Windows regex as there is difference in output depending of the OS language.
-	String[] to_test= {" Packets: Sent = 10, Received = 9, Lost = 1 (10% loss)",
+	String[] to_test= {" Packets: Sent = 10, Received = 9, Lost = 1 (10% loss)", //
+			   "    Packets: Sent = 5, Received = 5, Lost = 0 (0% loss),",//Windows XP Pro SP3 (English)
+			   "Paquets : envoyés = 5, reçus = 5, perdus = 0 (perte 0%),", // Windows Vista Sp2
 			   "     Paquets : envoyes = 10, recus = 9, perdus = 1 (perte 10%),",
 			   "     Paquets : envoyés = 10, recus = 9, perdus = 1 (perte 10%),",
 			   "     Paquets : envoyes = 10, reçus = 9, perdus = 1 (perte 10%),",
 			   "     Paquets : envoyés = 10, reçus = 9, perdus = 1 (perte 10%),",
-			   "    数据包: 已发送 = 5，已接收 = 5，丢失 = 0 (0% 丢失)，"
+			   "    数据包: 已发送 = 5，已接收 = 5，丢失 = 0 (0% 丢失)，",
 	};
         ArrayList<String> out = new ArrayList<String>();
 	for (int i = 0; i < to_test.length; i++){
 	    out.add(to_test[i]);
+	    System.out.println(IcmpPinger.getSummary(OS_SPECIFIC_SUMMARY_REGEX[2], out));
+	    out.remove(0);
+	}
+
+	System.out.println("\nTest parsing of ICMP summary on linux");
+	// Tests getSummary regex as there is difference in output depending of the OS language.
+	String[] to_test3 = {
+	    "3 packets transmitted, 0 received, 100% packet loss, time 1999ms",//FC14
+	};
+	for (int i = 0; i < to_test3.length; i++){
+	    out.add(to_test3[i]);
+	    System.out.println(IcmpPinger.getSummary(OS_SPECIFIC_SUMMARY_REGEX[0], out));
+	    out.remove(0);
+	}
+	System.out.println("\nTest parsing of ICMP summary on OSX");
+	// Tests getSummary regex as there is difference in output depending of the OS language.
+	String[] to_test4 = {
+	    "35 packets transmitted, 0 packets received, 100.0% packet loss",//OSX lab computer
+	    "5 packets transmitted, 5 packets received, 0.0% packet loss" //OSX 10.7, OSX 10.7.5, 10.8.2, 10.6.8
+	};
+	for (int i = 0; i < to_test4.length; i++){
+	    out.add(to_test4[i]);
 	    System.out.println(IcmpPinger.getSummary(OS_SPECIFIC_SUMMARY_REGEX[1], out));
 	    out.remove(0);
 	}
 
 	// Test getTimes
-	System.out.println("Test parsing of ICMP individual outputs");
+	System.out.println("\nTest parsing of ICMP individual outputs");
 	String[] to_test2 = {
+	    "64 bytes from nuq04s08-in-f31.1e100.net (74.125.224.127): icmp_seq=1 ttl=53 time=1.97 ms", //Some linux
 	    "64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.040 ms", //linux
+	    "64 bytes from 173.194.75.94: icmp_seq=2 ttl=45 time=454.709 ms", //OSX 10.7, 10.6.8, 10.7.5, 10.8.2
 	    "64 bytes from vb-in-f94.1e100.net (173.194.73.94): icmp_req=1 ttl=48 time=46.0 ms", //Ubuntu 11.10
-	    "Réponse de 173.194.75.94 : octets=32 temps=40 ms TTL=48", //Windows7 French
-	    "Reply from 74.125.224.82: bytes=1500 time=40ms TTL=52", // Windows7 English
+	    "Réponse de 173.194.75.94 : octets=32 temps=40 ms TTL=48", //Windows7 French, Windows Vista Sp2 French
+	    "Reply from 74.125.224.82: bytes=1500 time=40ms TTL=52", // Windows7 English, Win XP Pro SP3 (English)
 
 	    // The example bellow come from the translation provided by Microsoft of that page.
 	    // from http://support.microsoft.com/kb/323388

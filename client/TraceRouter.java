@@ -155,8 +155,8 @@ public class TraceRouter implements Prober {
 
         LinkedList<String> stdout_lines = new LinkedList<String>();
         LinkedList<String> stderr_lines = new LinkedList<String>();
-        // FIXME: check if 40 is always ok for traceroute
-        int retval = Launcher.launch(command, stdout_lines, stderr_lines, 40);
+        // FIXME: check if 70 is always ok for traceroute
+        int retval = Launcher.launch(command, stdout_lines, stderr_lines, 70);
 
         m_trace_times = "TROUTE " + addr.toString().split("/")[1] + " "; // the protocol (TraceROUTE)
 	m_trace_times += getTimes(reject_regex, translator, retval, stdout_lines);

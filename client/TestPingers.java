@@ -1,4 +1,5 @@
-import java.net.*;
+import java.net.UnknownHostException;
+import java.net.InetAddress;
 
 
 /** This class is disposable code to examplify how to use the various

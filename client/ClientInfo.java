@@ -1,5 +1,10 @@
-import java.util.*;
-import java.net.*;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.UUID;
+import java.net.InetAddress;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.NetworkInterface;
 import java.util.logging.Logger;
 
 

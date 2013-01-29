@@ -1,6 +1,9 @@
-import java.util.*;
-import java.util.regex.*;
-import java.net.*;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.regex.Pattern;
+import java.net.InetAddress;
 
 /**
    This class does the traceroute to a remote destination

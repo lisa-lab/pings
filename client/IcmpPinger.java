@@ -1,6 +1,8 @@
-import java.util.*;
-import java.util.regex.*;
-import java.net.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.LinkedList;
+import java.util.regex.Pattern;
+import java.net.InetAddress;
 
 /**
    This class launches an external ping command and returns the collected

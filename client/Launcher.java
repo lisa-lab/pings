@@ -1,5 +1,7 @@
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
+import java.util.List;
 
 /**
    This class launches an external commands and returns its output (both on

@@ -519,7 +519,16 @@ public class PingsClient extends Observable implements Runnable {
 		    catched = "IOException";
 		    err_msg =  "Exception caught in PingsClient thread " + pings_index +
 			" when contacting the server.\n" + e;
-                } // catch IOException
+                }
+		catch (Exception e) {
+		    // We catch all Exception to make automatic
+		    // retry. This make the system more robust to some
+		    // other possible temporary problem with the
+		    // server.
+		    catched = "Exception";
+		    err_msg =  "Exception caught in PingsClient thread " + pings_index +
+			" when contacting the server.\n" + e;
+		}
 		if (catched != ""){
                     consecutive_error_count++;
                     int wait_time = (int)Math.pow(2, consecutive_error_count);

@@ -230,7 +230,10 @@ public class ServerProxy {
             sb_response.append(chunk);
             chunk = br.readLine();
         }
-
-        return JSONValue.parse(sb_response.toString());
+	Object ret = JSONValue.parse(sb_response.toString());
+	if(ret == null)
+	    System.out.println("We didn't found JSON in the server output. We got:\n" +
+			       sb_response.toString());
+        return ret;
     }
 }

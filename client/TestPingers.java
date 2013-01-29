@@ -13,7 +13,7 @@ public class TestPingers {
         }
         
         // FIXME: get from applet's cookie
-        ClientInfo this_client = new ClientInfo(ClientInfo.m_cookie_name+"={user=bobafett;uuid=fatalapouet};path=/;expires=eventually");
+        ClientInfo this_client = new ClientInfo(PingsClient.m_cookie_name+"={user=bobafett;uuid=fatalapouet};path=/;expires=eventually");
 
         if (this_client.getNickname() == null)
             this_client.setNickname("bobafett");

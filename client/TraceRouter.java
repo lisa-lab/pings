@@ -69,6 +69,40 @@ public class TraceRouter implements Prober {
     */
     public void clearProbe() { m_trace_times = ""; }
 
+    /**
+       Returns the traceroute outputs needed.
+    */
+    public static String getTimes(String reject_regex, String[] translator, int retval,
+				  List<String> stdout_lines) {
+	String ret = "";
+        if (retval == 0) {
+            // Success!
+            // scan output for times
+            //
+            Pattern keep_filter = Pattern.compile("\\s*[0-9]+\\s.*"); // a line begining with a number
+            Pattern reject_filter = Pattern.compile(reject_regex); // a line filled with stars
+            boolean first = true;
+
+            for (String s : stdout_lines)
+                if (keep_filter.matcher(s).matches() && // is a line beginning with a number ...
+                    !reject_filter.matcher(s).matches()) { // ...but not full of stars
+                    String t = s.replaceAll("^\\s*",""). // leading spaces
+                        replaceAll("\\s$", ""). // trailing spaces
+                        replaceAll("\\s+", " "). // strings of spaces
+                        replaceAll("\\s+ms", "ms"); // space between number and units
+                    ret += (first ? "" : ",") + t.replaceAll(translator[0], translator[1]);
+                    first = false;
+                }
+
+            if (first)
+                // No assignation?
+                ret += "TIMEOUT";
+        }
+        else
+            // Deal with error codes
+            ret += "failed " + String.valueOf(retval);
+	return ret;
+    }
 
     /**
        Invokes an external traceroute command and collects the route data
@@ -125,32 +159,7 @@ public class TraceRouter implements Prober {
         int retval = Launcher.launch(command, stdout_lines, stderr_lines, 40);
 
         m_trace_times = "TROUTE " + addr.toString().split("/")[1] + " "; // the protocol (TraceROUTE)
-        if (retval == 0) {
-            // Success! 
-            // scan output for times
-            //
-            Pattern keep_filter = Pattern.compile("\\s*[0-9]+\\s.*"); // a line begining with a number
-            Pattern reject_filter = Pattern.compile(reject_regex); // a line filled with stars
-            boolean first = true;
-            
-            for (String s : stdout_lines)
-                if (keep_filter.matcher(s).matches() && // is a line beginning with a number ...
-                    !reject_filter.matcher(s).matches()) { // ...but not full of stars
-                    String t = s.replaceAll("^\\s*",""). // leading spaces
-                        replaceAll("\\s$", ""). // trailing spaces
-                        replaceAll("\\s+", " "). // strings of spaces
-                        replaceAll("\\s+ms", "ms"); // space between number and units
-                    m_trace_times += (first ? "" : ",") + t.replaceAll(translator[0], translator[1]);
-                    first = false;
-                }
-
-            if (first)
-                // No assignation?
-                m_trace_times += "TIMEOUT";
-        }
-        else
-            // Deal with error codes
-            m_trace_times += "failed " + String.valueOf(retval);
+	m_trace_times += getTimes(reject_regex, translator, retval, stdout_lines);
         
         return retval; // icmp_times may or may not be assigned!
     }

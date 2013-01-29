@@ -80,6 +80,7 @@ public class TraceRouter implements Prober {
             // scan output for times
             //
             Pattern keep_filter = Pattern.compile("\\s*[0-9]+\\s.*"); // a line begining with a number
+            Pattern keep_filter2 = Pattern.compile("\\s+[0-9]+.[0-9]+.[0-9]+.[0-9]+\\s+.*"); // a line begining with a ip
             Pattern reject_filter = Pattern.compile(reject_regex); // a line filled with stars
             boolean first = true;
 
@@ -92,7 +93,15 @@ public class TraceRouter implements Prober {
                         replaceAll("\\s+ms", "ms"); // space between number and units
                     ret += (first ? "" : ",") + t.replaceAll(translator[0], translator[1]);
                     first = false;
-                }
+                } else if(keep_filter2.matcher(s).matches() && // is a line beginning with an ip ...
+			  !reject_filter.matcher(s).matches()) { // not full of stars. On OSX, this is the same hop as the previous line.
+                    String t = s.replaceAll("^\\s*",""). // leading spaces
+                        replaceAll("\\s$", ""). // trailing spaces
+                        replaceAll("\\s+", " "). // strings of spaces
+                        replaceAll("\\s+ms", "ms"); // space between number and units
+                    ret += " " + t.replaceAll(translator[0], translator[1]);
+                    first = false;
+		}
 
             if (first)
                 // No assignation?

@@ -425,16 +425,6 @@ public class PingsGUI implements ActionListener {
         }
     }
     
-    class clientObserver implements Observer {
-        private PingsGlobe.PingGUI gui_effect = null;
-        private InetAddress last_address = null ;
-
-        public void update(Observable o, Object arg) {
-            PingsClient client = (PingsClient) o;
-	    updateProblemDisplay(client.error_reason);
-	}
-    }
-
     /**
      * This method is used to refresh the Pause/Resume button to make it show
      * 'Pause' or 'Resume' and act accordingly depending on the client state 

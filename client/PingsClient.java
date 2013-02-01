@@ -149,7 +149,7 @@ public class PingsClient extends Observable implements Runnable {
 	    } else {
 		Prober[] ps = {new IcmpPinger(m_client_info),
 			       new TraceRouter(m_client_info)};
-		s = new subClient(new CompositeProber(ps));
+		s = new subClient(new CompositeProber(ps, "first"));
 	    }
 	    subClients_pool[i] = s;
             subClients_threads_pool[i] = new Thread(subClients_pool[i]);
@@ -215,7 +215,7 @@ public class PingsClient extends Observable implements Runnable {
 	protected boolean last_pings_succeded = true;
 
         public subClient () {
-            prober = new CompositeProber(m_client_info);
+            prober = new CompositeProber(m_client_info, "first");
         }
 
         public subClient (Prober p) {

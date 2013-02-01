@@ -10,16 +10,23 @@ import java.net.InetAddress;
  */
 class CompositeProber implements Prober {
     private Prober m_probers[];
+    private String prob_result = "first";
 
-    public CompositeProber(Prober[] probers){
+    public CompositeProber(Prober[] probers, String prob_result){
 	m_probers = probers;
+
+	if(prob_result.equals("first") || prob_result.equals("and"))
+	    this.prob_result = prob_result;
     }
 
-    public CompositeProber(ClientInfo client_info) {
+    public CompositeProber(ClientInfo client_info, String prob_result) {
         m_probers = new Prober[3];
         m_probers[0] = new IcmpPinger(client_info);
         m_probers[1] = new TcpPinger(client_info);
         m_probers[2] = new TraceRouter(client_info);
+
+	if(prob_result.equals("first") || prob_result.equals("and"))
+	    this.prob_result = prob_result;
     }
 
     public String getLastProbe() {
@@ -51,13 +58,20 @@ class CompositeProber implements Prober {
 
     public int probe(InetAddress addr) throws InterruptedException {
         boolean succeeded = true;
+	if (prob_result == "first" && m_probers[0] == null)
+	    succeeded = false;
 
-        for (Prober p : m_probers) {
+	for (int i=0; i<m_probers.length; i++) {
+	    Prober p = m_probers[i];
 	    if(p == null)
 		continue;
-            succeeded &= (p.probe(addr) == 0);
+	    boolean succ = (p.probe(addr) == 0);
+	    if (prob_result == "first" && i == 0)
+		succeeded = succ;
+	    else if(prob_result == "and")
+		succeeded &= succ;
         }
-
         return (succeeded) ? 0 : 1;
+
     }
 }

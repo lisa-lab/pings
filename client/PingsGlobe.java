@@ -222,28 +222,32 @@ public class PingsGlobe extends Globe {
         }
 
         public void updatePingGUIValue(String value) {
-            //final String regex = "\\S+\\s\\S+\\s(\\d+)\\s(\\d+)\\s(\\d+).+";
-            
+	    // Format of value : ICMP ip nb_try nb_worked total_timems[ first_timems]*[;...]
+	    // We can't use the total time as on linux it isn't the sum of all the pings.
+	    // So we will display the first time.
+            //final String regex = "\\S+\\s\\S+\\s(\\d+)\\s(\\d+)\\s(\\d+)\\s(\\d+).+";
             try {
 
-                String[] groups = value.split(" |ms",6);
+                String[] groups = value.split(";")[0].split(" |ms", 8);
                 int nb_try = Integer.parseInt(groups[2]);
                 int nb_worked = Integer.parseInt(groups[3]);
-                float totaltime = Float.parseFloat(groups[4]) /1000f;
+                //float totaltime = Float.parseFloat(groups[4]) / 1000f;
+                float firsttime = Float.parseFloat(groups[6]) / 1000f;
+
                 if (nb_worked == 0) {
                     this.connectionRefused();
                 }
-                else
-                if (nb_worked < nb_try -1 )
+                else if (nb_worked < nb_try -1)//If more then 1 ICMP ping failed
                 {
                     this.unknownError();
                 }
                 else 
                 {
-                    this.setValue(totaltime /nb_try );
+                    this.setValue(firsttime);
                 }
             }
             catch (Exception e) {
+		//There is a parsing error. This probably mean their was an error during the ping.
                 this.unknownError();
             }
         }

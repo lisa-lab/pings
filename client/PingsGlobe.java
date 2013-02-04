@@ -232,7 +232,6 @@ public class PingsGlobe extends Globe {
                 int nb_try = Integer.parseInt(groups[2]);
                 int nb_worked = Integer.parseInt(groups[3]);
                 //float totaltime = Float.parseFloat(groups[4]) / 1000f;
-                float firsttime = Float.parseFloat(groups[6]) / 1000f;
 
                 if (nb_worked == 0) {
                     this.connectionRefused();
@@ -243,6 +242,7 @@ public class PingsGlobe extends Globe {
                 }
                 else 
                 {
+		    float firsttime = Float.parseFloat(groups[6]) / 1000f;
                     this.setValue(firsttime);
                 }
             }

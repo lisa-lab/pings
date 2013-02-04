@@ -7,7 +7,6 @@
 # Start all the processes
 screen -t Redis redis-server redis.conf
 #started by the os.
-#screen -t Memcache memcached -v -p 11211
 screen -t Storage ./storage_server production.ini
 screen -t Leaderboards ./leaderboards_server production.ini
 screen -t Web1 paster serve production.ini http_port=6543

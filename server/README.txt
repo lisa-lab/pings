@@ -11,8 +11,8 @@ files, which can be post-processed afterwards into whatever format is most
 useful.
 
 This code was tested under Python 2.7, with Fedora Core 14 and Ubuntu
-11.10. We use Pyramid together with Gevent for the web server, Memcached
-for the security tokens and Zeromq to send the results to a separate
+11.10. We use Pyramid together with Gevent for the web server and
+Zeromq to send the results to a separate
 storage server, which takes care of writing them out to disk. For the
 leaderboards, we use Redis and its sorted set implementation.
 

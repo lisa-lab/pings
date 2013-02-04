@@ -2,7 +2,6 @@ import ConfigParser
 import gevent.monkey
 from pyramid.config import Configurator
 from pings.web_server.resources import (Root, init_storage_zmq,
-                                        init_token_memcache,
                                         init_geoip, init_rankings_zmq,
                                         init_web_service)
 
@@ -41,10 +40,6 @@ def main(global_config, **settings):
     config_parser.read(global_config['__file__'])
     init_geoip()
     init_web_service(config_parser.getint('web_service', 'num_addresses'))
-    init_token_memcache(_get_config_list(config_parser,
-                                         'token_memcache', 'server_address'),
-                        config_parser.getint('token_memcache',
-                                             'token_expiration_sec'))
     init_storage_zmq(_get_config_list(config_parser,
                                       'storage_client', 'server_url'))
     init_rankings_zmq(config_parser.get('leaderboards_client',

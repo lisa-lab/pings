@@ -3,10 +3,6 @@ import logging
 import os
 import time
 
-#We need pylibmc, not memcache or ultramemcache or umemcache
-#We call token_mc.delete and only pylibmc return an error when the key
-#was not there.  We rely on this behavior
-import pylibmc as memcache
 import ipaddr
 import random
 import pygeoip
@@ -25,20 +21,6 @@ logger = logging.getLogger(__name__)
 #
 # Initialization
 #
-
-# Memcache instance for the security tokens.
-token_mc = None
-# Expiration time for the tokens in said memcache. If a client takes
-# longer than this number of seconds to ping the list of addresses it was
-# assigned and send back its reply, said reply will be refused when
-# received.
-token_exptime = None
-
-
-def init_token_memcache(memcache_addresses, exptime):
-    global token_mc, token_exptime
-    token_mc = memcache.Client(memcache_addresses)
-    token_exptime = exptime
 
 #
 # Zeromq resources
@@ -125,25 +107,8 @@ def init_web_service(num_addresses):
 def get_token():
     """Gets a security token. (A random base64 ascii string.)"""
     token = os.urandom(16).encode("base64")[:22]
-    assert token_mc.set(token, True, token_exptime)
     return token
 
-
-def check_token(token):
-    """Checks that a given security token is still valid."""
-    if token is None:
-        return False
-
-    # Lookup token in memcache.
-    #
-    # Memcache doesn't like getting Unicode for keys. And even though
-    # get_token() returns a str, by the time it's sent to the client and
-    # back, it will likely have been converted to Unicode (happening now,
-    # at least). Convert the token back to a str here to handle this
-    # problem in a localized way. Since the token is currently a base64
-    # string, ascii is okay as an encoding. (If fed a token that can't be
-    # converted to ASCII, Pyramid will convert the exception to a 500 error.)
-    return token_mc.delete(token.encode('ascii')) is not None
 
 # The address of the server that all clients should ping
 always_up_addresses = ["173.194.73.104", "183.60.136.45", "195.22.144.60"]

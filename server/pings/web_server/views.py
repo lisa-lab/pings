@@ -161,7 +161,6 @@ def submit_ping_results(request):
     token = request.json_body.get('token')
     nick = request.json_body.get('userid')
     uuid = request.json_body.get('uuid')
-    bad_token = resources.check_token(token)
 
     # Store results.
     results = request.json_body.get('results')
@@ -171,7 +170,6 @@ def submit_ping_results(request):
 
     results.insert(0, client_addr)
     results.append("TOKEN=" + token)
-    results.append("TOKEN_VALID=" + str(bad_token))
     results.append("NICK=" + nick)
     results.append("UUID=" + uuid)
     resources.store_results(results)

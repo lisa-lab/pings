@@ -57,7 +57,7 @@ function hide(index) {
 var cont = $('#analysis_container');
 function get_analysis(measurements) {
   if (cont.is(':visible')) return;
-  $.getJSON('http://iconnect2.iro.umontreal.ca:8080/feedback.py?jsoncallback=?', {"measurements": measurements}, function(data) {
+  $.getJSON('http://iconnect2.iro.umontreal.ca:80/feedback.py?jsoncallback=?', {"measurements": measurements}, function(data) {
     cont.html(data.content);
     cont.show();
     window.location.hash = "ANALYSIS";

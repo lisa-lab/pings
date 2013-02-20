@@ -8,12 +8,15 @@ import ServerProxy
 nb_iter = 1000
 server = "iconnect.iro.umontreal.ca"
 port = 80
+sleep_time = 0
 
 print sys.argv
 if len(sys.argv) > 1:
     server = sys.argv[1]
 if len(sys.argv) > 2:
     port = int(sys.argv[2])
+if len(sys.argv) > 3:
+    sleep_time = float(sys.argv[3])
 print server, port
 sp = ServerProxy(server, port)
 
@@ -31,6 +34,8 @@ info = ClientInfo("", "yoda")
 pings_queue = [None] * nb_iter
 t0 = time.time()
 for i in range(nb_iter):
+    if sleep_time > 0:
+        time.sleep(sleep_time)
     pings_queue[i] = sp.getPings(info)
 t1 = time.time()
 print "Time get_results r/s:",  nb_iter / (t1 - t0)

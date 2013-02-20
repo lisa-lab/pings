@@ -10,10 +10,6 @@ Essential
 Important
 =========
 
-* Refine the code that returns a list of addresses to be pinged. We may
-  want to do something smarted than simply pinging completely random
-  addresses.
-
 * Configure front-end proxy to guard against very long POST request from
   clients (via max request length).
 

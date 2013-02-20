@@ -1,4 +1,4 @@
 #!/bin/sh
 
 wget -q http://www-etud.iro.umontreal.ca/~boulanni/addresses.pickle.zip
-gunzip addresses.pickle.zip
+unzip addresses.pickle.zip

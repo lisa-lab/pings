@@ -16,7 +16,7 @@ __pycache__/
 # Ignore Javadoc output directory for client.
 client/doc/
 # Ignore output jar
-client/pings.jar
+client/*.jar
 
 # Ignore directories created by storage_server.
 server/20??-??-??/
@@ -25,5 +25,11 @@ server/dump.rdb
 
 # Don't add GeoIP data
 server/Geo*.dat
+server/GeoLiteCity.dat.gz
+
 # Don't commit fabric local configuration
 server/fabconfig.py
+
+# Ignore stdout/stderr and stats from from the server
+server/ip_server_stats.*.txt
+server/serve??.*.errout

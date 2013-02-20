@@ -374,7 +374,19 @@ def store_known_pignable(results):
         print "Skip exception", e
 
 if __name__ == "__main__":
-    if True:  # False:
+    if True:  # speed test display_stats for feedback
+        import sys
+        sys.path[0:0] = [os.path.join(os.path.dirname(__file__),
+                                      '../../../models/work_in_progress/src')]
+        from graph import display_stats
+        import numpy
+        ip = "132.204.25.12"
+        measurements = ip
+        one = lambda : '.'.join(map(str, numpy.random.randint(256, size=4))) + ',' + str(max(51.0, numpy.random.normal(loc=400.0, scale=200.0)))
+        measurements = '-'.join([one() for i in xrange(100)])
+        for i in range(10000):
+            response = display_stats(ip, measurements, False, False)
+    elif False:  # speed test get_pings
         nb_iter = 100000
         # Speed test get_pings
         t0 = time.time()
@@ -383,7 +395,7 @@ if __name__ == "__main__":
             get_pings("132.204.25.12")
         t1 = time.time()
         print "Time per request (ms):", (t1 - t0) / float(nb_iter) * 1000
-    else:
+    else:  # speed test get_geoip_data
         nb_iter = 3000
         # Speed test
         init_geoip()

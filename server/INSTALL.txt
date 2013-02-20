@@ -94,7 +94,7 @@ pip install .
 #sudo iptables -A INPUT -p tcp --dport 11211 -j REJECT
 
 - Add the following line to /etc/crontab. This generate each 5 minutes a static copy of the leaderboard to help scale as nginx is faster to serve then regenerting it each time or event caching it and making pyramid serve it.
-0,5,10,15,20,25,30,35,40,45,50,55 * * * * root cd /usr/share/nginx/www && wget iconnect2.iro.umontreal.ca:6544 -O leaderboard.html
+0,5,10,15,20,25,30,35,40,45,50,55 * * * * root cd /usr/share/nginx/www && wget iconnect2.iro.umontreal.ca:8080 -O leaderboard.html
 
 =======
 #List all current rules

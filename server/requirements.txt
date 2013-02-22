@@ -39,7 +39,6 @@ zope.component==3.12.0
 zope.deprecation==3.5.0
 zope.event==3.5.1
 zope.interface==3.8.0
-pylibmc==1.2.3
 
 #Bellow are for the model used for the feedback.
 numpy==1.6.2

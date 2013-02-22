@@ -33,8 +33,8 @@ function hide(index) {
 
 <div class="title">The Internet Connectome Project<sup>BETA</sup></div>
 
-<a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en" target="_blank"><img style="float: right; padding-left: 25px;" src="http://nouiz.org/pings/client/images/neurone_chip2.jpg" height="75"></a>
-<a href="http://www.ubi.com" target="_blank"><img style="float: right; padding-left: 25px;" src="http://nouiz.org/pings/client/images/Ubisoft.png" height="75"></a>
+<a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en" target="_blank"><img style="float: right; padding-left: 25px;" src="http://s3.amazonaws.com/udem_iconnect/neurone_chip2.jpg" height="75"></a>
+<a href="http://www.ubi.com" target="_blank"><img style="float: right; padding-left: 25px;" src="http://s3.amazonaws.com/udem_iconnect/Ubisoft.png" height="75"></a>
 
 <div style="clear: both;"></div>
 
@@ -85,7 +85,7 @@ function get_cookie(cookie_name, default_value) {
 uuid = get_cookie('udem_ping_uuid', '');
 nick = get_cookie('udem_ping_nickname', '');
 nb_pings = get_cookie('udem_ping_nb_pings', '0');
-var attributes = {code:'PingsApplet.class', archive:'http://nouiz.org/pings/client/pings.jar', width:800, height:500};
+var attributes = {code:'PingsApplet.class', archive:'http://s3.amazonaws.com/udem_iconnect/pings.jar', width:800, height:500};
 var parameters = {ping_hostname:'iconnect2.iro.umontreal.ca', ping_nb_pings:nb_pings, ping_port:'8080', ping_uuid:uuid, ping_nickname:nick};
 var version = '1.6';
 deployJava.runApplet(attributes, parameters, version);
@@ -146,7 +146,7 @@ Please run your browser session within a console and <a href="mailto:iconnectome
 <h2>The Internet Connectome project</h2>
 
 <p>
-<img style="float: right; height: 155px; padding: 0px 12px;" src="http://nouiz.org/pings/client/images/internet_study_map.gif">
+<img style="float: right; height: 155px; padding: 0px 12px;" src="http://s3.amazonaws.com/udem_iconnect/internet_study_map.gif">
 
 <b>To optimize peer-to-peer internet connections, it would be very useful to have the ability to estimate ahead of time
 the internet delay between different internet addresses.</b>
@@ -168,10 +168,10 @@ and we use machine learning to predict delays between yet unmeasured pairs of ad
 <h2>Sponsored by</h2>
 
 <center>
-<a href="http://www.umontreal.ca" target="_blank"><img style="padding: 5px 25px;" src="http://nouiz.org/pings/client/images/UMontreal.jpg" height="65"></a>
-<a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en" target="_blank"><img style="padding: 0 15px 0 25px;" src="http://nouiz.org/pings/client/images/neurone_chip2.jpg" height="75"></a>
-<a href="http://www.ubi.com" target="_blank"><img style="padding: 0 25px;" src="http://nouiz.org/pings/client/images/Ubisoft.png" height="75"></a>
-<a href="http://www.nserc-crsng.gc.ca/index_eng.asp" target="_blank"><img style="padding: 0 25px;" src="http://nouiz.org/pings/client/images/NSERC_logo.png" height="75"></a>
+<a href="http://www.umontreal.ca" target="_blank"><img style="padding: 5px 25px;" src="http://s3.amazonaws.com/udem_iconnect/UMontreal.jpg" height="65"></a>
+<a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en" target="_blank"><img style="padding: 0 15px 0 25px;" src="http://s3.amazonaws.com/udem_iconnect/neurone_chip2.jpg" height="75"></a>
+<a href="http://www.ubi.com" target="_blank"><img style="padding: 0 25px;" src="http://s3.amazonaws.com/udem_iconnect/Ubisoft.png" height="75"></a>
+<a href="http://www.nserc-crsng.gc.ca/index_eng.asp" target="_blank"><img style="padding: 0 25px;" src="http://s3.amazonaws.com/udem_iconnect/NSERC_logo.png" height="75"></a>
 <br /><p style="text-align: center; border-top: 1px dotted #aaa; margin-top: 13px; padding-top: 6px;">
 The Internet Connectome Project | Montréal | Québec<br />
 Copyright © 2012-2013 All rights reserved.

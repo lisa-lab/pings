@@ -242,7 +242,11 @@ public class PingsGUI implements ActionListener {
         }
         else {
 	    int failed = pings_failed_counter.get();
-	    String s = "ip tested: total(cookies) " +nb+ ", session " +session+ ", failed " + failed;
+	    String s = "ip tested: total(cookies) " +nb+ ", session " +session;
+
+	    if(session >= 9 && ((float)failed)/session > 0.3)
+		s += ", failed " + failed;
+
 	    pings_counter_display.setText(s);
         }
         setLayout();

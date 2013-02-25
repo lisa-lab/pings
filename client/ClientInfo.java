@@ -208,7 +208,6 @@ public class ClientInfo {
         else {
             // let's detect the os.
             String os_name = System.getProperty("os.name").toLowerCase();
-	    LOGGER.info("OS detected: " + os_name);
 
             // FIXME: find the finer-grained
             // OS names.
@@ -223,8 +222,8 @@ public class ClientInfo {
             else if (os_name.indexOf("bsd") >=0)
                 m_os_type=OSType.BSD;
             // add other OSes ... Solaris? OSX? ...DOS? :p
-	    LOGGER.info("OS idx detected: " + m_os_type);
-	    LOGGER.info("0: NotDetected, 1: Linux, 2: BDS, 3: OSX, 4: WinXP, 5: Win7, 6: WinOther, 7: Unsupported");
+	    LOGGER.info("OS returned by the system '" + os_name +
+			"'. Category detected: '" + m_os_type + "'");
 
             return m_os_type;
         }

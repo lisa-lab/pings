@@ -247,7 +247,9 @@ function hide(index) {
 
 <div class="title">Analysis Results</div>
 
-<div class="subtitle">Thank you for your participation !</div>
+<div class="subtitle">Thank you for your participation!<br>
+Please, let the applet run longer to help us collect more data.<br>
+Your score in the <a href="leaderboard.html">leaderboard</a> will continue to raise.</div>
 
 <h2>Your network location</h2>
 

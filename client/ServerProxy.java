@@ -164,6 +164,7 @@ public class ServerProxy {
         List<String> results = new ArrayList<String>();
         results.add(client_info.getAddress().getHostAddress());
         results.add(client_info.getInterface());
+        results.add("OS=" + System.getProperty("os.name"));
         results.addAll(Arrays.asList(pings.results));
         json_request.put("results", results);
         String nick = client_info.getNickname();

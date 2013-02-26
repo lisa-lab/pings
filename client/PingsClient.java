@@ -687,8 +687,12 @@ public class PingsClient extends Observable implements Runnable {
 	}else{
 	    try{
 		last = last.substring(0, last.length() - 2);
-		value = Float.parseFloat(last);
-		ok &= value >= 10 && value < 1900;
+		if (last.equals("?"))
+		    ok = false;
+		else{
+		    value = Float.parseFloat(last);
+		    ok &= value >= 10 && value < 1900;
+		}
 	    }catch(NumberFormatException e){
 		ok = false;
 		LOGGER.log(Level.INFO, "addMeasurement: Bad parsing of new ICMP ping: " + current_ping_result);

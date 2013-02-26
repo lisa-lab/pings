@@ -95,10 +95,10 @@ def get_pings(request):
 
     resources.store_results(info)
     nb_get_pings += 1
+    now = time()
+    spent = now - last_time
 
-    if (nb_get_pings % (5 * expected_get_pings_process_seconds)) == 0:
-        now = time()
-        spent = now - last_time
+    if spent > 5:
         removed = resources.last_clients.remove_old(now)
         #number of pings per second since the last check
         p_s = (nb_get_pings - last_nb_get_pings) / spent

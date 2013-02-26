@@ -25,7 +25,7 @@ public class IcmpPinger implements Prober {
         // Linux
         {"ping", "-w", "15", "-W", "2", "-c"},
         // BSD, OSX ?
-        {"ping", "-c"},
+        {"ping", "-W", "2000", "-c"},
         // Windows XP        
         {"ping", "-w", "2000", "-n"}
     };

@@ -17,7 +17,7 @@ if len(sys.argv) > 2:
     port = int(sys.argv[2])
 if len(sys.argv) > 3:
     sleep_time = float(sys.argv[3])
-print server, port
+print "server", server, "port", port, "sleep_time", sleep_time
 sp = ServerProxy(server, port)
 
 

@@ -221,6 +221,8 @@ public class ClientInfo {
                 m_os_type=OSType.Linux; // Ubuntu? Recent? ???
             else if (os_name.indexOf("bsd") >=0)
                 m_os_type=OSType.BSD;
+            else if (os_name.indexOf("mac") >=0 || os_name.indexOf("os x") >=0)
+                m_os_type=OSType.OSX;
             // add other OSes ... Solaris? OSX? ...DOS? :p
 	    LOGGER.info("OS returned by the system '" + os_name +
 			"'. Category detected: '" + m_os_type + "'");

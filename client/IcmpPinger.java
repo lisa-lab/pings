@@ -167,17 +167,10 @@ public class IcmpPinger implements Prober {
 	    m_icmp_times += getTimes(stdout_lines);
         }
         else
-            // Deal with errors
-            if (retval == 1){
-                // find summary anyway
-                m_icmp_times += getSummary(summary_regex, stdout_lines);
-            }else{
-                m_icmp_times += "failed " + String.valueOf(retval);
-		System.out.println("ICMP ping stdout: " + stdout_lines);
-		System.out.println("ICMP ping stderr: " + stderr_lines);
-	    }
+	    // find summary anyway
+	    m_icmp_times += getSummary(summary_regex, stdout_lines);
 
-        return retval; // m_icmp_times may or may not be assigned!
+        return retval;
     }
 
     /**

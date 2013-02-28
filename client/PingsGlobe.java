@@ -33,32 +33,17 @@ public class PingsGlobe extends Globe {
     
     //The color of the client.
     private static final Color origin_color = new Color(44f / 255f, 63f / 255f, 201f / 255f, 0.9f); //blue
-    private static final float[] waiting_color = {0,255,0}; //green // {195,208,226};//{ 69, 178, 110};
-    private static final float[] timed_out_color = {131, 13, 44};//red/rouge bourgogne
-    private static final float[] connection_refused_color = {20, 20, 20};//black (on voix mal)
-    private static final float[] unknown_error_color = {255, 255, 255};//white
+    private static final float[] waiting_color = {227, 90, 0}; //orange
+    private static final float[] timed_out_color = {200, 0, 0};//red
+    private static final float[] connection_refused_color = {200, 0, 0};//red
+    private static final float[] unknown_error_color = {200, 0, 0};//red
     private float prefered_font_size = 10f; //13.5f;
     private float circle_radius_scale=1.5f;
     private BasicStroke link_stroke = new BasicStroke(2.5f);
     
     private Graphics2D text_render;
     
-    private static final float [][] color_scale = {
-        {0,255,0,     0.025f },
-        {73,255,67,   0.050f },
-        {106,255,97,  0.075f },
-        {134,243,97,  0.100f },
-        {246,242,35,  0.150f },
-        {246,215,35,  0.200f },
-        {222,161,62,  0.250f },
-        {192,111,60,  0.300f },
-        {168,21,42,   0.400f },
-        {137,18,28,   0.500f },
-        {92,32,40,    0.600f },
-        {78,57,58,    0.700f },
-        {76,76,76,    0.850f },
-        {31,29,29,    1.000f },
-    };
+    private static final float [] worked_color = {0, 255, 0}; //green
     
     
     public PingsGlobe(int stored_pings_size) {
@@ -87,12 +72,7 @@ public class PingsGlobe extends Globe {
             else if (value == -2) {color = timed_out_color;}
             else if (value == -3) {color = unknown_error_color;}
             else if (value == -4) {color = connection_refused_color;}
-            else {
-                int i = 0;
-                while ((color_scale[i][3] < value) && (i < color_scale.length-1))
-                    {i++;}
-                color = color_scale[i];
-            }
+            else {color = worked_color;}
         }
         
         public GeoipInfo getGeoip() {
@@ -192,10 +172,13 @@ public class PingsGlobe extends Globe {
         /**
          * Draw a circle at the end point and an arc joining it with the origin.
          */
-        private void paint(Graphics2D g2, float color_attenuation, float circle_radius) {
+        private void paint(Graphics2D g2, float circle_radius) {
             if (target == null) return;
             
             //Set the parameter for this drawing
+	    float color_attenuation = 1;
+	    if (value > 0)
+		color_attenuation -= (float)value/1000f;
             Color peer_color = new Color(
                     color[0]/255f,
                     color[1]/255f,
@@ -358,11 +341,7 @@ public class PingsGlobe extends Globe {
         for (int i = 0;i < stored_pings_size ;i++) {
             PingGUI current_ping = stored_pings[actual_index];
             if (current_ping != null) {
-                float color_attenuation =
-                    ((float) (stored_pings_size - i))
-                    /
-                    ((float) stored_pings_size);
-                current_ping.paint(g2,color_attenuation,circle_radius);
+                current_ping.paint(g2,circle_radius);
             }
             actual_index--;
             if (actual_index == -1) actual_index = stored_pings_size -1;

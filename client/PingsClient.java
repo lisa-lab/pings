@@ -69,7 +69,7 @@ public class PingsClient extends Observable implements Runnable {
     boolean shown_analysis = false;
 
     //The number of subClient(s) to run simultaneously
-    protected int subClient_number = 6;
+    static final protected int subClient_number = 6;
     //The maximum number of subClient with TCP prober
     //This is to help the too small translation table size in some routers
     protected int max_tcp_subClient_number = 2;

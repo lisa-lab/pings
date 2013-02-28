@@ -24,7 +24,7 @@ public class PingsGlobe extends Globe {
     
     private GeoipInfo origin;
     private PingGUI[] stored_pings;
-    private static final int stored_pings_size = 20;
+    private static int stored_pings_size;
     private static final float attenuation_offset_for_cities = 2f / 20f;
     
     //The last index of the array used to store a ping, as null case are handle
@@ -61,12 +61,13 @@ public class PingsGlobe extends Globe {
     };
     
     
-    public PingsGlobe() {
+    public PingsGlobe(int stored_pings_size) {
         super();
         super.setShowGraticule(false);
         super.setShowTissot(false);
         super.setShowSea(true);
         super.setShowDay(false);
+	this.stored_pings_size = stored_pings_size;
         
         stored_pings = new PingGUI[stored_pings_size];
     }

@@ -143,7 +143,7 @@ public class PingsGUI implements ActionListener {
         applet_container.add(client_info_display);
         
         //Add the globe
-        ping_globe = new PingsGlobe();
+        ping_globe = new PingsGlobe(PingsClient.subClient_number * 2);
         int lines_size = 10 + nickname_field.getPreferredSize().height;
         ping_globe.resizeGlobe(Math.min(applet.getWidth(), applet.getHeight()) - lines_size);
         ping_globe.setBackground(background_color);

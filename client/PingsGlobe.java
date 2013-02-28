@@ -32,7 +32,7 @@ public class PingsGlobe extends Globe {
     private int last_ping = 0 ;
     
     //The color of the client.
-    private static final Color origin_color = new Color(44f / 255f, 63f / 255f, 201f / 255f, 0.9f); //blue
+    private static final Color origin_color = Color.yellow;
     private static final float[] waiting_color = {227, 90, 0}; //orange
     private static final float[] error_color = {200, 0, 0}; //red
     private static final float[] worked_color = {0, 255, 0}; //green

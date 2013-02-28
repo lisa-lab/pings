@@ -34,16 +34,14 @@ public class PingsGlobe extends Globe {
     //The color of the client.
     private static final Color origin_color = new Color(44f / 255f, 63f / 255f, 201f / 255f, 0.9f); //blue
     private static final float[] waiting_color = {227, 90, 0}; //orange
-    private static final float[] timed_out_color = {200, 0, 0};//red
-    private static final float[] connection_refused_color = {200, 0, 0};//red
-    private static final float[] unknown_error_color = {200, 0, 0};//red
+    private static final float[] error_color = {200, 0, 0}; //red
+    private static final float[] worked_color = {0, 255, 0}; //green
     private float prefered_font_size = 10f; //13.5f;
     private float circle_radius_scale=1.5f;
     private BasicStroke link_stroke = new BasicStroke(2.5f);
     
     private Graphics2D text_render;
     
-    private static final float [] worked_color = {0, 255, 0}; //green
     
     
     public PingsGlobe(int stored_pings_size) {
@@ -69,9 +67,7 @@ public class PingsGlobe extends Globe {
         
         private void UpdateColor() {
             if (value == -1) {color = waiting_color;}
-            else if (value == -2) {color = timed_out_color;}
-            else if (value == -3) {color = unknown_error_color;}
-            else if (value == -4) {color = connection_refused_color;}
+            else if (value == -2) {color = error_color;}
             else {color = worked_color;}
         }
         
@@ -85,19 +81,7 @@ public class PingsGlobe extends Globe {
             PingsGlobe.this.repaint();
         }
         
-        public void connectionRefused () {
-            this.value = -4;
-            UpdateColor();
-            PingsGlobe.this.repaint();
-        }
-        
-        public void unknownError() {
-            this.value = -3;
-            UpdateColor();
-            PingsGlobe.this.repaint();
-        }
-        
-        public void timedOut() {
+        public void Error() {
             this.value = -2;
             UpdateColor();
             PingsGlobe.this.repaint();
@@ -217,12 +201,8 @@ public class PingsGlobe extends Globe {
                 int nb_worked = Integer.parseInt(groups[3]);
                 //float totaltime = Float.parseFloat(groups[4]) / 1000f;
 
-                if (nb_worked == 0) {
-                    this.connectionRefused();
-                }
-                else if (nb_worked < nb_try -1)//If more then 1 ICMP ping failed
-                {
-                    this.unknownError();
+                if (nb_worked != nb_try) {
+                    this.Error();
                 }
                 else 
                 {
@@ -232,7 +212,7 @@ public class PingsGlobe extends Globe {
             }
             catch (Exception e) {
 		//There is a parsing error. This probably mean their was an error during the ping.
-                this.unknownError();
+                this.Error();
             }
         }
         

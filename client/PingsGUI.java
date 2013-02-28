@@ -418,7 +418,7 @@ public class PingsGUI implements ActionListener {
             //we need to do some workaround for the old ping and declare a 
             //new one.
             else {
-                if (gui_effect != null) gui_effect.unknownError();
+                if (gui_effect != null) gui_effect.Error();
                 String value = client.getCurrentPingResult();
                 gui_effect = ping_globe.addPing(current_ping_geoip);
                 if (value!= null && !value.equals("")) {

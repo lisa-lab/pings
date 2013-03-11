@@ -95,7 +95,7 @@ public class PingsGUI implements ActionListener {
         //Add the button to change the nickname
         rename_button = new JButton("Change");
         rename_button.setMnemonic(KeyEvent.VK_U);
-        rename_button.setToolTipText("Update your name for the leaderboard");
+        rename_button.setToolTipText("Update your nickname for the leaderboard");
         rename_button.setActionCommand("rename");
         rename_button.addActionListener(this);
         rename_button.setEnabled(false);
@@ -104,6 +104,7 @@ public class PingsGUI implements ActionListener {
         //Add the field to change the nickname
         nickname_field = new JTextField(15);
         nickname_field.setText(applet.pings_clients[0].getNickname());
+        rename_button.setToolTipText("Your nickname for the leaderboard");
         //Add a listener to able/disable the rename_button if the nickname is
         //different from the one stored
         nickname_field.getDocument().addDocumentListener(

@@ -7,6 +7,7 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.Font;
 import java.net.InetAddress;
 import java.util.Observable;
 import java.util.Observer;
@@ -140,6 +141,7 @@ public class PingsGUI implements ActionListener {
         
         //Add the display for the client info
         client_info_display = new JLabel("");
+	client_info_display.setFont(new Font(null, Font.BOLD, 16));
         client_info_display.setForeground(text_color);
         applet_container.add(client_info_display);
         

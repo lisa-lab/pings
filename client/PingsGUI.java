@@ -5,6 +5,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
+import java.awt.event.FocusListener;
+import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.Font;
@@ -130,6 +132,18 @@ public class PingsGUI implements ActionListener {
                         rename_button.doClick();
                     }
                 }
+            });
+
+	//Add a listener to update the name when we focus for the first time.
+	//We clear the default name to make it easier to enter a new one.
+        nickname_field.addFocusListener(
+            new FocusListener() {
+		public void focusGained(FocusEvent e){
+		    if (nickname_field.getText().equals(PingsApplet.initial_nickname)){
+			nickname_field.setText("");
+		    }
+		}
+		public void focusLost(FocusEvent e){}
             });
         applet_container.add(nickname_field);
         
@@ -306,7 +320,9 @@ public class PingsGUI implements ActionListener {
     }
     
     public void check_enable_button() {
-        if (nickname_field.getText().equals(applet.pings_clients[0].getNickname())) {
+	String nick = nickname_field.getText();
+        if (nick.length() <= 0 ||
+	    nick.equals(applet.pings_clients[0].getNickname())) {
             rename_button.setEnabled(false);
         }
         else {
@@ -504,18 +520,21 @@ public class PingsGUI implements ActionListener {
         //Handle the rename button
         else if (command.equals("rename")) {
             String new_name = nickname_field.getText();
-	    new_name = PingsClient.sanitize_string(new_name);
-	    nickname_field.setText(new_name);
 
-            for (int i = 0; i < applet.nb_clients; i++) {
-                applet.pings_clients[i].setNickname(new_name);
-            }
-            SwingUtilities.invokeLater( new Runnable() {
-                public void run() {
-                    rename_button.setEnabled(false);
-                }
-            });
-            System.out.println("Nick updated to " + new_name);
+	    if (new_name.length() > 0){
+		new_name = PingsClient.sanitize_string(new_name);
+		nickname_field.setText(new_name);
+
+		for (int i = 0; i < applet.nb_clients; i++) {
+		    applet.pings_clients[i].setNickname(new_name);
+		}
+		SwingUtilities.invokeLater( new Runnable() {
+			public void run() {
+			    rename_button.setEnabled(false);
+			}
+		    });
+		System.out.println("Nick updated to " + new_name);
+	    }
         }
         
         //Handle any other unknown component

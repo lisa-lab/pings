@@ -143,7 +143,14 @@ public class PingsGUI implements ActionListener {
 			nickname_field.setText("");
 		    }
 		}
-		public void focusLost(FocusEvent e){}
+		public void focusLost(FocusEvent e){
+		    String current_name = applet.pings_clients[0].getNickname();
+		    if (nickname_field.getText().length() == 0 &&
+			current_name.equals(PingsApplet.initial_nickname)){
+			nickname_field.setText(PingsApplet.initial_nickname);
+		    }
+
+		}
             });
         applet_container.add(nickname_field);
         

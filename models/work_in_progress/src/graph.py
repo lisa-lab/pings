@@ -257,7 +257,7 @@ Your score in the <a href="leaderboard.html">leaderboard</a> will continue to ra
 
 <tr><th style="text-align: left;">location</th>
 <th>average<br />latency (ms) &dagger;</th>
-<th></th></tr>
+<th>Relative rank</th></tr>
 
 <tr onmouseover="show(1,this)" onmouseout="hide(1)" ><td class="left_column">""" + d['country_name'] + u"""</td>
 <td class="middle_column">""" + str(int(numpy.round(float(stats[0][r[0]][0])))) + u"""</td>

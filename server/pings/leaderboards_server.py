@@ -110,6 +110,9 @@ class MultiLeaderboard:
         self.current_day = day
 
     def reset(self):
+        """
+        delete all scores!
+        """
         for name in self.names:
             self.leaderboards[name].reset()
 
@@ -119,6 +122,9 @@ class MultiLeaderboard:
             self.leaderboards[name].incr_score(userid, score_increment)
 
     def rem_nick(self, userid):
+        """
+        Remove a nick name from the leaderboard.
+        """
         for name in self.names:
             self.leaderboards[name].rem_nick(userid)
 
@@ -204,3 +210,47 @@ def main():
                     logging.exception('Exception while processing message: %s',
                                       msg)
         #logger.debug('Leaderboard: No new stats during the last seconds')
+
+if __name__ == '__main__':
+    print """
+    This isn't the normal script to use!
+    This is only need to correct the current db: like cleanup it up from test.
+    """
+
+    # Parse command line.
+    if len(sys.argv) not in [3, 4]:
+        print >>sys.stderr, (
+            "Usage: leaderboards_server config.ini {list,remove NICKNAME}")
+        sys.exit(1)
+
+    config_filename = sys.argv[1]
+
+    # First configure logging. Must be done before anything else that could
+    # use the logger.
+    fileConfig(config_filename)
+    global logger
+    logger = logging.getLogger(__name__)
+
+    # Load config file.
+    config_parser = ConfigParser.SafeConfigParser()
+    config_parser.read(config_filename)
+    config_section = 'leaderboards_server'
+
+    backend_type = config_parser.get(config_section, 'backend')
+
+    # Instantiate the backend.
+    leaderboard = globals()[backend_type.capitalize() + 'Leaderboard']()
+    assert len(sys.argv) >= 2
+    if sys.argv[2] == "reset":
+        # Delete all the scores
+        assert len(sys.argv) == 3
+        raise Exception(
+            "We do not allow to delete all scores on the command line for safety")
+    elif sys.argv[2] == "list":
+        for board, data in leaderboard.get_top_scores(50).iteritems():
+            print board
+            for i, (user, score) in enumerate(data):
+                print "    ", i, user, score
+    elif sys.argv[2] == "remove":
+        assert len(sys.argv) == 4
+        leaderboard.rem_nick(sys.argv[3])

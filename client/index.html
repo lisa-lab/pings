@@ -91,7 +91,7 @@ function get_cookie(cookie_name, default_value) {
 uuid = get_cookie('udem_ping_uuid', '');
 nick = get_cookie('udem_ping_nickname', '');
 nb_pings = get_cookie('udem_ping_nb_pings', '0');
-var attributes = {code:'PingsApplet.class', archive:'pings.jar', width:800, height:500};
+var attributes = {code:'PingsApplet.class', archive:'http://s3.amazonaws.com/udem_iconnect/pings.jar, width:800, height:500};
 var parameters = {ping_hostname:'iconnect2.iro.umontreal.ca', ping_nb_pings:nb_pings, ping_port:'80', ping_uuid:uuid, ping_nickname:nick};
 var version = '1.6';
 deployJava.runApplet(attributes, parameters, version);

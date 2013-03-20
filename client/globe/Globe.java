@@ -164,6 +164,7 @@ public class Globe extends JComponent {
 	//Windows!
 	// See https://issues.apache.org/jira/browse/PIVOT-664 or
 	//     http://stackoverflow.com/questions/7119060/how-to-prevent-browser-from-responding-to-scroll-events
+	//     http://stackoverflow.com/questions/7374983/have-a-wheel-listener-exclusively-consuming-events
 	//     for ways to tell the browswer to don't catch the mousewheel event.
 	if (false){
 	    addMouseWheelListener(
@@ -171,14 +172,6 @@ public class Globe extends JComponent {
 				      public void mouseWheelMoved(MouseWheelEvent e) {
 					  int steps = e.getWheelRotation();
 					  mouseZoom(-steps);
-				      }
-				  }
-				  );
-	}else{
-	    addMouseWheelListener(
-				  new MouseWheelListener() {
-				      public void mouseWheelMoved(MouseWheelEvent e) {
-					  mouseZoom(0);// to force a repaint.
 				      }
 				  }
 				  );

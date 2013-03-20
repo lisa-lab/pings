@@ -9,6 +9,8 @@ import java.awt.event.FocusListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 import java.awt.Font;
 import java.net.InetAddress;
 import java.util.Observable;
@@ -190,7 +192,22 @@ public class PingsGUI implements ActionListener {
         
         //Add an observer to refresh globe on resize
         applet.addComponentListener(new onResize());
-        
+
+	//Add an observer to refresh on mouse wheel
+	//Otherwise on Windows 7, the applet don't refresh correctly
+	applet.addMouseWheelListener(
+	       new MouseWheelListener() {
+
+		   public void mouseWheelMoved(MouseWheelEvent e) {
+		       SwingUtilities.invokeLater( new Runnable() {
+			       public void run() {
+				   setLayout();
+				   applet.repaint();
+			       }
+			   });
+		   }
+	       }
+	 );
         //Add an observer to the client to update the GUI.
         clients_observers = new clientThreadObserver[applet.nb_clients][];
         for (int i = 0; i < applet.nb_clients; i++) {

@@ -56,6 +56,9 @@ public class PingsGlobe extends Globe {
     }
     
     class PingGUI {
+	/*
+	 * This class represent one ping target on the globe
+	 */
         
         private GeoipInfo target;
         private double value = -1;
@@ -136,9 +139,6 @@ public class PingsGlobe extends Globe {
                     long s_value = Math.round(value);
                     description+= " : " + s_value + " s";
                 }
-            }
-            else if (value > 0 ) {
-                description+= " : " + ((int) (value)) + " s";
             }
             else if (value == -1) {
                 description+= " : Pinging";

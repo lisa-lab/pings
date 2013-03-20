@@ -158,15 +158,28 @@ public class Globe extends JComponent {
         addMouseListener( mouseListener = new ProjectionMouseListener( this, projection, transform ) );
         addMouseListener( zoomListener = new PanZoomMouseListener( this, transform ) );
         
-        //Add the mousewheel listener
-        addMouseWheelListener(
-            new MouseWheelListener() {
-                public void mouseWheelMoved(MouseWheelEvent e) {
-                    int steps = e.getWheelRotation();
-                    mouseZoom(-steps);
-                }
-            }
-        );
+	//Add the mousewheel listener.
+	//We don't use the mousewheel to zoom in/out the globe as the
+	//browser also catch it and we end up zooming and scrolling on
+	//Windows!
+	if (false){
+	    addMouseWheelListener(
+				  new MouseWheelListener() {
+				      public void mouseWheelMoved(MouseWheelEvent e) {
+					  int steps = e.getWheelRotation();
+					  mouseZoom(-steps);
+				      }
+				  }
+				  );
+	}else{
+	    addMouseWheelListener(
+				  new MouseWheelListener() {
+				      public void mouseWheelMoved(MouseWheelEvent e) {
+					  mouseZoom(0);// to force a repaint.
+				      }
+				  }
+				  );
+	}
         
         //Setting up the timer that forces a quality paint after a short idle time
         //This one is used to transition from fast to quality draw

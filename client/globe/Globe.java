@@ -162,6 +162,9 @@ public class Globe extends JComponent {
 	//We don't use the mousewheel to zoom in/out the globe as the
 	//browser also catch it and we end up zooming and scrolling on
 	//Windows!
+	// See https://issues.apache.org/jira/browse/PIVOT-664 or
+	//     http://stackoverflow.com/questions/7119060/how-to-prevent-browser-from-responding-to-scroll-events
+	//     for ways to tell the browswer to don't catch the mousewheel event.
 	if (false){
 	    addMouseWheelListener(
 				  new MouseWheelListener() {

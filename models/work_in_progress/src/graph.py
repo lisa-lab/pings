@@ -290,7 +290,7 @@ Your score in the <a href="leaderboard.html">leaderboard</a> will continue to ra
 <center><table cellspacing="0" cellpadding="0">
 <tr><td>Average latency (predicted)</td><td><b>%i ms</b></td></tr>
 <tr><td>Average latency (measured)</td><td><b>%i ms</b></td></tr>
-<tr><td style="width: 205px;">Accuracy of prediction</td><td><b>%i ms</b></td></tr>""" % (int(numpy.round(predictions.mean())), int(numpy.round(you_mean)), int(numpy.round(abs(targets-predictions).mean())))
+<tr><td style="width: 205px;">Average difference between prediction and measurement</td><td><b>%i ms</b></td></tr>""" % (int(numpy.round(predictions.mean())), int(numpy.round(you_mean)), int(numpy.round(abs(targets-predictions).mean())))
 
 #  print predictions, targets, indices
   if len(indices) > 0:

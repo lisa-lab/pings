@@ -499,7 +499,7 @@ def train_model(save=False):
 
 
 
-def export_datasets():
+def export_datasets(extra_proportion=0):
   rows = []
   for i, s in enumerate(test_data.data_sets):
     print '\r%i/%i' % (i+1, len(test_data.data_sets)),
@@ -513,43 +513,85 @@ def export_datasets():
              utils.get_int_from_ip(d['origin_ip']), utils.get_int_from_ip(d['destination_ip'])]
       rows.append(row)
 
+  extra_rows = []
+  if extra_proportion > 0:
+    for i in 'AC3', 'ACR':
+      for l in file('../data/ubi-data2/%s.csv' % i).readlines():
+        print '\r%i' % len(extra_rows),
+        sys.stdout.flush()
+        fields = l.rstrip().split(',')
+        ip1, ip2, ping12, ping21 = fields[4], fields[14], float(fields[24]), float(fields[25])
+        geo1 = utils.get_geoip_data(ip1)
+        geo2 = utils.get_geoip_data(ip2)
+        try:
+          distance = utils.geoip_distance(geo1, geo2)
+        except:
+          distance = 8927011  # average distance
+        if geo1 is None: geo1 = defaultdict(unicode)
+        if geo2 is None: geo2 = defaultdict(unicode)
+        try:
+          int_ip1, int_ip2 = map(utils.get_int_from_ip, (ip1, ip2))
+        except:
+          continue
+        type1, type2 = 3, 3  # different from mobile data
+        row = [geo1['country_code'], geo1['region_name'], geo1['city'], type1,
+               geo2['country_code'], geo2['region_name'], geo2['city'], type2,
+               distance, ping12, 0, 0, 0, int_ip1, int_ip2]
+        extra_rows.append(row)  # connection 1->2
+        row = [geo2['country_code'], geo2['region_name'], geo2['city'], type2,
+               geo1['country_code'], geo1['region_name'], geo1['city'], type1,
+               distance, ping21, 0, 0, 0, int_ip2, int_ip1]
+        extra_rows.append(row)  # connection 2->1
+    print 'ok'
+
   countries, regions, cities = set(), set(), set()
 
-  for r in rows:
-    t = tuple(r)
-    countries.add(t[0])
-    regions.add(t[0:2])
-    cities.add(t[0:3])
-    countries.add(t[4])
-    regions.add(t[4:6])
-    cities.add(t[4:7])
+  for rows_ in rows, extra_rows:
+    for r in rows_:
+      t = tuple(r)
+      countries.add(t[0])
+      regions.add(t[0:2])
+      cities.add(t[0:3])
+      countries.add(t[4])
+      regions.add(t[4:6])
+      cities.add(t[4:7])
 
   countries, regions, cities = map(sorted, (countries, regions, cities))
   filename = os.path.join(os.path.dirname(__file__), '..', 'data', 'sandbox2', 'names')
   cPickle.dump((countries, regions, cities), file(filename, 'w'), cPickle.HIGHEST_PROTOCOL)
 
-  for i, r in enumerate(rows):
-    print '\r%i/%i' % (i+1, len(rows)),
-    sys.stdout.flush()
-    t = tuple(r)
-    r[0] = bisect.bisect_left(countries, t[0])
-    r[1] = bisect.bisect_left(regions, t[0:2])
-    r[2] = bisect.bisect_left(cities, t[0:3])
-    r[3] += 1  # avoid -1
-    r[4] = bisect.bisect_left(countries, t[4])
-    r[5] = bisect.bisect_left(regions, t[4:6])
-    r[6] = bisect.bisect_left(cities, t[4:7])
-    r[7] += 1  # avoid -1
-    r[8] = int(numpy.round(t[8]))
-    r[9] = int(numpy.round(t[9]))
-    r[10] = int(r[0]==r[4])  # same country
-    r[11] = int(r[1]==r[5])  # same region
-    r[12] = int(r[2]==r[6])  # same city
+  for rows_ in rows, extra_rows:
+    for i, r in enumerate(rows_):
+      print '\r%i/%i' % (i+1, len(rows_)),
+      sys.stdout.flush()
+      t = tuple(r)
+      r[0] = bisect.bisect_left(countries, t[0])
+      r[1] = bisect.bisect_left(regions, t[0:2])
+      r[2] = bisect.bisect_left(cities, t[0:3])
+      r[3] += 1  # avoid -1
+      r[4] = bisect.bisect_left(countries, t[4])
+      r[5] = bisect.bisect_left(regions, t[4:6])
+      r[6] = bisect.bisect_left(cities, t[4:7])
+      r[7] += 1  # avoid -1
+      r[8] = int(numpy.round(t[8]))
+      r[9] = int(numpy.round(t[9]))
+      r[10] = int(r[0]==r[4])  # same country
+      r[11] = int(r[1]==r[5])  # same region
+      r[12] = int(r[2]==r[6])  # same city
+    print 'ok'
 
   data = numpy.array(rows, dtype='uint32')
   numpy.random.shuffle(data)
   bounds = 0, 0.8*len(data), 0.9*len(data), len(data)
   train, valid, test = [data[bounds[i]:bounds[i+1]] for i in 0, 1, 2]
+
+  if extra_proportion > 0:
+    extra_data = numpy.array(extra_rows, dtype='uint32')
+    numpy.random.shuffle(extra_data)
+    number = int(len(train) * extra_proportion)
+    train = numpy.concatenate((train, extra_data[:number]))
+    numpy.random.shuffle(train)
+
   for t in 'train', 'valid', 'test':
     #numpy.random.shuffle(locals()[t])
     filename = os.path.join(os.path.dirname(__file__), '..', 'data', 'sandbox2', t)

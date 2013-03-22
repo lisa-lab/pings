@@ -257,7 +257,7 @@ Your score in the <a href="leaderboard.html">leaderboard</a> will continue to ra
 
 <tr><th style="text-align: left;">location</th>
 <th>average<br />latency (ms) &dagger;</th>
-<th>Relative rank</th></tr>
+<th>Rank (mouse over stars for details)</th></tr>
 
 <tr onmouseover="show(1,this)" onmouseout="hide(1)" ><td class="left_column">""" + d['country_name'] + u"""</td>
 <td class="middle_column">""" + str(int(numpy.round(float(stats[0][r[0]][0])))) + u"""</td>
@@ -271,7 +271,7 @@ Your score in the <a href="leaderboard.html">leaderboard</a> will continue to ra
 <td class="middle_column">""" + str(int(numpy.round(float(stats[2][r[2]][0])))) + u"""</td>
 <td>""" + stars_html(rank(*order[2][0][r[2]])) + u"""</td></tr>
 
-<tr onmouseover="show(4,this)" onmouseout="hide(4)" style="background: #fec;"><td class="left_column">Overall</td>
+<tr onmouseover="show(4,this)" onmouseout="hide(4)" style="background: #fec;"><td class="left_column">YOU</td>
 <td class="middle_column">""" + str(int(numpy.round(you_mean))) + u"""</td>
 <td>""" + stars_html(percentile(you_mean, *world_stats)[1]) + u"""</td></tr>
 
@@ -290,7 +290,7 @@ Your score in the <a href="leaderboard.html">leaderboard</a> will continue to ra
 <center><table cellspacing="0" cellpadding="0">
 <tr><td>Average latency (predicted)</td><td><b>%i ms</b></td></tr>
 <tr><td>Average latency (measured)</td><td><b>%i ms</b></td></tr>
-<tr><td style="width: 205px;">Average difference between prediction and measurement</td><td><b>%i ms</b></td></tr>""" % (int(numpy.round(predictions.mean())), int(numpy.round(you_mean)), int(numpy.round(abs(targets-predictions).mean())))
+<tr><td style="width: 205px;">Mean prediction error</td><td><b>%i ms</b></td></tr>""" % (int(numpy.round(predictions.mean())), int(numpy.round(you_mean)), int(numpy.round(abs(targets-predictions).mean())))
 
 #  print predictions, targets, indices
   if len(indices) > 0:

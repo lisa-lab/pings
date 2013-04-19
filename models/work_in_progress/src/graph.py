@@ -514,7 +514,12 @@ def train_model(save=False):
   print 'class-wise:\n', numpy.array([numpy.mean([[abs(r), r**2] for r, c in zip(residuals[2], classes[0, :]) if c==k], axis=0)**[1, 0.5] for k in xrange(num_classes)])
 
   print 'classification accuracy', (classes[0, :] == classes[1, :]).mean()
-  print 'confusion matrix:\n', numpy.array([[((classes[0, :]==c1) & (classes[1, :]==c2)).sum() for c2 in xrange(num_classes)] for c1 in xrange(num_classes)])  # row = target, column = prediction
+  confusion = numpy.array([[((classes[0, :]==c1) & (classes[1, :]==c2)).sum() for c2 in xrange(num_classes)] for c1 in xrange(num_classes)])
+  print 'confusion matrix:\n', confusion  # row = target, column = prediction
+  pylab.figure()
+  pylab.imshow((confusion.astype(float).T/confusion.sum(axis=1)).T, aspect='auto', interpolation='nearest', cmap=pylab.cm.gray, extent=(0.5, num_classes + 0.5)*2)
+  pylab.xlabel('predicted class')
+  pylab.ylabel('target class')
 
   print 'ordering accuracy', numpy.mean([correct_order(*numpy.random.randint(num_examples, size=2)) for k in xrange(500000)])
   choices = [(classes[0, :]==c).nonzero()[0] for c in xrange(num_classes)]

@@ -376,6 +376,7 @@ def train_model(save=False):
 
   terms = [((), 0), ((8,), 0), ((3,), -1), ((7,), -1), ((3, 7), -1), ((0,), -1), ((4,), -1), ((10,), -1), ((0, 4), -1), ((0, 4, 3, 7), -1), ((1,), -1), ((5,), -1), ((11,), -1), ((1, 5), -1), ((2,), -1), ((6,), -1), ((12,), -1), ((2, 6), -1), ((13,), -1), ((14,), -1), ((13, 14), -1)]
   #terms = [((), 0)]  # constant (average) only
+  #terms = [((), 0), ((8,), 0)]  # distance only (IP/Location)
   #terms = [((), 0), ((0, 4), -1)]  # country-country only
 
   residuals = [s[:, TARGET].astype(float) for s in sets]
@@ -474,18 +475,42 @@ def train_model(save=False):
 
   examples = a[:, :200].T
   #examples = sorted(examples, key=lambda x: x[0])
+  pylab.figure()
   pylab.plot(examples)
   pylab.legend(('target', 'prediction'))
   pylab.xlabel('test example')
   pylab.ylabel('latency (ms)')
   pylab.show()
 
+  x = numpy.arange(30, 680, 15)
+  y = numpy.arange(30, 680, 15)
+  x_grid = numpy.resize(x, (len(y), len(x))).flatten()
+  y_grid = numpy.resize(y, (len(x), len(y))).T.flatten()
+  sigma = 30
+  distribution = sum(numpy.exp(-0.5*((x_grid - v)**2 + (y_grid - w)**2)/sigma**2) for v, w in a.T)
+  pylab.figure()
+  pylab.imshow(distribution.reshape((len(x), len(y))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
+  pylab.xlabel('target')
+  pylab.ylabel('prediction')
+  
+  def plot_distribution(domain, sigma, values, xlabel):
+    distribution = sum(numpy.exp(-0.5*(domain - v)**2/sigma**2) for v in values)
+    distribution /= distribution.sum() * (domain[1] - domain[0])
+    pylab.figure()
+    pylab.plot(domain, distribution)
+    pylab.xlabel(xlabel)
+    pylab.ylabel('P(error)')
+
+  plot_distribution(numpy.arange(-800, 800, 0.5), 20.0, residuals[2], 'error (ms)')
+  relative = 100.0 * abs(residuals[2]) / a[0, :]
+  plot_distribution(numpy.arange(0, 350, 0.5), 10.0, relative, 'relative error (%)')
+
   # more stats
   ranges = [0, 100, 200, 300, 500, 1000, 5001]
   classes = numpy.array([[bisect.bisect_right(ranges, j) - 1 for j in i] for i in a])
   num_classes = len(ranges) - 1
 
-  print 'L1, L2 errors', numpy.mean(abs(residuals[2])), numpy.mean(residuals[2]**2)**0.5
+  print 'L1, L2, relative errors', numpy.mean(abs(residuals[2])), numpy.mean(residuals[2]**2)**0.5, numpy.mean(relative)
   print 'class-wise:\n', numpy.array([numpy.mean([[abs(r), r**2] for r, c in zip(residuals[2], classes[0, :]) if c==k], axis=0)**[1, 0.5] for k in xrange(num_classes)])
 
   print 'classification accuracy', (classes[0, :] == classes[1, :]).mean()

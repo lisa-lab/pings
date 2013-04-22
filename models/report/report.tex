@@ -52,7 +52,7 @@ for $N$ training examples with targets $t_j$, $1\le j\le N$ with
 \begin{equation} \label{eq:y}
 y = M\cdot l
 \end{equation}
-the predictions of the model and $M_{ji}=1$ if edge $i$ is part of the path linking location pair $i$ and 0 otherwise.
+the predictions of the model and $M_{ji}=1$ if edge $i$ is part of the path linking location pair $j$ and 0 otherwise.
 
 
 \subsection{Extended model}
@@ -72,7 +72,7 @@ C \equiv \sum_{j=1}^N(t_j-y_j)^2 + \sum_{k=1}^K \lambda_k ||l^{(k)}||^2
 \begin{equation} \label{eq:y2}
 y = \sum_{k=1}^K M^{(k)}\cdot l^{(k)}
 \end{equation}
-where $M_{j:}^{(k)}$ represents the $k$-th feature vector of the $j$-th example input, e.g. a one-hot vector representing the city of the host address, a one-hot vector representing the country combination of both addresses, or a real value giving the physical distance between the two locations.
+where $M_{j:}^{(k)}$ represents the $k$-th feature vector of the $j$-th example, e.g. a one-hot vector representing the city of the host address, a one-hot vector representing the country combination of both addresses, or a real value giving the physical distance between the two locations.
 It is easy to see that the basic tree model of Figure~\ref{fig:tree} can be recovered by this framework simply by using $K=7$ terms: \texttt{city1, region1, country1, country2, region2, city2} and a constant.
 %
 It is also possible to use second-order terms such as \texttt{(country1, country2)} or \texttt{(city1, city2)} to add direct edges in the graph, satisfying requirement 1 above, or other miscellaneous information fulfilling requirement 3 above.
@@ -85,7 +85,7 @@ It is important not to constrain the $l^{(k)}_i$ to be non-negative in this cont
 Minimizing equation~(\ref{eq:cost2}) involves solving a huge sparse linear system with $N\cdot n_f$ entries, where the number of training examples $N\simeq 2\times 10^6$ and the number of input features $n_f\simeq10^{10}$ in our experiments.
 A more efficient approach is to optimize each successive term $l^{(k)}$ in a greedy fashion by keeping the previous ones fixed, which makes each $M^{(k)}$ in reduced row echelon form and readily invertible.
 This greedy approximation becomes exact as $\lambda_k\rightarrow 0$, eliminates the underdetermination associated with subpopulation terms (e.g. \texttt{city1} $\subset$ \texttt{country1}) and helps generalization.
- This approach also makes it easier to select the hyperparameters $\lambda_k$ and to adaptively learn the parameters in an online setting.
+This approach also makes it easier to select the hyperparameters $\lambda_k$ and to adaptively learn the parameters $l^{(k)}$ in an online setting.
 
 
 \section{Experiments}
@@ -145,23 +145,23 @@ For each term, $\lambda_k$ is chosen so as to optimize the validation $L_2$ erro
 330.0 & distance \\
 328.1 & type1 \\
 315.9 & type2 \\
-315.4 & type1, type2 \\
+315.4 & (type1, type2) \\
 302.2 & country1 \\
 293.0 & country2 \\
 292.6 & same\_country \\
-288.7 & country1, country2 \\
-280.5 & country1, country2, type1, type2 \\
+288.7 & (country1, country2) \\
+280.5 & (country1, country2, type1, type2) \\
 280.1 & region1 \\
 278.9 & region2 \\
 278.9 & same\_region \\
-276.7 & region1, region2 \\
+276.7 & (region1, region2) \\
 276.1 & city1 \\
 272.2 & city2 \\
 272.2 & same\_city \\
-263.9 & city1, city2 \\
+263.9 & (city1, city2) \\
 262.2 & ip1 \\
 249.6 & ip2 \\
-248.3 & ip1, ip2 \\
+248.3 & (ip1, ip2) \\
 \hline 
 \end{tabular} 
 \caption{Evolution of the validation $L_2$ error with each term added to our graphical model.}

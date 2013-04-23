@@ -480,18 +480,26 @@ def train_model(save=False):
   pylab.legend(('target', 'prediction'))
   pylab.xlabel('test example')
   pylab.ylabel('latency (ms)')
-  pylab.show()
 
-  x = numpy.arange(30, 680, 15)
-  y = numpy.arange(30, 680, 15)
+  examples = a[:, :500]
+  pylab.figure()
+  pylab.scatter(*examples, s=5, c='black')
+  limit = 0, examples.max()*1.1
+  pylab.xlim(limit)
+  pylab.ylim(limit)
+  pylab.xlabel('target (ms)')
+  pylab.ylabel('prediction (ms)')
+
+  x = numpy.arange(30, 680, 10)
+  y = numpy.arange(30, 680, 10)
   x_grid = numpy.resize(x, (len(y), len(x))).flatten()
   y_grid = numpy.resize(y, (len(x), len(y))).T.flatten()
-  sigma = 30
+  sigma = 18
   distribution = sum(numpy.exp(-0.5*((x_grid - v)**2 + (y_grid - w)**2)/sigma**2) for v, w in a.T)
   pylab.figure()
   pylab.imshow(distribution.reshape((len(x), len(y))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
-  pylab.xlabel('target')
-  pylab.ylabel('prediction')
+  pylab.xlabel('target (ms)')
+  pylab.ylabel('prediction (ms)')
   
   def plot_distribution(domain, sigma, values, xlabel):
     distribution = sum(numpy.exp(-0.5*(domain - v)**2/sigma**2) for v in values)

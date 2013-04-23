@@ -195,7 +195,6 @@ The proposed model clearly outperforms other baselines.
 While the obtained $L_{1,2}$ and relative errors remain relatively high, the classification accuracy (56.4\%) and ordering accuracy (78.8\%) indicate that the graphical model predictions lie in a reasonable range and suffice to determine the fastest of two addresses in the majority of cases. 
 
 
-
 \begin{table}[h]
 \centering
 \begin{tabular}{|cccc|}
@@ -240,8 +239,10 @@ This could indicate an intrinsic noise to the measurement process that is added 
 The ability of the graphical model to correctly identify the order of magnitude of latency is also reflected in the confusion matrix, displayed in Figure~\ref{fig:conf}.
 The model clearly only confuses adjacent classes around the diagonal $C'_{aa}$.
 
-Finally, a qualitative assessment of the model performance can be obtained by plotting a few predictions randomly chosen from the test set (Figure~\ref{fig:samples}).
+A qualitative assessment of the model performance can be obtained by plotting a few predictions randomly chosen from the test set (Figure~\ref{fig:samples}).
 Again, the model correctly predicts the order of magnitude of the latency most of the time.
+%
+Finally, detailed error distributions that further highlight the advantage of our model are presented in Appendix~A.
 
 
 %\begin{table}[h]
@@ -263,7 +264,7 @@ Again, the model correctly predicts the order of magnitude of the latency most o
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=\columnwidth]{full_samples}
+\includegraphics[width=\columnwidth]{full_scatter}
 \caption{A few predictions by the graphical model randomly chosen from the test set.}
 \label{fig:samples}
 \end{figure}
@@ -286,7 +287,7 @@ This ability translates into a high ordering accuracy (78.8\%), which is suffici
 \subfigure[IP2Location]{\includegraphics[width=0.75\columnwidth]{distance_dist}}
 \subfigure[Country pairs]{\includegraphics[width=0.75\columnwidth]{country_dist}}
 \subfigure[Graphical model]{\includegraphics[width=0.75\columnwidth]{full_dist}}
-\caption{Error distribution.}
+\caption{Distribution of the test error $|t_j-y_j|$.}
 \end{figure}
 
 
@@ -296,16 +297,16 @@ This ability translates into a high ordering accuracy (78.8\%), which is suffici
 \subfigure[IP2Location]{\includegraphics[width=0.75\columnwidth]{distance_rdist}}
 \subfigure[Country pairs]{\includegraphics[width=0.75\columnwidth]{country_rdist}}
 \subfigure[Graphical model]{\includegraphics[width=0.75\columnwidth]{full_rdist}}
-\caption{Relative error distribution.}
+\caption{Distribution of the test relative error $|t_j-y_j|/t_j$.}
 \end{figure}
 
 
-\begin{figure}
+\begin{figure*}
 \centering
-\subfigure[IP2Location]{\includegraphics[width=0.7\columnwidth]{distance_2d}}
-\subfigure[Country pairs]{\includegraphics[width=0.7\columnwidth]{country_2d}}
-\subfigure[Graphical model]{\includegraphics[width=0.7\columnwidth]{full_2d}}
-\caption{Target-prediction joint distribution.}
-\end{figure}
+\subfigure[IP2Location]{\includegraphics[width=0.75\columnwidth]{distance_2d}}
+\subfigure[Country pairs]{\includegraphics[width=0.75\columnwidth]{country_2d}}
+\subfigure[Graphical model]{\includegraphics[width=0.75\columnwidth]{full_2d}}
+\caption{Heat map of the test joint distribution $P(t_j,y_j)$ estimated with a Gaussian kernel ($\sigma=18$~ms).}
+\end{figure*}
 
 \end{document}

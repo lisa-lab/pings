@@ -54,7 +54,19 @@ Once you have all the requirements above installed , the rest is pretty simple.
    ``cd server``.
 
 4. To install all the Python dependencies for the Pings, run
-   ``pip install -r requirements.txt``. This takes a little while.
+   ``PYTHONPATH= pip install -r requirements.txt``. This takes a little while.
+
+   If you have the error:
+
+      ImportError: No module named numpy.distutils.core
+
+   then run this command before re-running the previous command
+   (This fix some order installation dependency):
+
+       ``pip install numpy==1.6.2``
+
+   The PYTHONPATH= is needed in case you modified it. We do not want
+   it to mess with the installation.
 
 5. Then run ``python setup.py develop`` to install (in-place) the Pings
    server code itself.

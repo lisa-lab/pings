@@ -8,7 +8,7 @@ local Pings install. If you just want to run a copy of the server as simply as
 possible, you could skip these steps if desired.
 
 To follow this guide, you will need virtualenv and virtualenvwrapper (2.9 or
-greater). On top of Python (obviously), you will need memcached and redis
+greater). On top of Python (obviously), you will need redis
 installed. And finally you will also require the development packages for 
 libevent and zeromq.
 
@@ -73,11 +73,11 @@ Once you have all the requirements above installed , the rest is pretty simple.
 
 You should now have a Pings server running, listening on port 6543.
 
-A few notes. The above assumes that the Redis and Memcache servers
+A few notes. The above assumes that the Redis server
 installed are running. If this is not the case, start the missing ones (in
-separate windows again) with ``redis-server`` or ``memcached``. If you have
+separate windows again) with ``redis-server``. If you have
 the Screen program installed, you can also use the ``development.screenrc``
-file instead, which starts all the above programs (except memcached) in
+file instead, which starts all the above programs in
 separate screen windows. Simply do ``screen -c development.screenrc`` to do
 that.
 
@@ -88,7 +88,7 @@ cd fredericbastien-ipaddr-py-speed-up/trunk
 pip install .
 
 
-- modify /etc/memcached.conf to listen to all port if needed AND set iptables rules AND enable them at start up
+- set iptables rules AND enable them at start up
 #sudo iptables -A INPUT -p tcp --dport 11211 -j ACCEPT -s IP
 #sudo iptables -A INPUT -p tcp --dport 11211 -j ACCEPT -s LOCALHOSTIP
 #sudo iptables -A INPUT -p tcp --dport 11211 -j REJECT

@@ -35,6 +35,7 @@ public class PingsGlobe extends Globe {
     private static final Color origin_color = Color.yellow;
     private static final float[] waiting_color = {227, 90, 0}; //orange
     private static final float[] error_color = {200, 0, 0}; //red
+    private static final float[] no_answer_color = {250, 150, 150}; //pink
     private static final float[] worked_color = {0, 255, 0}; //green
     private float prefered_font_size = 10f; //13.5f;
     private float circle_radius_scale=1.5f;
@@ -71,6 +72,7 @@ public class PingsGlobe extends Globe {
         private void UpdateColor() {
             if (value == -1) {color = waiting_color;}
             else if (value == -2) {color = error_color;}
+            else if (value == -3) {color = no_answer_color;}
             else {color = worked_color;}
         }
         
@@ -90,6 +92,12 @@ public class PingsGlobe extends Globe {
             PingsGlobe.this.repaint();
         }
         
+        public void NoAnswer() {
+            this.value = -3;
+            UpdateColor();
+            PingsGlobe.this.repaint();
+        }
+
         public void noResultsYet () {
             this.value = -1;
             UpdateColor();
@@ -143,7 +151,10 @@ public class PingsGlobe extends Globe {
             else if (value == -1) {
                 description+= " : Pinging";
             }
-            else if (value < 0) {
+            else if (value == -3) {
+                description+= " : No Answer";
+            }
+            else if (value <= 0) {
                 description+= " : Error";
             }
             
@@ -201,7 +212,10 @@ public class PingsGlobe extends Globe {
                 int nb_worked = Integer.parseInt(groups[3]);
                 //float totaltime = Float.parseFloat(groups[4]) / 1000f;
 
-                if (nb_worked != nb_try) {
+                if (nb_worked == 0) {
+                    this.NoAnswer();
+                }
+                else if (nb_try > 0 && nb_worked != nb_try) {
                     this.Error();
                 }
                 else 

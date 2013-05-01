@@ -35,7 +35,7 @@ public class PingsGlobe extends Globe {
     private static final Color origin_color = Color.yellow;
     private static final float[] waiting_color = {227, 90, 0}; //orange
     private static final float[] error_color = {200, 0, 0}; //red
-    private static final float[] no_answer_color = {250, 150, 150}; //pink
+    private static final float[] no_answer_color = {255, 53, 138}; //pink
     private static final float[] worked_color = {0, 255, 0}; //green
     private float prefered_font_size = 10f; //13.5f;
     private float circle_radius_scale=1.5f;

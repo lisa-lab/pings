@@ -123,7 +123,8 @@ and the ordering accuracy:
 \begin{equation}
 OA = \frac2{N(N-1)}\sum_{j=1}^N\sum_{j'>j}^N
 \begin{cases}
-1 & \text{ if } (t_j-t_{j'})(y_j-y_{j'})\ge0 \\ 
+1 & \text{ if } t_j > t_{j'} \text{ and } y_j > y_{j'} \\
+1 & \text{ if } t_j \le t_{j'} \text{ and } y_j \le y_{j'} \\
 0 & \text{ otherwise}
 \end{cases}
 \end{equation}

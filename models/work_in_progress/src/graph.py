@@ -501,7 +501,7 @@ def train_model(save=False):
   sigma = 18
   distribution = sum(numpy.exp(-0.5*((x_grid - v)**2 + (y_grid - w)**2)/sigma**2) for v, w in a.T)
   pylab.figure()
-  pylab.imshow(distribution.reshape((len(x), len(y))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
+  pylab.imshow(distribution.reshape((len(y), len(x))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
   pylab.xlabel('target (ms)')
   pylab.ylabel('prediction (ms)')
   
@@ -532,6 +532,67 @@ def train_model(save=False):
   pylab.imshow((confusion.astype(float).T/confusion.sum(axis=1)).T, aspect='auto', interpolation='nearest', cmap=pylab.cm.gray, extent=(0.5, num_classes + 0.5)*2)
   pylab.xlabel('predicted class')
   pylab.ylabel('target class')
+
+  if PLOT_GEOIP:
+      # plot distance (col. 8) vs target
+      ex_target = sets[2][:500, TARGET]
+      ex_dist = sets[2][:500, 8]
+      pylab.figure()
+      pylab.scatter(ex_target, ex_dist, s=5, c='black')
+      pylab.xlim((0, ex_target.max()*1.1))
+      pylab.ylim((0, ex_dist.max()*1.1))
+      pylab.xlabel('target (ms)')
+      pylab.ylabel('GeoIP distance (m)')
+
+      # plot distance (col. 8) vs target (all samples)
+      ex_target = sets[2][:, TARGET]
+      ex_dist = sets[2][:, 8]
+      pylab.figure()
+      pylab.scatter(ex_target, ex_dist, s=5, c='black')
+      pylab.xlim((0, ex_target.max()*1.1))
+      pylab.ylim((0, ex_dist.max()*1.1))
+      pylab.xlabel('target (ms)')
+      pylab.ylabel('GeoIP distance (m)')
+
+      # Same, as heat map, with more data
+      # Try to get around 100 grid divisions
+      tgt = sets[2][:, TARGET]
+      dist = sets[2][:, 8]
+      tgt_max = tgt.max() * 1.1
+      dist_max = dist.max() * 1.1
+      x = numpy.arange(0, tgt_max, tgt_max / 100)
+      y = numpy.arange(0, dist_max, dist_max / 100)
+      x_grid = numpy.resize(x, (len(y), len(x))).flatten()
+      print 'len(x):', len(x)
+      print 'x_grid.shape:', x_grid.shape
+      y_grid = numpy.resize(y, (len(x), len(y))).T.flatten()
+      print 'len(y):', len(y)
+      print 'y_grid.shape:', y_grid.shape
+      sigma_x = 1.8 * tgt_max / 100
+      sigma_y = 1.8 * dist_max / 100
+      distribution = sum(numpy.exp(-0.5*((x_grid - x_)**2/sigma_x**2 + (y_grid - y_)**2/sigma_y**2)) for x_, y_ in zip(tgt, dist))
+      print 'distribution.shape:', distribution.shape
+      pylab.figure()
+      pylab.imshow(distribution.reshape((len(y), len(x))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
+      pylab.xlabel('target (ms)')
+      pylab.ylabel('GeoIP distance (m)')
+
+      # Closer zoom on the interesting part
+      # Reuse the same parameters for target as the first heat map
+      x = numpy.arange(30, 680, 10)
+      sigma_x = 18
+      x_grid = numpy.resize(x, (len(y), len(x))).flatten()
+      y_grid = numpy.resize(y, (len(x), len(y))).T.flatten()
+      distribution = sum(numpy.exp(-0.5*((x_grid - x_)**2/sigma_x**2 + (y_grid - y_)**2/sigma_y**2)) for x_, y_ in zip(tgt, dist))
+      pylab.figure()
+      pylab.imshow(distribution.reshape((len(y), len(x))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
+      pylab.xlabel('target (ms)')
+      pylab.ylabel('GeoIP distance (m)')
+
+  try:
+    pylab.show()
+  except:
+    pass
 
   print 'ordering accuracy', numpy.mean([correct_order(*numpy.random.randint(num_examples, size=2)) for k in xrange(500000)])
   choices = [(classes[0, :]==c).nonzero()[0] for c in xrange(num_classes)]

@@ -98,6 +98,8 @@ def is_geoip_accurate(geoip):
     """Tells if a geoip is accurate by checking it provides a city."""
     if geoip is None:
         return False
+    if 'city' not in geoip:
+        return False
     return (geoip['city'] <> None and geoip['city'] <> '')
 
 

@@ -30,52 +30,56 @@ def prettify(record):
     if record[k] == '':
       record[k] = '<i>Unknown %s</i>' % l
 
+LOAD = True
+PLOT_GEOIP = False
 
-# load data
-dataf = os.path.join(os.path.dirname(__file__), '../data/sandbox2/')
-data = numpy.concatenate([cPickle.load(file(os.path.join(dataf, t))) for t in 'train', 'valid', 'test'])
-sizes = data.max(axis=0) + 1
-namesf = os.path.join(os.path.dirname(__file__), '../data/sandbox2/names')
-names = cPickle.load(file(namesf))
-paramsf = os.path.join(os.path.dirname(__file__), '../data/sandbox2/params')
-params, terms = cPickle.load(file(paramsf))
-TARGET = 9
 
-# compute stats (mean, var) for each location (country, region, city)
-world_stats = data[:, TARGET].mean(), data[:, TARGET].var()**0.5
-stats = []
-for i, n in enumerate(names):
-  stats_location = [[] for k in xrange(len(n))]
-  for d in data:
-    stats_location[d[i]].append(d[TARGET])
-  for j, l in enumerate(stats_location):
-    if len(l) >= 4:  # minimum number of examples for reliability
-      stats_location[j] = numpy.mean(l), numpy.var(l)**0.5
-    elif i > 0:
-      parent = n[j][0] if i==1 else n[j][:-1]  # "parent" location
-      index = bisect.bisect_left(names[i-1], parent)
-      stats_location[j] = stats[-1][index]
-    else:
-      stats_location[j] = world_stats
-  stats.append(stats_location)
+if LOAD:
+    # load data
+    dataf = os.path.join(os.path.dirname(__file__), '../data/sandbox2/')
+    data = numpy.concatenate([cPickle.load(file(os.path.join(dataf, t))) for t in 'train', 'valid', 'test'])
+    sizes = data.max(axis=0) + 1
+    namesf = os.path.join(os.path.dirname(__file__), '../data/sandbox2/names')
+    names = cPickle.load(file(namesf))
+    paramsf = os.path.join(os.path.dirname(__file__), '../data/sandbox2/params')
+    params, terms = cPickle.load(file(paramsf))
+    TARGET = 9
 
-# compute ranks for each location i within each ancestor location j
-# order[i, j<=i]: i=0,1,2 (country, region, city) j=0,1,2 (world, country, region) => tuple(rank, out_of_N)
-order = []
-for i in xrange(3):
-  order.append([])
-  for j in xrange(i+1):
-    order[i].append([None]*len(names[i]))
-    last_index = 0
-    while last_index < len(names[i]):  # 1 iteration = 1 j-location
-      ancestor = names[i][last_index][:j]
-      index = last_index + 1
-      while index < len(names[i]) and names[i][index][:j] == ancestor:
-        index += 1
-      indices = numpy.argsort([s[0] for s in stats[i][last_index:index]])
-      for k, l in enumerate(indices):
-        order[i][j][last_index + l] = k+1, len(indices)
-      last_index = index
+    # compute stats (mean, var) for each location (country, region, city)
+    world_stats = data[:, TARGET].mean(), data[:, TARGET].var()**0.5
+    stats = []
+    for i, n in enumerate(names):
+      stats_location = [[] for k in xrange(len(n))]
+      for d in data:
+        stats_location[d[i]].append(d[TARGET])
+      for j, l in enumerate(stats_location):
+        if len(l) >= 4:  # minimum number of examples for reliability
+          stats_location[j] = numpy.mean(l), numpy.var(l)**0.5
+        elif i > 0:
+          parent = n[j][0] if i==1 else n[j][:-1]  # "parent" location
+          index = bisect.bisect_left(names[i-1], parent)
+          stats_location[j] = stats[-1][index]
+        else:
+          stats_location[j] = world_stats
+      stats.append(stats_location)
+
+    # compute ranks for each location i within each ancestor location j
+    # order[i, j<=i]: i=0,1,2 (country, region, city) j=0,1,2 (world, country, region) => tuple(rank, out_of_N)
+    order = []
+    for i in xrange(3):
+      order.append([])
+      for j in xrange(i+1):
+        order[i].append([None]*len(names[i]))
+        last_index = 0
+        while last_index < len(names[i]):  # 1 iteration = 1 j-location
+          ancestor = names[i][last_index][:j]
+          index = last_index + 1
+          while index < len(names[i]) and names[i][index][:j] == ancestor:
+            index += 1
+          indices = numpy.argsort([s[0] for s in stats[i][last_index:index]])
+          for k, l in enumerate(indices):
+            order[i][j][last_index + l] = k+1, len(indices)
+          last_index = index
 
 
 # utility functions

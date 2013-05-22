@@ -32,6 +32,7 @@ def prettify(record):
 
 LOAD = True
 PLOT_GEOIP = False
+PLOT_ACCURACY = False
 
 
 if LOAD:
@@ -589,17 +590,38 @@ def train_model(save=False):
       pylab.xlabel('target (ms)')
       pylab.ylabel('GeoIP distance (m)')
 
-  try:
-    pylab.show()
-  except:
-    pass
-
   print 'ordering accuracy', numpy.mean([correct_order(*numpy.random.randint(num_examples, size=2)) for k in xrange(500000)])
   choices = [(classes[0, :]==c).nonzero()[0] for c in xrange(num_classes)]
   choice = lambda x: x[numpy.random.randint(len(x))]
   symmetrize = lambda A: (A + A.T) * 0.5
   print 'class-wise:\n', symmetrize(numpy.array([[numpy.mean([correct_order(choice(choices[c1]), choice(choices[c2])) for k in xrange(100000)]) for c2 in xrange(num_classes)] for c1 in xrange(num_classes)]))
 
+  ## Ordering accuracy limited to data pairs where abs(a[0, i] - a[0, j]) <= x
+  if PLOT_ACCURACY:
+    def sample_pair_from(data, min_delay=0.):
+        ex1 = choice(data)
+        ex2 = choice(data)
+        if abs(ex1[0] - ex2[0]) <= min_delay:
+            return (None, None)
+        else:
+            return ex1, ex2
+
+    plot_data = []
+    for min_delay in xrange(0, 1000, 10):
+        accuracies = [cmp(ex1[0], ex2[0]) == cmp(ex1[1], ex2[1])
+                      for ex1, ex2 in [sample_pair_from(a.T, min_delay=min_delay)
+                                       for i in xrange(500000)]
+                      if ex1 is not None]
+        plot_data.append(numpy.mean(accuracies))
+    pylab.figure()
+    pylab.plot(numpy.arange(0, 1000, 10), plot_data)
+    pylab.xlabel('min delay considered (ms)')
+    pylab.ylabel('ordering accuracy')
+
+  try:
+    pylab.show()
+  except:
+    pass
 
 
 def export_datasets(extra_proportion=0):

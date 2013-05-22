@@ -30,52 +30,56 @@ def prettify(record):
     if record[k] == '':
       record[k] = '<i>Unknown %s</i>' % l
 
+LOAD = True
+PLOT_GEOIP = False
 
-# load data
-dataf = os.path.join(os.path.dirname(__file__), '../data/sandbox2/')
-data = numpy.concatenate([cPickle.load(file(os.path.join(dataf, t))) for t in 'train', 'valid', 'test'])
-sizes = data.max(axis=0) + 1
-namesf = os.path.join(os.path.dirname(__file__), '../data/sandbox2/names')
-names = cPickle.load(file(namesf))
-paramsf = os.path.join(os.path.dirname(__file__), '../data/sandbox2/params')
-params, terms = cPickle.load(file(paramsf))
-TARGET = 9
 
-# compute stats (mean, var) for each location (country, region, city)
-world_stats = data[:, TARGET].mean(), data[:, TARGET].var()**0.5
-stats = []
-for i, n in enumerate(names):
-  stats_location = [[] for k in xrange(len(n))]
-  for d in data:
-    stats_location[d[i]].append(d[TARGET])
-  for j, l in enumerate(stats_location):
-    if len(l) >= 4:  # minimum number of examples for reliability
-      stats_location[j] = numpy.mean(l), numpy.var(l)**0.5
-    elif i > 0:
-      parent = n[j][0] if i==1 else n[j][:-1]  # "parent" location
-      index = bisect.bisect_left(names[i-1], parent)
-      stats_location[j] = stats[-1][index]
-    else:
-      stats_location[j] = world_stats
-  stats.append(stats_location)
+if LOAD:
+    # load data
+    dataf = os.path.join(os.path.dirname(__file__), '../data/sandbox2/')
+    data = numpy.concatenate([cPickle.load(file(os.path.join(dataf, t))) for t in 'train', 'valid', 'test'])
+    sizes = data.max(axis=0) + 1
+    namesf = os.path.join(os.path.dirname(__file__), '../data/sandbox2/names')
+    names = cPickle.load(file(namesf))
+    paramsf = os.path.join(os.path.dirname(__file__), '../data/sandbox2/params')
+    params, terms = cPickle.load(file(paramsf))
+    TARGET = 9
 
-# compute ranks for each location i within each ancestor location j
-# order[i, j<=i]: i=0,1,2 (country, region, city) j=0,1,2 (world, country, region) => tuple(rank, out_of_N)
-order = []
-for i in xrange(3):
-  order.append([])
-  for j in xrange(i+1):
-    order[i].append([None]*len(names[i]))
-    last_index = 0
-    while last_index < len(names[i]):  # 1 iteration = 1 j-location
-      ancestor = names[i][last_index][:j]
-      index = last_index + 1
-      while index < len(names[i]) and names[i][index][:j] == ancestor:
-        index += 1
-      indices = numpy.argsort([s[0] for s in stats[i][last_index:index]])
-      for k, l in enumerate(indices):
-        order[i][j][last_index + l] = k+1, len(indices)
-      last_index = index
+    # compute stats (mean, var) for each location (country, region, city)
+    world_stats = data[:, TARGET].mean(), data[:, TARGET].var()**0.5
+    stats = []
+    for i, n in enumerate(names):
+      stats_location = [[] for k in xrange(len(n))]
+      for d in data:
+        stats_location[d[i]].append(d[TARGET])
+      for j, l in enumerate(stats_location):
+        if len(l) >= 4:  # minimum number of examples for reliability
+          stats_location[j] = numpy.mean(l), numpy.var(l)**0.5
+        elif i > 0:
+          parent = n[j][0] if i==1 else n[j][:-1]  # "parent" location
+          index = bisect.bisect_left(names[i-1], parent)
+          stats_location[j] = stats[-1][index]
+        else:
+          stats_location[j] = world_stats
+      stats.append(stats_location)
+
+    # compute ranks for each location i within each ancestor location j
+    # order[i, j<=i]: i=0,1,2 (country, region, city) j=0,1,2 (world, country, region) => tuple(rank, out_of_N)
+    order = []
+    for i in xrange(3):
+      order.append([])
+      for j in xrange(i+1):
+        order[i].append([None]*len(names[i]))
+        last_index = 0
+        while last_index < len(names[i]):  # 1 iteration = 1 j-location
+          ancestor = names[i][last_index][:j]
+          index = last_index + 1
+          while index < len(names[i]) and names[i][index][:j] == ancestor:
+            index += 1
+          indices = numpy.argsort([s[0] for s in stats[i][last_index:index]])
+          for k, l in enumerate(indices):
+            order[i][j][last_index + l] = k+1, len(indices)
+          last_index = index
 
 
 # utility functions
@@ -497,7 +501,7 @@ def train_model(save=False):
   sigma = 18
   distribution = sum(numpy.exp(-0.5*((x_grid - v)**2 + (y_grid - w)**2)/sigma**2) for v, w in a.T)
   pylab.figure()
-  pylab.imshow(distribution.reshape((len(x), len(y))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
+  pylab.imshow(distribution.reshape((len(y), len(x))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
   pylab.xlabel('target (ms)')
   pylab.ylabel('prediction (ms)')
   
@@ -528,6 +532,67 @@ def train_model(save=False):
   pylab.imshow((confusion.astype(float).T/confusion.sum(axis=1)).T, aspect='auto', interpolation='nearest', cmap=pylab.cm.gray, extent=(0.5, num_classes + 0.5)*2)
   pylab.xlabel('predicted class')
   pylab.ylabel('target class')
+
+  if PLOT_GEOIP:
+      # plot distance (col. 8) vs target
+      ex_target = sets[2][:500, TARGET]
+      ex_dist = sets[2][:500, 8]
+      pylab.figure()
+      pylab.scatter(ex_target, ex_dist, s=5, c='black')
+      pylab.xlim((0, ex_target.max()*1.1))
+      pylab.ylim((0, ex_dist.max()*1.1))
+      pylab.xlabel('target (ms)')
+      pylab.ylabel('GeoIP distance (m)')
+
+      # plot distance (col. 8) vs target (all samples)
+      ex_target = sets[2][:, TARGET]
+      ex_dist = sets[2][:, 8]
+      pylab.figure()
+      pylab.scatter(ex_target, ex_dist, s=5, c='black')
+      pylab.xlim((0, ex_target.max()*1.1))
+      pylab.ylim((0, ex_dist.max()*1.1))
+      pylab.xlabel('target (ms)')
+      pylab.ylabel('GeoIP distance (m)')
+
+      # Same, as heat map, with more data
+      # Try to get around 100 grid divisions
+      tgt = sets[2][:, TARGET]
+      dist = sets[2][:, 8]
+      tgt_max = tgt.max() * 1.1
+      dist_max = dist.max() * 1.1
+      x = numpy.arange(0, tgt_max, tgt_max / 100)
+      y = numpy.arange(0, dist_max, dist_max / 100)
+      x_grid = numpy.resize(x, (len(y), len(x))).flatten()
+      print 'len(x):', len(x)
+      print 'x_grid.shape:', x_grid.shape
+      y_grid = numpy.resize(y, (len(x), len(y))).T.flatten()
+      print 'len(y):', len(y)
+      print 'y_grid.shape:', y_grid.shape
+      sigma_x = 1.8 * tgt_max / 100
+      sigma_y = 1.8 * dist_max / 100
+      distribution = sum(numpy.exp(-0.5*((x_grid - x_)**2/sigma_x**2 + (y_grid - y_)**2/sigma_y**2)) for x_, y_ in zip(tgt, dist))
+      print 'distribution.shape:', distribution.shape
+      pylab.figure()
+      pylab.imshow(distribution.reshape((len(y), len(x))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
+      pylab.xlabel('target (ms)')
+      pylab.ylabel('GeoIP distance (m)')
+
+      # Closer zoom on the interesting part
+      # Reuse the same parameters for target as the first heat map
+      x = numpy.arange(30, 680, 10)
+      sigma_x = 18
+      x_grid = numpy.resize(x, (len(y), len(x))).flatten()
+      y_grid = numpy.resize(y, (len(x), len(y))).T.flatten()
+      distribution = sum(numpy.exp(-0.5*((x_grid - x_)**2/sigma_x**2 + (y_grid - y_)**2/sigma_y**2)) for x_, y_ in zip(tgt, dist))
+      pylab.figure()
+      pylab.imshow(distribution.reshape((len(y), len(x))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
+      pylab.xlabel('target (ms)')
+      pylab.ylabel('GeoIP distance (m)')
+
+  try:
+    pylab.show()
+  except:
+    pass
 
   print 'ordering accuracy', numpy.mean([correct_order(*numpy.random.randint(num_examples, size=2)) for k in xrange(500000)])
   choices = [(classes[0, :]==c).nonzero()[0] for c in xrange(num_classes)]

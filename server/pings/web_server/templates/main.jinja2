@@ -334,7 +334,7 @@ onmouseout="document.getElementById('menu-source').src='images/button_source_nor
    <center>
       <table cellspacing="0" cellpadding="0">
 {% for item in global %}
-{% if loop.index % 0 %}
+{% if loop.index % 2 == 0 %}
 <tr><td width="9%" background="images/bar_thin_2.png">{{ loop.index }}</td><td width="71%" background="images/bar_thick_2.png">{{ item[0] }}</td><td width="20%" background="images/bar_thick_2.png">{{ item[1] }}</td></tr>
 {% else %}
 <tr><td>{{ loop.index }}</td><td>{{ item[0] }}</td><td>{{ item[1] }}</td></tr>
@@ -350,7 +350,7 @@ onmouseout="document.getElementById('menu-source').src='images/button_source_nor
       <table cellspacing="0" cellpadding="0">
 
 {% for item in weekly %}
-{% if loop.index % 0 %}
+{% if loop.index % 2 == 0 %}
 <tr><td width="9%" background="images/bar_thin_2.png">{{ loop.index }}</td><td width="71%" background="images/bar_thick_2.png">{{ item[0] }}</td><td width="20%" background="images/bar_thick_2.png">{{ item[1] }}</td></tr>
 {% else %}
 <tr><td>{{ loop.index }}</td><td>{{ item[0] }}</td><td>{{ item[1] }}</td></tr>
@@ -364,7 +364,7 @@ onmouseout="document.getElementById('menu-source').src='images/button_source_nor
     <center>
       <table cellspacing="0" cellpadding="0">
 {% for item in daily %}
-{% if loop.index % 0 %}
+{% if loop.index % 2 == 0 %}
 <tr><td width="9%" background="images/bar_thin_2.png">{{ loop.index }}</td><td width="71%" background="images/bar_thick_2.png">{{ item[0] }}</td><td width="20%" background="images/bar_thick_2.png">{{ item[1] }}</td></tr>
 {% else %}
 <tr><td>{{ loop.index }}</td><td>{{ item[0] }}</td><td>{{ item[1] }}</td></tr>

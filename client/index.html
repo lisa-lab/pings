@@ -1,14 +1,10 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
- "http://www.w3.org/TR/html4/loose.dtd">
 
-<html lang="en">
 
- <head>
-  <title>Home - The Internet Connectome project</title>
-  <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
-  <link href="site.css" media="all" type="text/css" rel="stylesheet">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"> 
+<head>
   <script type="text/javascript" src="http://code.jquery.com/jquery-1.8.3.min.js"></script>
   <script src="http://www.java.com/js/deployJava.js"></script>
+  <meta http-equiv="X-UA-Compatible" content="IE=9" /> 
   <base target="_blank">
 
 <script>
@@ -25,41 +21,392 @@ function hide(index) {
 }
 </script>
 
- </head>
+   <style type="text/css">
+   
+    body {
+    background-image: url(images/bkg_site-glow-final.jpg);
+    background-attachment: fixed;
+	background-size: cover;
+	height:100%;
+	margin-top: 0px;
+	margin-right: 0px;
+	margin-bottom: 0px;
+	margin-left: 0px;
+    }
+	
 
- <body>
-   <center>
-     <div class="main_div">
+    #mydiv {
+	position:inherit;
+	width: 834px; 
+	height: auto; 
+	margin-left: auto;
+  	margin-right: auto;
 
-<div class="title">The Internet Connectome Project<sup>BETA</sup></div>
+	background-image: url(images/ligne-middle.png);
+    }
+	
+	
+	#container-text {
+	width: 750px;
+	margin-top: 5px;
+	margin-left: 50px;
+    }
+		
+	
+	#mydiv-positionnement {
+	position: relative;
+	left:81px;
+	
+    }
+	
+	
+	.norepeat {
+	background-repeat:no-repeat;
+    }
+	
 
-<a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en" target="_blank"><img style="float: right; padding-left: 25px;" src="http://s3.amazonaws.com/udem_iconnect/neurone_chip2.jpg" height="75"></a>
+	#frame-footer-logo
+	{
+	margin-left:-100px;
+	}
+	
 
-<!--<a href="http://www.ubi.com" target="_blank"><img style="float: right; padding-left: 25px;" src="http://s3.amazonaws.com/udem_iconnect/Ubisoft.png" height="75"></a> -->
+	#menu-sections	{
+	position:absolute;
+	table-layout:fixed;
+	top:30px;
+	z-index:10;
+	}
+	
+	
+	#logo-lisa-cliquable
+	{
+	position:absolute;
+	left:0px;
+	top:20px;
+	z-index:55;
+	}
+	
+	
 
-<div style="clear: both;"></div>
+	#lignes-blanches-left {
+	position:absolute;
+	left:20px;
+	top:150px;
+	z-index:10;
+	}
+	
+	
+	#lignes-blanches-left-bottom {
+	position:absolute;
+	left:20px;
+	top:1550px;
+	z-index:10;
+	}
+	
 
-<ul class="nav">
-  <li class="navsel"><a href="index.html">Home</a></li>
-  <li><a href="about.html">About</a></li>
-  <li><a href="data.html">Get the data</a></li>
-  <li><a href="https://github.com/lisa-lab/pings" target="_blank">Get the source</a></li>
-  <li><a href="leaderboard.html">Leaderboards</a></li>
-</ul>
+	#lignes-blanches-right
+	{
+	position:absolute;
+	right:20px;
+	top:670px;
+	z-index:10;
+	}
+	
+	
+	#start-pinging
+	{
+	position:absolute;
+	left:0px;
+	top:220px;
+	z-index:15;
+	}
+	
+	
+	#msg-box
+	{
+	position:absolute;
+	left:1220px;
+	top:380px;
+	z-index:15;
+	}
 
-<a name="ANALYSIS">
+
+/* feedback (analysis) related *//* FIN feedback (analysis) related *//* FIN feedback (analysis) related */
+
+
+#analysis_container
+	{
+	font-family: Verdana, Geneva, sans-serif;
+	font-size: 14px;
+	width:200px;
+	
+	}
+
+
+#name
+	{
+	position:absolute;
+	right:0px;
+	top:-5px;
+	z-index:15;
+	}
+	
+	
+	#beta
+	{
+	position:absolute;
+	right:5px;
+	top:40px;
+	z-index:25;
+	}
+	
+.analysis.main_div {
+  -moz-border-radius: 15px;
+  border-radius: 15px;
+  width: 600px;
+  height: 100%;
+  padding-top: 7px;
+  padding-bottom: 10px;
+}
+
+.main_div .analysis.main_div {
+  border: 2px dotted #aaa;
+  border-radius: 0px;
+  -moz-border-radius: 0px;
+}
+.analysis h2 {
+  margin-top: 15px;
+}
+.analysis .title {
+  height: 41px;
+  padding-top: 3px;
+  text-align: center;
+  float: none;
+  width: 100%;
+  font-weight: bold;
+}
+.analysis img {
+  position: relative;
+  top: -2px;
+}
+.analysis .subtitle {
+  padding-top: 5px;
+  text-align: center; 
+}
+.analysis table {
+  width: 98%;
+  padding-bottom: 8px;
+}
+.analysis td {
+  padding: 3px 4px;
+  text-align: left;
+  border-top: 1px dotted #ccc;
+}
+.analysis th {
+  font-weight: normal;
+  font-size: 0.8em;
+  color: #777;
+  padding: 0px 5px;
+}
+.analysis td.left_column {
+  font-size: 1.2em;
+  min-width: 120px;
+}
+.analysis td.middle_column {
+  font-size: 1.2em;
+  font-weight: bold;
+  width: 90px;
+  text-align: center;
+}
+.analysis .tooltip {
+  border: 1px solid #000;
+  position: absolute;
+  padding: 10px;
+  background: #fcfcfc;
+  z-index: 999999;
+  display: none;
+}
+
+.analysis .bar {
+  height: 5px;
+  background: #E35A00;
+  float: left;
+  margin-right: 5px;
+}
+.analysis .bar.top {
+  background: #6D7D57;
+  margin-top: 5px;
+}
+.analysis .label {
+  font-size: 0.75em;
+  color: #888;
+}
+.analysis .label.bottom {
+  position: relative;
+  top: -5px;
+}
+
+
+/* FIN feedback (analysis) related *//* FIN feedback (analysis) related *//* FIN feedback (analysis) related *//* FIN feedback (analysis) related */
+
+
+
+body,td,th {
+	font-family: Verdana, Geneva, sans-serif;
+	font-size: 12px;
+}
+
+
+   </style>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+<body>
+
+<!--MENU CONNECTHOME DEBUT -->
+
+<table width="100%" align="center" border="0">
+  <tr>
+    <td><img src="images/title_name.png" width="995" height="159"><br></td>
+  </tr>
+</table>
+<!--MENU CONNECTHOME FIN -->
+
+
+<!--Debut Cliquable Lisa Logo-->
+<div id="logo-lisa-cliquable"><br>
+<a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en" target="_blank"><img src="images/hspacer.png" width="240" height="80" border="0"></a>
+</div>
+<!--Fin Cliquable Lisa Logo -->
+
+
+<br />
+<br />
+<br />
 <br />
 
-<h2 style="margin-bottom: 15px;">Start pinging now! <sup>*</sup></h2>
 
-<p><b>No personal data will be collected.</b>
-<p><b>Wait 15 minutes to get the analysis</b> of your Internet connection.
-<p>This Java applet is digitally <b>signed by the Université de Montréal.</b>
-<p>Please <b>authorize the applet</b> as it needs access to network functions.
+<!--Debut Banner Data-->
+<div id="name"><br>
+<img src="images/name.png"></div>
+<!--Fin Banner Data -->
+<br>
 
-<center><div id="analysis_container" style="width: 500px; margin-bottom: 30px; display: none;"></div></center>
 
-<script>
+<!--Debut image Beta-->
+<div id="beta"><br>
+<img src="images/beta.png"></div>
+<!--Fin image Beta -->
+<br>
+
+
+<!--DEBUT Lignes Colonne de Gauche -->
+<div id="lignes-blanches-left"><br>
+<img src="images/lignes-left-column.png"></div>
+
+<!--Fin Lignes Blanches Colonne de Gauche -->
+
+
+<!--DEBUT Lignes Colonne de Gauche -->
+<div id="lignes-blanches-left-bottom"><br>
+<img src="images/lignes-left-column.png"></div>
+
+<!--Fin Lignes Blanches Colonne de Gauche -->
+
+
+<!--DEBUT Lignes Colonne de Droite -->
+<div id="lignes-blanches-right"><br>
+<img src="images/lignes-right-column.png"></div>
+<!--Fin Lignes Blanches Colonne de Droite -->
+
+
+<!--Debut Banner START PINGING NOW-->
+<div id="start-pinging"><br>
+<img src="images/banner-start-pinging.png"></div>
+
+<!--Fin Banner START PINGING NOW -->
+
+
+
+
+
+
+
+<!--MENU HEADER DEBUT -->
+
+<div id="menu-sections">
+<table width="500px" border="0"><br>
+  <tr>
+    <td>
+<a href="index.html" target="_self" 
+onmouseover="document.getElementById('menu-home').src='images/button_home_pressed.png'" 
+onmouseout="document.getElementById('menu-home').src='images/button_home_pressed.png'">
+<img id="menu-home" width=101 height=71 border=0 src="images/button_home_pressed.png"><br>
+<br>
+
+</a></td>
+
+       <td>
+<a href="about.html" target="_blank" 
+onmouseover="document.getElementById('menu-about').src='images/button_about_over.png'" 
+onmouseout="document.getElementById('menu-about').src='images/button_about_normal.png'"><br>
+<img id="menu-about" width=114 height=71 border=0 src="images/button_about_normal.png"></a></td>
+
+    <td><a href="data.html" target="_blank" 
+onmouseover="document.getElementById('menu-data').src='images/button_data_over.png'" 
+onmouseout="document.getElementById('menu-data').src='images/button_data_normal.png'">
+<br>
+<br>
+<br>
+<img src="images/button_data_normal.png" alt="" width=203 height=69 border=0 id="menu-data"></a></td>
+
+
+ <td><a href="leaderboard.html" target="_blank" 
+onmouseover="document.getElementById('menu-leader').src='images/button_leader_over.png'" 
+onmouseout="document.getElementById('menu-leader').src='images/button_leader_normal.png'"><br>
+   <br>
+   <br>
+<br>
+<img src="images/button_leader_normal.png" alt="" width=244 height=60 border=0 id="menu-leader"></a></td>
+ 
+ 
+  <td><a href="https://github.com/lisa-lab/pings" target="_blank" 
+onmouseover="document.getElementById('menu-source').src='images/button_source_over.png'" 
+onmouseout="document.getElementById('menu-source').src='images/button_source_normal.png'">
+<br>
+<br>
+<br>
+<br>
+<br><br>
+<br>
+
+<br>
+<img src="images/button_source_normal.png" alt="" width=257 height=66 border=0 id="menu-source"></a></td>
+ 
+  </tr>
+</table><br>
+<br>
+</div>
+<!--MENU HEADER FIN -->
+
+<br>
+<br>
+<br>
+
+
+<a name="ANALYSIS">
+
+<center><img src="images/msg_box.png" width="863" height="123" align="middle" /><img src="images/hspacer.png" width="95" height="1" />
+
+<img src="images/app_frame_top.png" alt="" width="834" align="absbottom" style="display: block;"></center>
+<div id="mydiv" align="center">
+  <table width="800px" border="0" align="center">
+    <tr>
+      <td><!--DEBUT DU CODE ANALYSIS -->
+        <center>
+          <div id="analysis_container" style="width: 800px; margin-bottom: 30px; display: none;" align="center"></div>
+        </center>
+        <script>
 var cont = $('#analysis_container');
 function get_analysis(measurements) {
   if (cont.is(':visible')) return;
@@ -70,11 +417,16 @@ function get_analysis(measurements) {
   });
   setTimeout(function() {get_analysis(measurements);}, 10000);
 }
-</script>
-
-
-<center>
-<script>
+        </script>
+        <!--FIN DU CODE ANALYSIS --></td>
+        
+        
+        
+    </tr>
+    <!--DEBUT DU CODE EARTH -->
+    <center>
+      <img src="images/hspacer.png" alt="" width="5" height="1">
+      <script>
 function set_cookie(cookie_name, value) {
  document.cookie = cookie_name + "=" + value + ";expires=Sat, 14 Dec 2019 00:00:00 GMT";
 }
@@ -91,101 +443,169 @@ function get_cookie(cookie_name, default_value) {
 uuid = get_cookie('udem_ping_uuid', '');
 nick = get_cookie('udem_ping_nickname', '');
 nb_pings = get_cookie('udem_ping_nb_pings', '0');
-var attributes = {code:'PingsApplet.class', archive:'http://s3.amazonaws.com/udem_iconnect/pings.jar', width:800, height:500};
+var attributes = {code:'PingsApplet.class', archive:'http://s3.amazonaws.com/udem_iconnect/pings.jar', width:700, height:500};
 var parameters = {ping_hostname:'iconnect2.iro.umontreal.ca', ping_nb_pings:nb_pings, ping_port:'80', ping_uuid:uuid, ping_nickname:nick};
 var version = '1.6';
 deployJava.runApplet(attributes, parameters, version);
-</script>
-</center>
 
-
-<br/><p>
-<b>The applet starts collecting data automatically.</b><br />
-1. Make sure to enter a valid identifier (nickname) in order to appear in the 
-<a href="leaderboard.html" target=_blank>leaderboard</a>.<br />
-2. Let the applet run for a while by keeping this browser window open. The more data (about ping delays between
-your machine and other randomly chosen addresses) you help us collect, the better!<br />
-3. After the applet has run for 15 minutes, we will display a <b>detailed analysis of your Internet connection</b> according to our preliminary model.<br />
-4. You can click and drag the earth to rotate it. You can shift-click and drag to zoom in or out.
-</p><br />
-
-
-
-<h2>Troubleshooting</h2>
-
-<p>
-As our applet is still in a the prototype stage, bugs may occur.
-<br />
-Don't hesitate to contact us at <a href="mailto:iconnectome@googlegroups.com" title="Internet Connectome Applet">iconnectome@googlegroups.com</a> if you have any questions or suggestions.
-</p><br />
-
-<p>
-<b>If the applet does not start:</b><br />
-Your browser should automatically initiate the installation of the required Java version (> 1.6) or redirect you to the appropriate installation page for your OS/browser.
-Restarting your browser may be required after installation.
-You can verify your installation on the <a href="http://javatester.org/version.html">Java tester</a> page, which should display Java Version 1.6 or above.
-</p><br />
-
-<p>
-<b>If Java cannot be installed successfully:</b><br />
-Java can be tricky to install on certain system architectures, OS or browser.
-Please follow installation instructions for your specific setup by searching Google.
-You can verify your installation on the <a href="http://javatester.org/version.html">Java tester</a> page, which should display Java Version 1.6 or above.
-</p><br />
-
-<p>
-<b>If Java starts but you encounter a reproducible bug in the applet:</b><br />
-Please run your browser session within a console and <a href="mailto:iconnectome@googlegroups.com?Subject=Bug%20report">send us</a> the resulting output along with information about your OS, browser and Java environment.
-<ul>
-<li>Under <u>Windows</u>, you need to enable the "Java console". In the Control Panel, search for Java and start the Java configuration software. Click on the advanced tab. In the "Java console", check show the console option. Restart your browser and reload this web page. A window will open with the output of the applet.</li>
-<li>Under <u>Mac OS X</u>, open system preferences. Find the Java preferences. Open the advanced preferences tab and select the option to show the console. Restart your browser and reload this web page. A window will open with the output of the applet.</li>
-<li>Under <u>Linux</u>, simply launch your browser from the terminal with the following command:</li>
-</ul></p>
-<div class="codeblock">&lt;YOUR_BROWSER&gt; http://iconnect.iro.umontreal.ca</div>
-<p>where &lt;YOUR_BROWSER&gt; is your browser executable, e.g. firefox, google-chrome, etc.</p>
-
-
-<h2>The Internet Connectome project</h2>
-
-<p>
-<img style="float: right; height: 155px; padding: 0px 12px;" src="http://s3.amazonaws.com/udem_iconnect/internet_study_map.gif">
-
-<b>To optimize peer-to-peer internet connections, it would be very useful to have the ability to estimate ahead of time
-the internet delay between different internet addresses.</b>
-<br />
-Using the "PING" applet, you can help us construct a <i>connectome</i> of the internet, i.e. a topology of network connectivity.
-<br />
-As a bonus after our applet has run for 15 minutes, we will provide a detailed analysis of your Internet connection according to our preliminary model.
-<br />
-<!--The project originates from a collaboration between <a href="http://www.ubi.com">Ubisoft</a> 
-and the <a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en">machine learning lab (LISA)</a>
-at Université de Montréal.<br /> -->
-The data will be made publicly and freely available to all.
-We target potential applications in matchmaking, video on demand and multiplayer game experience
-and we use machine learning to predict delays between yet unmeasured pairs of addresses.
-<br /> <a href="about.html">Learn more »</a>
-</p>
-
-
-
-<h2>Sponsored by</h2>
-
-<center>
-<a href="http://www.umontreal.ca" target="_blank"><img style="padding: 5px 25px;" src="http://s3.amazonaws.com/udem_iconnect/UMontreal.jpg" height="65"></a>
-<a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en" target="_blank"><img style="padding: 0 15px 0 25px;" src="http://s3.amazonaws.com/udem_iconnect/neurone_chip2.jpg" height="75"></a>
-<!--<a href="http://www.ubi.com" target="_blank"><img style="padding: 0 25px;" src="http://s3.amazonaws.com/udem_iconnect/Ubisoft.png" height="75"></a>-->
-<a href="http://www.nserc-crsng.gc.ca/index_eng.asp" target="_blank"><img style="padding: 0 25px;" src="http://s3.amazonaws.com/udem_iconnect/NSERC_logo.png" height="75"></a>
-<br /><p style="text-align: center; border-top: 1px dotted #aaa; margin-top: 13px; padding-top: 6px;">
-The Internet Connectome Project | Montréal | Québec<br />
-Copyright © 2012-2013 All rights reserved.
-</p>
-</center>
-
-<br />
+      </script>
+    </center>
+    <!--FIN DU CODE EARTH -->
+  </table>
 </div>
-</center>
+<center> <img src="images/app_frame_bottom.png" alt="" width="834"/ align="absbottom"></center>
 
+
+
+
+<table width="810px" border="0" align="center"><br><br>
+
+
+
+<tr>
+    <td width="1%" align="right"  valign="top"> </td>
+    <td width="99%"  align="left"  valign="top"><strong>The applet starts collecting data automatically.</strong><br><br><br><br>
+
+</td>
+
+
+<tr>
+    <td width="10%" align="right"  valign="top">1.</td>
+    <td width="90%"  valign="top">Make sure to enter a valid identifier (nickname) in order to appear in the <a href="leaderboard.html">leaderboard.</a><br><br>
+
+</td>
+  </tr>
+  <tr>
+    <td width="10%" align="right"  valign="top">2.</td>
+    <td width="90%" valign="top">Let the applet run for a while by keeping this browser window open. The more data (about ping delays between your machine and other randomly chosen addresses) you help us collect, the better!<br><br>
+
+
+</td>
+  </tr>
+    <tr>
+    <td width="10%" align="right"  valign="top">3.</td>
+    <td width="90%"  valign="top">After the applet has run for 15 minutes, we will display a <strong>detailed analysis of your Internet connection</strong> according to our preliminary model.<br><br>
+
+
+</td>
+  </tr>
+    <tr>
+    <td width="10%" align="right"  valign="top">4.</td>
+    <td width="90%"  valign="top">You can click and drag the earth to rotate it. You can shift-click and drag to zoom in or out.
+</td>
+  </tr>
+</table><br />
 <br />
+
+
+
+
+
+<table width="920px" height="865px" border="0" align="center" background="images/frame-homev2.png" class="norepeat">
+  <tr><td align="left">    
+<div id="container-text">
+<strong><h2><font color="#c24000">Troubleshooting</font></h2></strong>
+
+
+As our applet is still in a the prototype stage, bugs may occur. <br>
+
+Don't hesitate to contact us at <a href="mailto:iconnectome@googlegroups.com">iconnectome@googlegroups.com</a> if you have any questions or suggestions.<br>
+<br>
+
+
+<strong>If the applet does not start:</strong><br>
+
+Your browser should automatically initiate the installation of the required Java version (> 1.6) or redirect you to the appropriate installation page for your OS/browser. Restarting your browser may be required after installation. You can verify your installation on the <a href="http://javatester.org/version.html" target="_blank">Java tester</a> page, which should display Java Version 1.6 or above. <br>
+<br>
+
+<strong>If Java cannot be installed successfully:</strong><br>
+
+Java can be tricky to install on certain system architectures, OS or browser. Please follow installation instructions for your specific setup by searching Google. You can verify your installation on the <a href="http://javatester.org/version.html" target="_blank">Java tester</a> page, which should display Java Version 1.6 or above. <br>
+<br><br>
+
+
+<strong>If Java starts but you encounter a reproducible bug in the applet:</strong><br>
+
+Please run your browser session within a console and <a href="mailto:iconnectome@googlegroups.com?Subject=Bug%20report">send us</a> the resulting output along with information about your OS, browser and Java environment.
+<br>
+<br>
+
+Under Windows, you need to enable the "Java console". In the Control Panel, search for Java and start the Java configuration software. Click on the advanced tab. In the "Java console", check show the console option. Restart your browser and reload this web page. A window will open with the output of the applet.
+<br>
+
+Under Mac OS X, open system preferences. Find the Java preferences. Open the advanced preferences tab and select the option to show the console. Restart your browser and reload this web page. A window will open with the output of the applet.
+<br>
+<br>
+
+Under Linux, simply launch your browser from the terminal with the following command:<br><br>
+
+
+<YOUR_BROWSER> http://iconnect.iro.umontreal.ca<br>
+<br>
+
+where <YOUR_BROWSER> is your browser executable, e.g. firefox, google-chrome, etc.<br>
+<br>
+<br>
+<br><br>
+<strong><h2><font color="#c24000">The Internet Connectome project</font></h2></strong>
+
+
+<strong>To optimize peer-to-peer internet connections, it would be very useful to have the ability to estimate ahead of time the internet delay between different internet addresses. </strong>
+<br>
+<br>
+Using the "PING" applet, you can help us construct a connectome of the internet, i.e. a topology of network connectivity. 
+As a bonus after our applet has run for 15 minutes, we will provide a detailed analysis of your Internet connection according to our preliminary model. 
+The data will be made publicly and freely available to all. We target potential applications in matchmaking, video on demand and multiplayer game experience and we use machine learning to predict delays between yet unmeasured pairs of addresses. 
+
+
+<br>
+<br>
+<a href="about.html"><strong>Learn more &raquo;</strong></a>
+
+
+ </div>
+
+
+
+</td>
+  </tr>
+</table>
+
+    
+    
+
+<table width="820px" border="0" align="center">
+  <tr>
+    <td align="left" valign="top"><table width="920px" height="567px" border="0" background="images/frame_4.png" class="norepeat">
+      <tr>
+      
+        <td valign="top"><br>
+          <strong>
+            <h2><font color="#c24000"><img src="images/hspacer.png" width="20" height="1">Sponsored By</font></h2>
+            </strong>
+          <!--DEBUT FOOTER LOGO -->
+          <div id="frame-footer-logo2">
+            <table width="820px" border="0" align="center">
+              <tr>
+                <td align="left"><table width="90%" border="0" cellpadding="30" align="left">
+                  <tr align="center">
+                    <td><a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en" target="_blank"><img src="images/logo_lisa.png" alt="" width="215" height="62" border="0"></a></td>
+                    <td><a href="http://www.umontreal.ca/" target="_blank"><img src="images/logo_udm.png" alt="" width="171" height="64" border="0"></a></td>
+                  </tr>
+                  <tr align="center">
+                    <td height="148"><a href="http://www.nserc-crsng.gc.ca/index_eng.asp" target="_blank"><img src="images/logo_nserc-crsng.png" alt="" width="160" height="64" border="0"></a></td>
+                    <td><a href="http://www.ubisoft.com" target="_blank"><img src="images/logo_ubi.png" alt="" width="111" height="83" border="0"></a></td>
+                  </tr>
+                </table></td>
+              </tr>
+            </table>   </table>
+      <!--FIN FOOTER LOGO -->
+      <br>
+      <br>
+      <br></td>
+  </tr>
+</table>
+<br>
+
 </body>
- 
 </html>

@@ -1,194 +1,448 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
- "http://www.w3.org/TR/html4/loose.dtd">
 
-<html lang="en">
+<!DOCTYPE html>
+<!-- Test -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><style>
+            p {
+                width: 750px;
+                padding-left: 50px;
+            }
+			
+	    body {
+    background-image: url(images/bkg_site-glow-final.jpg);
+    background-attachment: fixed;
+	background-size: cover;
+	height:100%;
+	margin-top: 0px;
+	margin-right: 0px;
+	margin-bottom: 0px;
+	margin-left: 0px;
+    }
+	
 
- <head>
-  <title>About - The Internet Connectome project</title>
-  <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
-  <link href="site.css" media="all" type="text/css" rel="stylesheet">
- </head>
- 
- <body>
-   <center>
-     <div class="main_div">
-
-<div class="title">The Internet Connectome Project<sup>BETA</sup></div>
-
-<a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en" target="_blank"><img style="float: right; padding-left: 25px;" src="http://nouiz.org/pings/client/images/neurone_chip2.jpg" height="75"></a>
-<!--<a href="http://www.ubi.com" target="_blank"><img style="float: right; padding-left: 25px;" src="http://nouiz.org/pings/client/images/Ubisoft.png" height="75"></a>-->
-
-<div style="clear: both;"></div>
-
-<ul class="nav">
-  <li><a href="index.html">Home</a></li>
-  <li class="navsel"><a href="about.html">About</a></li>
-  <li><a href="data.html">Get the data</a></li>
-  <li><a href="https://github.com/lisa-lab/pings" target="_blank">Get the source</a></li>
-  <li><a href="leaderboard.html">Leaderboards</a></li>
-</ul>
-
-<br /><br />
-
-<h2>About the Internet Connectome project</h2>
-
-<p>
-To provide superior user experience, many applications need to know a lot about the characteristics of the user's Internet connection, such as bandwidth and latency.
-An example of application where it is mostly the connections between the users and the servers that matter is video on demand.
-The servers can tailor the videos, adapting bit-rate and resolution to yield the most enjoyable experience possible given the user's connection.
-However, when the applications are peer-to-peer, i.e., with messages flowing directly between users rather than through a server, it is important to estimate these speed and delay characteristics for potential connections <em>between users</em>.
-For instance, in multi-player games one of the players in a party may serve as the game host, offering his computer or game console as a temporary game server.
-In this setting, the quality of the connection between the users in the same party (connecting to the same user-hosted game server) will matter a lot more than the connection to the game company’s server.
-To help decide who to connect with who without having to spend seconds on each potential pair of users, it would be very useful to be able to efficiently <em>predict</em> latency between any pair of Internet addresses.
-<br /><br />
-However, the Internet, by its very nature, is particularly difficult to observe and measure as a whole.
-First, the Internet is not under a central authority, but instead is composed of a rather ad-hoc assembly
-of many sub-networks with different characteristics, each being cared for by different entities, all rather
-reluctant to share their knowledge of their corner of the Internet. Second, the very scale of the Internet
-is, in itself, a major (but not insuperable) obstacle to any comprehensive survey. Any effort to map the
-topology of the Internet, measure its different local characteristics such as latency and bandwidth between
-addresses, is
-impossible to complete using a few computers or with the help of only a handful of volunteers.
-<br /><br />
-This is why crowd-sourcing our survey of the Internet (in a way we will discuss further in just a
-moment) appears to be the only viable solution. By the individually small effort of a great number of
-people, great things can be achieved! Indeed, as more volonteers from different locations in the world
-join the survey, the collected data set becomes more useful. The data will be made public
-and available to researchers and developers anywhere in the world. Ultimately, the collected
-data has the potential to benefit the whole Internet community, and our goal at
-the <a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en">machine learning
-lab</a> (LISA), at <a href="http://www.umontreal.ca">Université de Montréal</a> 
-is to devise and train models that will predict internet latency between
-pairs of Internet addresses, and thus help deliver, in the end, a better user experience for all kinds of
-applications.
-</p>
-
-<h2>The Goals & the Means</h2>
-<p>
-As hinted in the introduction, the goal of the survey is to map the topology of the Internet as well as
-measure, as accurately as possible, the latency between any two end points of the Internet where
-users could be. The topology (the way computers and routers are connected together) is to be
-surveyed using the traceroute tool. The latency is to be estimated using two types of pings. The first
-ping method is the classical ping that uses the ICMP protocol to estimate the round-trip time between
-two computers, that is, the time a message takes to reach a remote destination and come back to the
-sender. The second ping method is the non-traditional TCP ping that uses the TCP protocol to estimate
-the time it takes to establish a TCP connection between the local host and the remote destination. Both
-ping methods gather different type information, and both are useful in their own way.
-<br /><br />
-Volunteers can participate to the survey quite easily by going to our 
-<a href="index.html">Internet survey web page</a> and by
-launching a digitally-signed Java applet (the applet is digitally signed because it needs to access the
-system-specific ping and traceroute commands). The applet will probe the topology of the Internet and
-estimate the latency to a number of remote destinations as determined by our survey server. The survey
-server determines which remote hosts will be probed by the volunteers in order to ensure a good
-coverage of the Internet as well as reliable latency measures.
-Volunteers are encouraged to let the applet run as long as possible. A user-configurable duty-cycle will
-let the applet perform a series of probes at fixed intervals, thus letting the volunteer decide how much
-of their bandwidth they are giving us. In any case, the probes are likely to have negligible impact on the
-volunteers' connection, as the individual probes are not bandwidth intensive, necessitating only a few
-hundred bytes each.
-<br /><br />
-The data is collected on the survey server at Université de Montréal and will be 
-available under a <a href="license.txt">BSD
-3 Clause</a> license. The data files will be in 
-an easy to parse, text-only, format, and updated as more data are accumulated.
-<br /><br />
-Further, the volunteers are invited to register a nickname to have their contribution appear on the daily,
-weekly, and monthly leaderboards of volunteers performing the most pings. The volunteers' nicknames are only 
-collected internally in our server for leaderboard purposes; they will not appear in the distributed
-data files.
-</p>
-
-<h2>An Open Approach</h2>
-<p>
-On a fundamental level, we, at the <a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en">LISA</a>, 
-believe in the importance of <a href="http://en.wikipedia.org/wiki/Open_science">Open Science</a>. We are
-convinced that scientific knowledge, and the data it is based on, is to be open to all.
-This is why the complete source code (both applet and server side) as well as the collected data are
-available to all, to be used under Open Source and Open Data licenses, respectively. The source code is
-to be found on our <a href="https://github.com/lisa-lab/pings">project's github page</a>, and all are invited
-to have a look at it, comment, and
-participate. The software is available under a <a href="license.txt">BSD 3 Clause</a> license, and contains bits
-of software
-from other people, such as the globe applet based on the work of the <a href="http://www.jhlabs.com/java/maps/proj/">
-JH Labs java projection project</a>
-(available under an Apache license) and MaxMind's GeoLite database and API for geolocation
-(available under LGPL and BSD-like licences).
-<br /><br />
-We also believe in the importance of <a href="http://en.wikipedia.org/wiki/Open_data">Open Data</a> for science.
-One of the core components of science
-(and experimental sciences in particular) is the reproducibility of experiments, which seems to be often
-overlooked or treated quite lightly. In order to ensure wider cooperation from other researchers and the
-reproducibility of our results, all the data we collect is available under an <a href="license.txt">BSD 3 Clause Like</a> open
-data license, which grants the use of the data for any purpose, that is, everyone is free to use it to do
-more research, to publish it, or rehash it as need be, as long as they comply with the license.
-</p>
-
-<h2>A Partnership</h2>
-<p>
-This project is part of the <a href="http://www.ubi.com">Ubisoft</a> / 
-<a href="http://www.nserc-crsng.gc.ca/index_eng.asp">NSERC</a> industrial chair on Artificial Intelligence 
-at the <a href="http://www.iro.umontreal.ca/?lang=en">DIRO</a>,
-<a href="http://www.umontreal.ca">Université de Montréal</a>. The National Science and Engineering
-Research Council (NSERC) of Canada funds basic and applied research.
-The chair, created by NSERC over a year ago (in March 2011), concentrates on the
-applications of Machine Learning to the challenges brought by next-generation games. One such
-challenge is <a href="http://en.wikipedia.org/wiki/Matchmaking_(video_games)">advanced matchmaking</a>, 
-where the goal is to form two opposing teams such that players
-in each team complement each other well, and such that the resulting teams' strengths are as balanced
-as possible, in order to maximize all of the players' fun during the game &ndash; everyone wants a good fight!
-The current project of mapping the Internet and estimating latency between players is motivated by 
-the desire to take estimated latency between players into account when forming teams.
-You can learn
-more about the industrial chair <a href="http://www.nserc-crsng.gc.ca/Chairholders-TitulairesDeChaire/Chairholder-Titulaire_eng.asp?pid=436">here</a>.
-<br /><br />
-However, the partnership isn't limited to Ubisoft and Université de Montréal: having the complete
-project under Open Source and Open Data licenses allows any volunteer to join us and participate in
-the project! So, if you are interested in participating to the code base or have ideas on how to use the
-collected data, you can <a href="mailto:iconnectome@googlegroups.com">contact us</a>.
-</p>
-
-<h2>The Team</h2>
-<p>
-Who are we? The <a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en">machine learning (LISA)</a> 
-(Laboratoire d'Informatique des Systèmes Adaptatifs) at <a href="http://www.umontreal.ca">Université de
-Montréal</a> is one of the foremost artificial intelligence laboratories in the world, and is led by professor
-<a href="http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html">Yoshua Bengio</a>. As we mentioned previously, 
-the LISA and Ubisoft Montréal collaborate through the
-Ubisoft/NSERC Industrial chair on Artificial Intelligence.
-<br /><br />
-The principal contributors to this project are or have been
-Steven Pigeon,
-Yoshua Bengio, 
-Frédéric Bastien,
-Nicolas Boulanger-Lewandowski,
-Myriam Côté,
-Christian Hudon,  
-Raphaël Bonaque,
-Olivier Delalleau,
-Yves Jacquier, Frédéric Bernard and
-Frank Zhang.
-</p>
+    #mydiv {
+	position: relative;
+	width: 834px; 
+	height: auto; 
+	/*background-image: url(images/ligne-middle.png);*/
+    }
+		
+	
+	#mydiv-positionnement {
+	position:absolute;
+	left:480px;
+    }
+	
+	.elementToBeFixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+}
+	
+ 	#scroll-header {
+     position: fixed;
+     height: 32px;
+	 background-image: url(images/top_glow.png) ;
+     width:100%;
+     z-index: 75; /* Put it on top of the body */
+     top: 0; /* Make sure it is ALWAYS at the top */
+     }		 
 
 
-<h2>Sponsored by</h2>
+	#menu-sections	{
+	position:absolute;
+	table-layout:fixed;
+	top:30px;
+	z-index:10;
+	}
 
-<center>
-<a href="http://www.umontreal.ca" target="_blank"><img style="padding: 5px 25px;" src="http://nouiz.org/pings/client/images/UMontreal.jpg" height="65"></a>
-<a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en" target="_blank"><img style="padding: 0 15px 0 25px;" src="images/neurone_chip2.jpg" height="75"></a>
-<!--<a href="http://www.ubi.com" target="_blank"><img style="padding: 0 25px;" src="http://nouiz.org/pings/client/images/Ubisoft.png" height="75"></a>-->
-<a href="http://www.nserc-crsng.gc.ca/index_eng.asp" target="_blank"><img style="padding: 0 25px;" src="http://nouiz.org/pings/client/images/NSERC_logo.png" height="75"></a>
-<br /><p style="text-align: center; border-top: 1px dotted #aaa; margin-top: 13px; padding-top: 6px;">
-The Internet Connectome Project | Montréal | Québec<br />
-Copyright © 2012-2013 All rights reserved.
-</p>
-</center>
 
-<br />
+	#lignes-blanches-left {
+	position:absolute;
+	left:20px;
+	top:150px;
+	z-index:-10;
+	}
+
+
+	#lignes-blanches-right
+	{
+	position:absolute;
+	right:20px;
+	top:670px;
+	z-index:10;
+	}
+
+
+	#banner-about
+	{
+	position:absolute;
+	left:0px;
+	top:220px;
+	z-index:15;
+	}
+	
+	#logo-lisa-cliquable
+	{
+	position:absolute;
+	left:0px;
+	top:20px;
+	z-index:55;
+	}
+	
+	
+	#name
+	{
+	position:absolute;
+	right:0px;
+	top:-5px;
+	z-index:15;
+	}
+	
+	
+	#beta
+	{
+	position:absolute;
+	right:5px;
+	top:40px;
+	z-index:25;
+	}
+
+	
+	#banner-sponsored
+	{
+	position:absolute;
+	left:1px;
+	top:365px;
+	z-index:15;
+	}
+		
+	
+	#frame-background
+	{
+	position:absolute;
+	left:429px;
+	top:200px;
+	z-index:-1;
+	}
+	
+	
+	#frame-footer-logo
+	{
+	position:absolute;
+	left:0px;
+	top:190px;
+	z-index:41;
+	}
+	
+		
+	#frame-footer-copyright
+	{
+	position:absolute;
+	left:150px;
+	top:850px;
+	z-index:41;
+	}
+	
+
+
+body,td,th {
+	font-family: Verdana, Geneva, sans-serif;
+	font-size: 12px;
+}
+   .norepeat {background-repeat:no-repeat;
+}
+   </style>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+<body>
+
+
+
+
+
+
+
+<!--MENU CONNECTHOME DEBUT -->
+
+<table width="100%" align="center" border="0">
+  <tr>
+    <td><img src="images/title_name.png" width="995" height="159" border="0" usemap="#Map2"><br></td>
+  </tr>
+</table>
+<!--MENU CONNECTHOME FIN -->
+
+
+<!--Debut Cliquable Lisa Logo-->
+<div id="logo-lisa-cliquable"><br>
+<a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en" target="_blank"><img src="images/hspacer.png" width="240" height="80" border="0"></a>
 </div>
-</center>
+<!--Fin Cliquable Lisa Logo -->
 
-<br />
-</body>
+
+<!--Debut banner Data-->
+<div id="banner-about"><br>
+<img src="images/banner-about-project.png"></div>
+<!--Fin Banner Data --><br><br>
+
+
+
+<!--MENU HEADER DEBUT -->
+
+<div id="menu-sections">
+<table width="500px" border="0"><br>
+  <tr>
+    <td>
+<a href="index.html" target="_self" 
+onmouseover="document.getElementById('menu-home').src='images/button_home_over.png'" 
+onmouseout="document.getElementById('menu-home').src='images/button_home_normal.png'">
+<img id="menu-home" width=101 height=71 border=0 src="images/button_home_normal.png"><br>
+<br>
+
+</a></td>
+
+       <td>
+<a href="about.html" target="_self" 
+onmouseover="document.getElementById('menu-about').src='images/button_about_pressed.png'" 
+onmouseout="document.getElementById('menu-about').src='images/button_about_pressed.png'"><br>
+<img id="menu-about" width=114 height=71 border=0 src="images/button_about_pressed.png"></a></td>
+
+    <td><a href="data.html" target="_self" 
+onmouseover="document.getElementById('menu-data').src='images/button_data_over.png'" 
+onmouseout="document.getElementById('menu-data').src='images/button_data_normal.png'">
+<br>
+<br>
+<br>
+<img src="images/button_data_normal.png" alt="" width=203 height=69 border=0 id="menu-data"></a></td>
+
+
+ <td><a href="leaderboard.html" target="_self" 
+onmouseover="document.getElementById('menu-leader').src='images/button_leader_over.png'" 
+onmouseout="document.getElementById('menu-leader').src='images/button_leader_normal.png'"><br>
+   <br>
+   <br>
+<br>
+<img src="images/button_leader_normal.png" alt="" width=244 height=60 border=0 id="menu-leader"></a></td>
  
-</html>
+ 
+  <td><a href="https://github.com/lisa-lab/pings" target="_blank" 
+onmouseover="document.getElementById('menu-source').src='images/button_source_over.png'" 
+onmouseout="document.getElementById('menu-source').src='images/button_source_normal.png'">
+<br>
+<br>
+<br>
+<br>
+<br><br>
+<br>
+
+<br>
+<img src="images/button_source_normal.png" alt="" width=257 height=66 border=0 id="menu-source"></a></td>
+ 
+  </tr>
+</table><br>
+<br>
+</div>
+<!--MENU HEADER FIN -->
+
+
+<!--Debut Banner Data-->
+<div id="name"><br>
+<img src="images/name.png" border="0" usemap="#Map">
+<map name="Map">
+  <area shape="rect" coords="76,46,209,91" href="#">
+</map>
+</div>
+<!--Fin Banner Data -->
+<br>
+
+
+<!--Debut image Beta-->
+<div id="beta"><br>
+<img src="images/beta.png"></div>
+<!--Fin image Beta -->
+<br>
+
+
+
+
+<!--DEBUT Lignes Colonne de Gauche -->
+<div id="lignes-blanches-left"><br>
+<img src="images/lignes-left-column.png"></div>
+
+<!--Fin Lignes Blanches Colonne de Gauche -->
+
+
+<!--DEBUT Lignes Colonne de Droite -->
+<div id="lignes-blanches-right"><br>
+<img src="images/lignes-right-column-short.png"></div>
+<!--Fin Lignes Blanches Colonne de Droite -->
+
+
+
+<br>
+<br>
+<br>
+
+
+
+
+
+
+
+
+<div id="all" style="
+        width: 920px;
+        margin-left: auto;
+        margin-right: auto;
+">
+<div id="top" style="
+    background-image: url('images/frame_1_v2_top.png');
+    background-repeat: no-repeat;
+    min-height: 720px;
+">
+</div>
+
+<div id="mid" style="
+    background-image: url('images/frame_1_v2_mid.png');
+    background-repeat: repeat-y;
+    background-clip: content-box;
+    width: 896px;
+    padding-top: 650px;
+    margin-top: -650px;
+    padding-bottom: 20px;
+    margin-bottom: -20px;
+">
+<div id="txt" style="
+    background: none;
+    margin-top: -650px;
+    margin-bottom: -20px;
+">
+<p>
+To provide superior user experience, many applications need to know a lot about the characteristics of the user's Internet connection, such as bandwidth and latency. An example of application where it is mostly the connections between the users and the servers that matter is video on demand. The servers can tailor the videos, adapting bit-rate and resolution to yield the most enjoyable experience possible given the user's connection. However, when the applications are peer-to-peer, i.e., with messages flowing directly between users rather than through a server, it is important to estimate these speed and delay characteristics for potential connections between users. For instance, in multi-player games one of the players in a party may serve as the game host, offering his computer or game console as a temporary game server. In this setting, the quality of the connection between the users in the same party (connecting to the same user-hosted game server) will matter a lot more than the connection to the game company's server. To help decide who to connect with who without having to spend seconds on each potential pair of users, it would be very useful to be able to efficiently predict latency between any pair of Internet addresses. 
+<br>
+<br>
+
+However, the Internet, by its very nature, is particularly difficult to observe and measure as a whole. First, the Internet is not under a central authority, but instead is composed of a rather ad-hoc assembly of many sub-networks with different characteristics, each being cared for by different entities, all rather reluctant to share their knowledge of their corner of the Internet. Second, the very scale of the Internet is, in itself, a major (but not insuperable) obstacle to any comprehensive survey. Any effort to map the topology of the Internet, measure its different local characteristics such as latency and bandwidth between addresses, is impossible to complete using a few computers or with the help of only a handful of volunteers. 
+<br>
+<br>
+
+This is why crowd-sourcing our survey of the Internet (in a way we will discuss further in just a moment) appears to be the only viable solution. By the individually small effort of a great number of people, great things can be achieved! Indeed, as more volonteers from different locations in the world join the survey, the collected data set becomes more useful. The data will be made public and available to researchers and developers anywhere in the world. Ultimately, the collected data has the potential to benefit the whole Internet community, and our goal at the machine learning lab (LISA), at Université de Montréal is to devise and train models that will predict internet latency between pairs of Internet addresses, and thus help deliver, in the end, a better user experience for all kinds of applications.
+<br>
+<br>
+<br>
+<strong><font color="#c24000" size="4">The Goals & the Means</font></strong><br>
+
+<br>
+As hinted in the introduction, the goal of the survey is to map the topology of the Internet as well as measure, as accurately as possible, the latency between any two end points of the Internet where users could be. The topology (the way computers and routers are connected together) is to be surveyed using the traceroute tool. The latency is to be estimated using two types of pings. The first ping method is the classical ping that uses the ICMP protocol to estimate the round-trip time between two computers, that is, the time a message takes to reach a remote destination and come back to the sender. The second ping method is the non-traditional TCP ping that uses the TCP protocol to estimate the time it takes to establish a TCP connection between the local host and the remote destination. Both ping methods gather different type information, and both are useful in their own way. 
+<br>
+<br>
+
+Volunteers can participate to the survey quite easily by going to our Internet survey web page and by launching a digitally-signed Java applet (the applet is digitally signed because it needs to access the system-specific ping and traceroute commands). The applet will probe the topology of the Internet and estimate the latency to a number of remote destinations as determined by our survey server. The survey server determines which remote hosts will be probed by the volunteers in order to ensure a good coverage of the Internet as well as reliable latency measures. Volunteers are encouraged to let the applet run as long as possible. A user-configurable duty-cycle will let the applet perform a series of probes at fixed intervals, thus letting the volunteer decide how much of their bandwidth they are giving us. In any case, the probes are likely to have negligible impact on the volunteers' connection, as the individual probes are not bandwidth intensive, necessitating only a few hundred bytes each. 
+<br>
+<br>
+
+The data is collected on the survey server at Université de Montréal and will be available under a BSD 3 Clause license. The data files will be in an easy to parse, text-only, format, and updated as more data are accumulated. 
+<br>
+<br>
+
+Further, the volunteers are invited to register a nickname to have their contribution appear on the daily, weekly, and monthly leaderboards of volunteers performing the most pings. The volunteers' nicknames are only collected internally in our server for leaderboard purposes; they will not appear in the distributed data files.
+<br>
+<br>
+<strong><font color="#c24000" size="4">An Open Approach</font></strong>
+<br>
+
+<br>
+On a fundamental level, we, at the LISA, believe in the importance of Open Science. We are convinced that scientific knowledge, and the data it is based on, is to be open to all. This is why the complete source code (both applet and server side) as well as the collected data are available to all, to be used under Open Source and Open Data licenses, respectively. The source code is to be found on our project's github page, and all are invited to have a look at it, comment, and participate. The software is available under a BSD 3 Clause license, and contains bits of software from other people, such as the globe applet based on the work of the JH Labs java projection project (available under an Apache license) and MaxMind's GeoLite database and API for geolocation (available under LGPL and BSD-like licences). <br>
+<br>
+
+We also believe in the importance of Open Data for science. One of the core components of science (and experimental sciences in particular) is the reproducibility of experiments, which seems to be often overlooked or treated quite lightly. In order to ensure wider cooperation from other researchers and the reproducibility of our results, all the data we collect is available under an BSD 3 Clause Like open data license, which grants the use of the data for any purpose, that is, everyone is free to use it to do more research, to publish it, or rehash it as need be, as long as they comply with the license.
+<br>
+<br>
+<br>
+<br>
+
+<strong><font color="#c24000" size="4">A Partnership</font></strong><br><br>
+
+
+This project is part of the Ubisoft / NSERC industrial chair on Artificial Intelligence at the DIRO, Université de Montréal. The National Science and Engineering Research Council (NSERC) of Canada funds basic and applied research. The chair, created by NSERC over a year ago (in March 2011), concentrates on the applications of Machine Learning to the challenges brought by next-generation games. One such challenge is advanced matchmaking, where the goal is to form two opposing teams such that players in each team complement each other well, and such that the resulting teams' strengths are as balanced as possible, in order to maximize all of the players' fun during the game – everyone wants a good fight! The current project of mapping the Internet and estimating latency between players is motivated by the desire to take estimated latency between players into account when forming teams. You can learn more about the industrial chair here. 
+<br>
+<br>
+
+However, the partnership isn't limited to Ubisoft and Université de Montréal: having the complete project under Open Source and Open Data licenses allows any volunteer to join us and participate in the project! So, if you are interested in participating to the code base or have ideas on how to use the collected data, you can contact us.
+<br>
+<br>
+<br>
+
+<strong><font color="#c24000" size="4">The Team</font></strong><br><br>
+
+
+Who are we? The machine learning (LISA) (Laboratoire d'Informatique des Systèmes Adaptatifs) at Université de Montréal is one of the foremost artificial intelligence laboratories in the world, and is led by professor Yoshua Bengio. As we mentioned previously, the LISA and Ubisoft Montréal collaborate through the Ubisoft/NSERC Industrial chair on Artificial Intelligence. 
+<br>
+<br>
+
+The principal contributors to this project are or have been Steven Pigeon, Yoshua Bengio, Frédéric Bastien, Nicolas Boulanger-Lewandowski, Myriam Côté, Christian Hudon, Raphaël Bonaque, Olivier Delalleau, Yves Jacquier, Frédéric Bernard and Frank Zhang.</td>
+  
+</p>
+
+
+</div>
+</div>
+<div id="bottom" style="
+    background-image: url('images/frame_1_v2_bottom.png');
+    background-repeat: no-repeat;
+    min-height: 80px;
+"></div>
+   
+</div>
+
+
+          <!--DEBUT FOOTER LOGO -->
+          <div>
+            <table width="896px" height="567px" border="0" align="center" background="images/frame_4.png">
+              <tr>
+                <td align="left" >
+                
+                
+                    <strong>
+            <h2><font color="#c24000"><img src="images/hspacer.png" width="20" height="1">Sponsored By</font></h2>
+            </strong>
+
+<table width="80%" border="0" cellpadding="30" align="left">
+  <tr align="center">
+                    <td>                
+                <img src="../Final/images/hspacer.png" width="70" height="1"><a href="http://www.iro.umontreal.ca/rubrique.php3?id_rubrique=27&lang=en" target="_blank"><img src="images/logo_lisa.png" alt="" width="215" height="62" border="0"></a></td>
+                    <td><a href="http://www.umontreal.ca/" target="_blank"><img src="images/logo_udm.png" alt="" width="171" height="64" border="0"></a></td>
+          </tr>
+                  <tr align="center">
+                    <td height="148"><a href="http://www.nserc-crsng.gc.ca/index_eng.asp" target="_blank"><img src="images/logo_nserc-crsng.png" alt="" width="160" height="64" border="0"></a></td>
+                    <td><a href="http://www.ubisoft.com" target="_blank"><img src="images/logo_ubi.png" alt="" width="111" height="83" border="0"></a></td>
+                  </tr>
+                   <tr align="center">
+                    <td><br>
+<br>
+<br>
+<br>
+<br>
+<br>
+</td>
+                    <td>    </td>
+            </tr>
+                </table></td>
+              </tr>
+            </table>
+          </div>
+          <!--FIN FOOTER LOGO -->
+          <br>
+          <br>
+      
+          <br></td>
+      </tr>
+    </table></td>
+  </tr>
+</table>
+</div>
+<!--FIN FOOTER LOGO -->
+
+
+
+
+</body></html>

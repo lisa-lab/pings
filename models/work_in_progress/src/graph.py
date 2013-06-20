@@ -15,6 +15,9 @@ try:
     #The following import are needed only for training
     import pylab
     import scipy.optimize
+
+    # needed for training with KT
+    import scipy.stats
 except ImportError:
     pass
 
@@ -372,20 +375,79 @@ if __name__ == '__main__':
 
 
 ###########################
-def train_model(save=False):
+def train_model(save=False,
+                # Ignore outlier data with delay bigger than this threshold in the train and valid data
+                train_outlier_threshold=5000,  # keep everything
+                objective='LAD',  # least absolute deviation
+                model='full',
+                ):
+  # Possible value for objective:
+  # - 'LS': least squares, minimize the L2-norm of the difference between objective and prediction
+  # - 'LAD': least absolute deviation, minimize the L1-norm of that difference
+  # - 'KT': Kendall's tau coefficient, minimized by Theil's estimator
+
+  # Possible value for model:
+  # - 'full': full graphical model
+  # - 'constant': constant (average) only
+  # - 'distance': GeoIP distance only (IP/Location)
+  # - 'countries': country-country only
+
   sets = [cPickle.load(file('../data/sandbox2/' + t)) for t in 'train', 'valid', 'test']
 
-  sizes = numpy.maximum(*[s.max(axis=0) for s in sets]) + 1
+  def filter_outliers(dataset, threshold, column):
+    """
+    Remove lines in dataset where the value of column is above threshold.
+    """
+    return numpy.asarray([row for row in dataset if row[column] <= threshold])
+
   names = 'country1', 'region1', 'city1', 'type1', 'country2', 'region2', 'city2', 'type2', 'distance', 'latency', 'same_country', 'same_region', 'same_city', 'ip1', 'ip2'
   TARGET = names.index('latency')
 
-  terms = [((), 0), ((8,), 0), ((3,), -1), ((7,), -1), ((3, 7), -1), ((0,), -1), ((4,), -1), ((10,), -1), ((0, 4), -1), ((0, 4, 3, 7), -1), ((1,), -1), ((5,), -1), ((11,), -1), ((1, 5), -1), ((2,), -1), ((6,), -1), ((12,), -1), ((2, 6), -1), ((13,), -1), ((14,), -1), ((13, 14), -1)]
-  #terms = [((), 0)]  # constant (average) only
-  #terms = [((), 0), ((8,), 0)]  # distance only (IP/Location)
-  #terms = [((), 0), ((0, 4), -1)]  # country-country only
+  # Remove outliers on train and valid, but keep them in the test set
+  sets[0] = filter_outliers(sets[0], outlier_threshold, TARGET)
+  sets[1] = filter_outliers(sets[1], outlier_threshold, TARGET)
+
+  sizes = numpy.maximum(*[s.max(axis=0) for s in sets]) + 1
+
+  model_to_terms = {
+          'full': [((), 0),             # constant (average)
+                   ((8,), 0),           # distance
+                   ((3,), -1),          # type1
+                   ((7,), -1),          # type2
+                   ((3, 7), -1),        # type1, type2
+                   ((0,), -1),          # country1
+                   ((4,), -1),          # country2
+                   ((10,), -1),         # same_country
+                   ((0, 4), -1),        # country1, country2
+                   ((0, 4, 3, 7), -1),  # country1, country2, type1, type2
+                   ((1,), -1),          # region1
+                   ((5,), -1),          # region2
+                   ((11,), -1),         # same_region
+                   ((1, 5), -1),        # region1, region2
+                   ((2,), -1),          # city1
+                   ((6,), -1),          # city2
+                   ((12,), -1),         # same_city
+                   ((2, 6), -1),        # city1, city2
+                   ((13,), -1),         # ip1
+                   ((14,), -1),         # ip2
+                   ((13, 14), -1)],     # ip1, ip2
+          'constant': [((), 0)],  # constant (average)
+          'distance': [((), 0),     # constant (average)
+                       ((8,), 0)],  # distance
+          'countries': [((), 0),        # constant (average)
+                        ((0, 4), -1)],  # (country1, country2)
+          }
+  terms = model_to_terms[model]
 
   residuals = [s[:, TARGET].astype(float) for s in sets]
-  print [numpy.mean(r**2)**0.5 for r in residuals]
+  if objective == 'LS':
+      print [numpy.mean(r**2)**0.5 for r in residuals]
+  elif objective == 'LAD':
+      print [numpy.abs(r).mean() for r in residuals]
+  elif objective == 'KT':
+      print [1.0 for r in residuals]
+  else:
+      raise NotImplementedError
   sys.stdout.flush()
 
   #bottom = sets[0][:, TARGET].min()  # never allow predictions lower than this
@@ -393,79 +455,209 @@ def train_model(save=False):
 
   for feature_indices, regularization in terms:
     feature_indices = list(feature_indices)
+    # strides of an array with ndim=len(feature_indices), that would contain
+    # all combinations of features
     strides = numpy.array([numpy.prod(sizes[feature_indices[:i]]) for i in xrange(len(feature_indices) + 1)], dtype='uint64')
+    # Represent the features of each example by a single integer,
+    # by multiplying the values of features by the corresponding
+    # stride, so that a different combination will give a different
+    # total.
     features = [numpy.sum(s[:, feature_indices] * strides[:-1], axis=1) for s in sets]
     regression = 8 in feature_indices  # hardcoded (only on distance)
-    
-    if regression:  # ridge regression
-      floats = features[0].astype(float)
-      
-      ATA = numpy.empty((2, 2))
-      ATA[0, 0] = (floats**2).sum()
-      ATA[1, 1] = len(floats)
-      ATA[0, 1] = ATA[1, 0] = floats.sum()
-      ATb = numpy.empty((2, 1))
-      ATb[0, 0] = (floats*residuals[0]).sum()
-      ATb[1, 0] = residuals[0].sum()
 
-      def regularize(coefficient, update=False):
-        m, b = numpy.linalg.solve(ATA + numpy.diag([float(coefficient)]*2), ATb)
-        result = residuals[1] - m * features[1] - b
-        if update:
-          saved_params.append((m, b, coefficient))
-          for i, f in enumerate(features):
-            residuals[i] -= m * f + b
-        return result
-    
+    if regression:  # ridge regression
+      assert len(feature_indices) == 1, "cannot combine regression with something else"
+      # Features from the training set
+      floats = features[0].astype(float)
+
+      if objective == 'LS':
+        ATA = numpy.empty((2, 2))
+        ATA[0, 0] = (floats**2).sum()
+        ATA[1, 1] = len(floats)
+        ATA[0, 1] = ATA[1, 0] = floats.sum()
+        ATb = numpy.empty((2, 1))
+        ATb[0, 0] = (floats*residuals[0]).sum()
+        ATb[1, 0] = residuals[0].sum()
+
+        def regularize(coefficient, update=False):
+          m, b = numpy.linalg.solve(ATA + numpy.diag([float(coefficient)]*2), ATb)
+          #print 'm=%f, b=%f' % (m, b)
+          result = residuals[1] - m * features[1] - b
+          if update:
+            saved_params.append((m, b, coefficient))
+            for i, f in enumerate(features):
+              residuals[i] -= m * f + b
+          return result
+      elif objective == 'LAD':
+        def train_err(m_b):
+            m, b = m_b
+            err = numpy.abs(floats * m + b - residuals[0]).mean()
+            #print 'm=%f, b=%f, err=%f' % (m, b, err)
+            return err
+
+        m, b = scipy.optimize.fmin(train_err, [3e-5, 0], xtol=1e-5, ftol=1e-5, disp=False)
+
+        def regularize(coefficient, update=False):
+            reg_m = m / (1 + coefficient)
+            result = residuals[1] - reg_m * features[1] - b
+
+            if update:
+                saved_params.append((m, b, coefficient))
+                for i, f in enumerate(features):
+                    residuals[i] -= reg_m * f + b
+
+            return result
+      elif objective == 'KT':
+        # Try to use Theil-Sen to compute it
+        m, b, lo_slope, up_slope = scipy.stats.mstats.theilslopes(
+                y=residuals[0][:10000], x=floats[:10000])
+
+        #print 'm:', m, 'b:', b
+        #print 'train error:', scipy.stats.kendalltau(
+        #        residuals[0][:10000] - (m * floats[:10000] + b),
+        #        floats[:10000])
+
+        def regularize(coefficient, update=False):
+            reg_m = m / (1 + coefficient)
+            result = residuals[1] - reg_m * features[1] - b
+            if update:
+                saved_params.append((m, b, coefficient))
+                for i, f in enumerate(features):
+                    residuals[i] -= reg_m * f + b
+            return result
+      else:
+        raise NotImplementedError
+
     elif strides[-1] < 2000:  # dense
       params = numpy.zeros(strides[-1], dtype='float32')
       number = numpy.zeros(strides[-1], dtype='int32')
-      for i, f in enumerate(features[0]):  # training set
-        params[f] += residuals[0][i]
-        number[f] += 1
-      def regularize(coefficient, update=False):
-        params_adjusted = params / (number + coefficient)
-        result = residuals[1] - params_adjusted[features[1]]
-        if update:
-          saved_params.append((params_adjusted, number, coefficient))
-          for i, f in enumerate(features):
-            residuals[i] -= params_adjusted[f]
-        return result
+
+      if objective == 'LS':
+        for i, f in enumerate(features[0]):  # training set
+          params[f] += residuals[0][i]
+          number[f] += 1
+        def regularize(coefficient, update=False):
+          params_adjusted = params / (number + coefficient)
+          result = residuals[1] - params_adjusted[features[1]]
+          if update:
+            saved_params.append((params_adjusted, number, coefficient))
+            for i, f in enumerate(features):
+              residuals[i] -= params_adjusted[f]
+          return result
+      elif objective in  ('LAD', 'KT'):
+        # list of residuals corresponding to each value of features
+        values = [[] for f in range(strides[-1])]
+        for i, f in enumerate(features[0]):  # training set
+            values[f].append(residuals[0][i])
+            number[f] += 1
+        for f in range(strides[-1]):
+            if values[f]:
+                params[f] = numpy.median(values[f])
+
+        def regularize(coefficient, update=False):
+            # TODO: make sure that's what we want
+            params_adjusted = (params * number) / (number + coefficient)
+            result = residuals[1] - params_adjusted[features[1]]
+            if update:
+                saved_params.append((params_adjusted, number, coefficient))
+                for i, f in enumerate(features):
+                    residuals[i] -= params_adjusted[f]
+            return result
+      else:
+          raise NotImplementedError
 
     else:  # sparse
       params = defaultdict(float)
       number = defaultdict(int)
-      for i, f in enumerate(features[0]):
-        params[f] += residuals[0][i]
-        number[f] += 1
-      def regularize(coefficient, update=False):
-        params_adjusted = params.copy()
-        for f, n in number.iteritems():
-          params_adjusted[f] /= n + coefficient
-        residual_valid = residuals[1].copy()
-        for j, ff in enumerate(features[1]):
-          if params_adjusted.has_key(ff):
-            residual_valid[j] -= params_adjusted[ff]
-        if update:
-          saved_params.append((params_adjusted, number, coefficient))
-          for i, f in enumerate(features):
-            for j, ff in enumerate(f):
-              if params_adjusted.has_key(ff):
-                residuals[i][j] -= params_adjusted[ff]
-        return residual_valid
+
+      if objective == 'LS':
+        for i, f in enumerate(features[0]):
+          params[f] += residuals[0][i]
+          number[f] += 1
+        def regularize(coefficient, update=False):
+          params_adjusted = params.copy()
+          for f, n in number.iteritems():
+            params_adjusted[f] /= n + coefficient
+          residual_valid = residuals[1].copy()
+          for j, ff in enumerate(features[1]):
+            if params_adjusted.has_key(ff):
+              residual_valid[j] -= params_adjusted[ff]
+          if update:
+            saved_params.append((params_adjusted, number, coefficient))
+            for i, f in enumerate(features):
+              for j, ff in enumerate(f):
+                if params_adjusted.has_key(ff):
+                  residuals[i][j] -= params_adjusted[ff]
+          return residual_valid
+      elif objective in ('LAD', 'KT'):
+        # contains the residuals corresponding ot each value of features
+        values = defaultdict(list)  # default is an empty list
+        for i, f in enumerate(features[0]):
+            values[f].append(residuals[0][i])
+            number[f] += 1
+        for f in values.keys():
+            params[f] = numpy.median(values[f])
+
+        def regularize(coefficient, update=False):
+            params_adjusted = params.copy()
+            for f, n in number.iteritems():
+                params_adjusted[f] = (params[f] * n) / (n + coefficient)
+            result = residuals[1].copy()
+            for j, ff in enumerate(features[1]):
+                if ff in params_adjusted:
+                    result[j] -= params_adjusted[ff]
+            if update:
+                saved_params.append((params_adjusted, number, coefficient))
+                for i, f in enumerate(features):
+                    for j, ff in enumerate(f):
+                        if ff in params_adjusted:
+                            residuals[i][j] -= params_adjusted[ff]
+            return result
+      else:
+          raise NotImplementedError
 
     if regularization == -1:
-      def minimize(coefficient):
-        if coefficient <= 1e-5: return 1e100
-        residual = regularize(coefficient)
-        error = numpy.mean(residual**2)**0.5
-        #print coefficient, error
-        #sys.stdout.flush()
-        return error      
+      if objective == 'LS':
+        def minimize(coefficient):
+            if coefficient <= 1e-5: return 1e100
+            residual = regularize(coefficient)
+            error = numpy.mean(residual**2)**0.5
+            #print coefficient, error
+            #sys.stdout.flush()
+            return error
+
+      elif objective in ('LAD', 'KT'):
+        def minimize(coefficient):
+            if coefficient <= 1e-5:
+                return 1e100
+            residual = regularize(coefficient)
+            error = numpy.abs(residual).mean()
+            return error
+      else:
+          raise NotImplementedError
+
       regularization = scipy.optimize.fmin(minimize, 10.0, xtol=1e-1, ftol=1e-3, disp=False)[0]
     regularize(regularization, update=True)
 
-    print [numpy.mean(r**2)**0.5 for r in residuals], numpy.array(names)[feature_indices], regularization
+    if objective == 'LS':
+        print [numpy.mean(r**2)**0.5 for r in residuals], numpy.array(names)[feature_indices], regularization
+    elif objective in ('LAD', 'KT'):
+        print [numpy.abs(r).mean() for r in residuals], numpy.array(names)[feature_indices], regularization
+    elif objective == 'KT':
+        errs = []
+        rng = numpy.random.RandomState(('2013', '05', '29'))
+        for s, r in zip(sets, residuals):
+            # Select only 50k samples, otherwise it takes too long,
+            # and integers overflow into long int, which confuses numpy
+            idx = rng.permutation(s.shape[0])[:50000]
+            target = s[idx, TARGET]
+            res = r[idx]
+            pred = target - res
+            err, pval = scipy.stats.kendalltau(pred, target)
+            errs.append(err)
+        print errs, numpy.array(names)[feature_indices], regularization
+    else:
+        raise NotImplementedError
     sys.stdout.flush()
 
 

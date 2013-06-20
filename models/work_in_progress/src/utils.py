@@ -130,7 +130,7 @@ def get_data_from_file((filename, columns, skip_first), add_data, sieve):
     file_path = get_data_path(filename)
     sieved = []
     others = []
-    
+
     with open(file_path,'r') as csv_file:
         try:
             for _ in range(skip_first):
@@ -141,12 +141,17 @@ def get_data_from_file((filename, columns, skip_first), add_data, sieve):
         for line in csv_file:
             line_n += 1
             entry = {}
-            for j,column_content in enumerate(line.split(',')):
+            for j, column_content in enumerate(line.split(',')):
                 entry[columns[j]] = column_content
-            
+
+            if j == 0:
+                # Skip empty line
+                continue
+
             add_data(entry)
-            
             if sieve(entry):
                 sieved.append(entry)
-            else : others.append(entry)
-    return sieved,others
+            else:
+                others.append(entry)
+
+    return sieved, others

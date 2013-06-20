@@ -626,21 +626,35 @@ def train_model(save=False):
 
 def export_datasets(extra_proportion=0):
   rows = []
+  # Keep (ip1, ip2, latency) triplets already seen in a set,
+  # to remove duplicates
+  already_seen = set()
+  n_duplicates = 0
+
   for i, s in enumerate(test_data.data_sets):
     print '\r%i/%i' % (i+1, len(test_data.data_sets)),
     sys.stdout.flush()
     for d in test_data.load_data_from_pkl(i):
       origin = d['origin_geoip']
       destination = d['destination_geoip']
+      _id = (d['origin_ip'], d['destination_ip'], d['peer_latency'])
+      if _id in already_seen:
+          n_duplicates += 1
+          continue
+
+      already_seen.add(_id)
       row = [origin['country_code'], origin['region_name'], origin['city'], d['origin_type'],
              destination['country_code'], destination['region_name'], destination['city'], d['destination_type'],
              d['distance'], d['peer_latency'], 0, 0, 0,
              utils.get_int_from_ip(d['origin_ip']), utils.get_int_from_ip(d['destination_ip'])]
       rows.append(row)
 
+  print 'n_duplicates: %d / %d' % (n_duplicates, n_duplicates + len(rows))
+
   extra_rows = []
   if extra_proportion > 0:
     for i in 'AC3', 'ACR':
+      n_extra_duplicates = 0
       for l in file('../data/ubi-data2/%s.csv' % i).readlines():
         print '\r%i' % len(extra_rows),
         sys.stdout.flush()
@@ -659,14 +673,30 @@ def export_datasets(extra_proportion=0):
         except:
           continue
         type1, type2 = 3, 3  # different from mobile data
-        row = [geo1['country_code'], geo1['region_name'], geo1['city'], type1,
-               geo2['country_code'], geo2['region_name'], geo2['city'], type2,
-               distance, ping12, 0, 0, 0, int_ip1, int_ip2]
-        extra_rows.append(row)  # connection 1->2
-        row = [geo2['country_code'], geo2['region_name'], geo2['city'], type2,
-               geo1['country_code'], geo1['region_name'], geo1['city'], type1,
-               distance, ping21, 0, 0, 0, int_ip2, int_ip1]
-        extra_rows.append(row)  # connection 2->1
+
+        _id = (ip1, ip2, ping12)
+        if _id not in already_seen:
+            already_seen.add(_id)
+            row = [geo1['country_code'], geo1['region_name'], geo1['city'], type1,
+                   geo2['country_code'], geo2['region_name'], geo2['city'], type2,
+                   distance, ping12, 0, 0, 0, int_ip1, int_ip2]
+            extra_rows.append(row)  # connection 1->2
+        else:
+            n_extra_duplicates += 1
+
+        _id = (ip2, ip1, ping21)
+        if _id not in already_seen:
+            already_seen.add(_id)
+            row = [geo2['country_code'], geo2['region_name'], geo2['city'], type2,
+                   geo1['country_code'], geo1['region_name'], geo1['city'], type1,
+                   distance, ping21, 0, 0, 0, int_ip2, int_ip1]
+            extra_rows.append(row)  # connection 2->1
+        else:
+            n_extra_duplicates += 1
+      print 'in extra (%s), n_duplicates: %d / %d' % (
+              i,
+              n_extra_duplicates,
+              n_extra_duplicates + len(extra_rows))
     print 'ok'
 
   countries, regions, cities = set(), set(), set()
@@ -690,37 +720,42 @@ def export_datasets(extra_proportion=0):
       print '\r%i/%i' % (i+1, len(rows_)),
       sys.stdout.flush()
       t = tuple(r)
-      r[0] = bisect.bisect_left(countries, t[0])
-      r[1] = bisect.bisect_left(regions, t[0:2])
-      r[2] = bisect.bisect_left(cities, t[0:3])
-      r[3] += 1  # avoid -1
-      r[4] = bisect.bisect_left(countries, t[4])
-      r[5] = bisect.bisect_left(regions, t[4:6])
-      r[6] = bisect.bisect_left(cities, t[4:7])
-      r[7] += 1  # avoid -1
-      r[8] = int(numpy.round(t[8]))
-      r[9] = int(numpy.round(t[9]))
+      r[0] = bisect.bisect_left(countries, t[0])    # country1
+      r[1] = bisect.bisect_left(regions, t[0:2])    # region1
+      r[2] = bisect.bisect_left(cities, t[0:3])     # city1
+      r[3] += 1                                     # type1 (avoid -1)
+      r[4] = bisect.bisect_left(countries, t[4])    # country2
+      r[5] = bisect.bisect_left(regions, t[4:6])    # region2
+      r[6] = bisect.bisect_left(cities, t[4:7])     # city2
+      r[7] += 1                                     # type2 (avoid -1)
+      r[8] = int(numpy.round(t[8]))                 # distance
+      r[9] = int(numpy.round(t[9]))                 # latency
       r[10] = int(r[0]==r[4])  # same country
       r[11] = int(r[1]==r[5])  # same region
       r[12] = int(r[2]==r[6])  # same city
+      # r[13]: ip1
+      # r[14]: ip2
     print 'ok'
 
+  # Split data when the data is still ordered form older to newer
   data = numpy.array(rows, dtype='uint32')
-  numpy.random.shuffle(data)
   bounds = 0, 0.8*len(data), 0.9*len(data), len(data)
   train, valid, test = [data[bounds[i]:bounds[i+1]] for i in 0, 1, 2]
+  # Then, shuffle valid and test
+  numpy.random.seed([2013, 05, 27, 1])
+  numpy.random.shuffle(valid)
+  numpy.random.shuffle(test)
 
   if extra_proportion > 0:
     extra_data = numpy.array(extra_rows, dtype='uint32')
     numpy.random.shuffle(extra_data)
     number = int(len(train) * extra_proportion)
     train = numpy.concatenate((train, extra_data[:number]))
-    numpy.random.shuffle(train)
+
+  # Then, shuffle train
+  numpy.random.shuffle(train)
 
   for t in 'train', 'valid', 'test':
     #numpy.random.shuffle(locals()[t])
     filename = os.path.join(os.path.dirname(__file__), '..', 'data', 'sandbox2', t)
     cPickle.dump(locals()[t], file(filename, 'w'), cPickle.HIGHEST_PROTOCOL)
-
-
-

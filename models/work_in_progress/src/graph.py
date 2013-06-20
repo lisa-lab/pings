@@ -340,7 +340,7 @@ def application(environment, start_response):
   if environment['PATH_INFO'] != '/feedback.py':
     start_response('404 Not Found', [])
     return []
-  
+
   parameters = parse_qs(environment['QUERY_STRING'])
   ip = environment['REMOTE_ADDR']
   ip = parameters.get('ip', [ip])[0]  # override real IP for testing
@@ -495,6 +495,7 @@ def train_model(save=False):
   pylab.xlabel('target (ms)')
   pylab.ylabel('prediction (ms)')
 
+  # plot prediction/target heat map on test data
   x = numpy.arange(30, 680, 10)
   y = numpy.arange(30, 680, 10)
   x_grid = numpy.resize(x, (len(y), len(x))).flatten()
@@ -505,7 +506,14 @@ def train_model(save=False):
   pylab.imshow(distribution.reshape((len(y), len(x))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
   pylab.xlabel('target (ms)')
   pylab.ylabel('prediction (ms)')
-  
+
+  # plot prediction/target heat map on train data
+  distribution = sum(numpy.exp(-0.5*((x_grid - v)**2 + (y_grid - w)**2)/sigma**2) for v, w in zip(sets[0][:, TARGET], sets[0][:, TARGET] - residuals[0]))
+  pylab.figure()
+  pylab.imshow(distribution.reshape((len(y), len(x))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
+  pylab.xlabel('TRAIN target (ms)')
+  pylab.ylabel('TRAIN prediction (ms)')
+
   def plot_distribution(domain, sigma, values, xlabel):
     distribution = sum(numpy.exp(-0.5*(domain - v)**2/sigma**2) for v in values)
     distribution /= distribution.sum() * (domain[1] - domain[0])
@@ -522,15 +530,15 @@ def train_model(save=False):
   ranges = [0, 100, 200, 300, 500, 1000, 5001]
   classes = numpy.array([[bisect.bisect_right(ranges, j) - 1 for j in i] for i in a])
   num_classes = len(ranges) - 1
-
-  print 'L1, L2, relative errors', numpy.mean(abs(residuals[2])), numpy.mean(residuals[2]**2)**0.5, numpy.mean(relative)
+  print 'L1, L2, relative errors (train)', numpy.mean(abs(residuals[0])), numpy.mean(residuals[0]**2)**0.5, 100 * numpy.mean(abs(residuals[0] / sets[0][:, TARGET]))
+  print 'L1, L2, relative errors (test)', numpy.mean(abs(residuals[2])), numpy.mean(residuals[2]**2)**0.5, numpy.mean(relative)
   print 'class-wise:\n', numpy.array([numpy.mean([[abs(r), r**2] for r, c in zip(residuals[2], classes[0, :]) if c==k], axis=0)**[1, 0.5] for k in xrange(num_classes)])
 
   print 'classification accuracy', (classes[0, :] == classes[1, :]).mean()
   confusion = numpy.array([[((classes[0, :]==c1) & (classes[1, :]==c2)).sum() for c2 in xrange(num_classes)] for c1 in xrange(num_classes)])
   print 'confusion matrix:\n', confusion  # row = target, column = prediction
   pylab.figure()
-  pylab.imshow((confusion.astype(float).T/confusion.sum(axis=1)).T, aspect='auto', interpolation='nearest', cmap=pylab.cm.gray, extent=(0.5, num_classes + 0.5)*2)
+  pylab.imshow((confusion.astype(float).T/confusion.sum(axis=1)).T, aspect='auto', interpolation='nearest', cmap=pylab.cm.gray, extent=(0.5, num_classes + 0.5, 0.5 + num_classes, 0.5))
   pylab.xlabel('predicted class')
   pylab.ylabel('target class')
 
@@ -564,11 +572,11 @@ def train_model(save=False):
       x = numpy.arange(0, tgt_max, tgt_max / 100)
       y = numpy.arange(0, dist_max, dist_max / 100)
       x_grid = numpy.resize(x, (len(y), len(x))).flatten()
-      print 'len(x):', len(x)
-      print 'x_grid.shape:', x_grid.shape
+      #print 'len(x):', len(x)
+      #print 'x_grid.shape:', x_grid.shape
       y_grid = numpy.resize(y, (len(x), len(y))).T.flatten()
-      print 'len(y):', len(y)
-      print 'y_grid.shape:', y_grid.shape
+      #print 'len(y):', len(y)
+      #print 'y_grid.shape:', y_grid.shape
       sigma_x = 1.8 * tgt_max / 100
       sigma_y = 1.8 * dist_max / 100
       distribution = sum(numpy.exp(-0.5*((x_grid - x_)**2/sigma_x**2 + (y_grid - y_)**2/sigma_y**2)) for x_, y_ in zip(tgt, dist))
@@ -595,6 +603,63 @@ def train_model(save=False):
   choice = lambda x: x[numpy.random.randint(len(x))]
   symmetrize = lambda A: (A + A.T) * 0.5
   print 'class-wise:\n', symmetrize(numpy.array([[numpy.mean([correct_order(choice(choices[c1]), choice(choices[c2])) for k in xrange(100000)]) for c2 in xrange(num_classes)] for c1 in xrange(num_classes)]))
+
+  if 1:
+    oa_means = []
+    n_considered = 0
+    n_ignored = 0
+    # Records all ips contacted by ip1
+    ip1_to_idx = {}
+    ip1_idx = names.index('ip1')
+    ip2_idx = names.index('ip2')
+    for i, ex in enumerate(sets[2]):
+        cur_ip1 = ex[ip1_idx]
+        if cur_ip1 not in ip1_to_idx:
+            ip1_to_idx[cur_ip1] = []
+        ip1_to_idx[cur_ip1].append(i)
+
+    for cur_ip1 in sorted(ip1_to_idx.keys()):
+        idx_list = ip1_to_idx[cur_ip1]
+        if len(set(idx_list)) == 1:
+            continue
+
+        ip1_oa = []
+        for i in range(len(idx_list)):
+            ip2_i = sets[2][idx_list[i], ip2_idx]
+            tgt_i = sets[2][idx_list[i], TARGET]
+            # round to make sure there is no information from tgt_i
+            # still in pred_i, because of the way its computed.
+            pred_i = (tgt_i - residuals[2][idx_list[i]]).round()
+            for j in range(i + 1, len(idx_list)):
+                ip2_j = sets[2][idx_list[j], ip2_idx]
+                if ip2_i == ip2_j:
+                    # This case does not matter, because the same IP
+                    # will always be chosen, whatever the algorithm.
+                    n_ignored += 1
+                    continue
+
+                n_considered += 1
+                tgt_j = sets[2][idx_list[j], TARGET]
+                pred_j = (tgt_j - residuals[2][idx_list[j]]).round()
+
+                if tgt_i == tgt_j:
+                    # Both answers are OK, it does not matter which IP
+                    # is selected. This case will not appear when there
+                    # is a minimal delay.
+                    ip1_oa.append(1)
+                elif pred_i == pred_j:
+                    # If we reverse i and j, we should have the same result,
+                    # so 0.5
+                    ip1_oa.append(0.5)
+                else:
+                    ip1_oa.append(cmp(pred_i, pred_j) == cmp(tgt_i, tgt_j))
+            if ip1_oa:
+                oa_means.append(numpy.mean(ip1_oa))
+    #print '%d samples, %d sources, %d sources with > 1 dest, %d pairs of samples considered' % (len(sets[2]), len(ip1_to_idx), len(oa_means), n_considered)
+    #print '(%d pairs of samples ignored because same source and dest IP)' % n_ignored
+    print 'ordering accuracy normalized by source IP: %f' % numpy.mean(oa_means)
+
+    #import ipdb; ipdb.set_trace()
 
   ## Ordering accuracy limited to data pairs where abs(a[0, i] - a[0, j]) <= x
   if PLOT_ACCURACY:

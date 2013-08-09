@@ -7,12 +7,16 @@ import cPickle
 import json
 import os
 import sys
+import time
 from wsgiref.simple_server import make_server
 
 import numpy
 from scipy.special import erf
 try:
     #The following import are needed only for training
+    import matplotlib
+    # to make figures in a headless environment
+    matplotlib.use('Agg')
     import pylab
     import scipy.optimize
 
@@ -364,25 +368,33 @@ def application(environment, start_response):
 
 
 if __name__ == '__main__':
-  server = make_server('', 6660, application)
-  print 'Server running ...'
-  sys.stdout.flush()
-  try:
-    server.serve_forever()
-  except KeyboardInterrupt:
-    print 'Server shutdown'
-
+    server = make_server('', 6660, application)
+    print 'Server running ...'
+    sys.stdout.flush()
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print 'Server shutdown'
 
 
 ###########################
+###########################
 def train_model(save=False,
-                # Ignore outlier data with delay bigger than this threshold in the train and valid data
                 train_outlier_threshold=5000,  # keep everything
                 objective='LAD',  # least absolute deviation
                 model='full',
+                oa_max_delay=[5000.],
+                plot_accuracy=PLOT_ACCURACY,
+                data='iOS',
+                plot_dir='',
+                show_plots=False,
                 ):
+  # train_outlier_threshold: Ignore outlier data with delay bigger than
+  # this threshold in the train and valid data
+
   # Possible value for objective:
-  # - 'LS': least squares, minimize the L2-norm of the difference between objective and prediction
+  # - 'LS': least squares, minimize the L2-norm of the difference between
+  #         objective and prediction
   # - 'LAD': least absolute deviation, minimize the L1-norm of that difference
   # - 'KT': Kendall's tau coefficient, minimized by Theil's estimator
 
@@ -392,20 +404,90 @@ def train_model(save=False,
   # - 'distance': GeoIP distance only (IP/Location)
   # - 'countries': country-country only
 
-  sets = [cPickle.load(file('../data/sandbox2/' + t)) for t in 'train', 'valid', 'test']
+  # oa_max_delay: For each value in that list, report ordering
+  # accuracies ignoring pairs where both delays are above that value.
+  if data.startswith('iOS'):
+    datadir = '../data/sandbox2/iOS/'
+    datatype = 'pkl'
+  elif data.startswith('AC'):
+    datadir = '../data/sandbox2/AC/'
+    datatype = 'pkl'
+  elif data.startswith('IC2012'):
+    datadir = '../data/sandbox2/IC2012/'
+    datatype = 'npy'
+  else:
+    raise ValueError('Dataset not recognized: %s' % data)
+
+  if datatype == 'pkl':
+    sets = [cPickle.load(file(datadir + t, 'rb')) for t in 'train', 'valid', 'test']
+  elif datatype == 'npy':
+    sets = [numpy.load(datadir + t + '.npy') for t in 'train', 'valid', 'test']
+  else:
+    raise ValueError('Dataset type not recognized: %s' % datatype)
 
   def filter_outliers(dataset, threshold, column):
     """
     Remove lines in dataset where the value of column is above threshold.
     """
-    return numpy.asarray([row for row in dataset if row[column] <= threshold])
+    if dataset[:, column].max() > threshold:
+        return numpy.asarray([row for row in dataset if row[column] <= threshold])
+    else:
+        return dataset
 
   names = 'country1', 'region1', 'city1', 'type1', 'country2', 'region2', 'city2', 'type2', 'distance', 'latency', 'same_country', 'same_region', 'same_city', 'ip1', 'ip2'
   TARGET = names.index('latency')
 
   # Remove outliers on train and valid, but keep them in the test set
-  sets[0] = filter_outliers(sets[0], outlier_threshold, TARGET)
-  sets[1] = filter_outliers(sets[1], outlier_threshold, TARGET)
+  sets[0] = filter_outliers(sets[0], train_outlier_threshold, TARGET)
+  sets[1] = filter_outliers(sets[1], train_outlier_threshold, TARGET)
+
+  if data == 'iOS-wifi':
+    # Keep only wifi data
+    type1_idx = names.index('type1')
+    type2_idx = names.index('type2')
+    type_to_str = {0: '-1', 1: '0', 2: 'wifi', 3: 'cell'}
+
+    def print_stats(dataset):
+        print 'total:', len(dataset)
+        for t1 in range(4):
+            for t2 in range(4):
+                nb_rows = len([1 for row in dataset
+                               if row[type1_idx] == t1
+                               and row[type2_idx] == t2])
+                if nb_rows:
+                    print '%s/%s: %i' % (
+                        type_to_str[t1],
+                        type_to_str[t2],
+                        nb_rows)
+    if 0:
+        print 'train examples:'
+        print_stats(sets[0])
+        print 'valid examples:'
+        print_stats(sets[1])
+        print 'test examples:'
+        print_stats(sets[2])
+
+    n_train, n_valid, n_test = len(sets[0]), len(sets[1]), len(sets[2])
+    sets[0] = numpy.asarray([row for row in sets[0]
+                             if (row[type1_idx] == 2 and
+                                 row[type2_idx] == 2)])
+    sets[1] = numpy.asarray([row for row in sets[1]
+                             if (row[type1_idx] == 2 and
+                                 row[type2_idx] == 2)])
+    sets[2] = numpy.asarray([row for row in sets[2]
+                             if (row[type1_idx] == 2 and
+                                 row[type2_idx] == 2)])
+    n_train_kept, n_valid_kept, n_test_kept = \
+        len(sets[0]), len(sets[1]), len(sets[2])
+    print ('train examples kept: %d / %d (%i%%)'
+           % (n_train_kept, n_train,
+              int(round(100. * n_train_kept / n_train))))
+    print ('valid examples kept: %d / %d (%i%%)'
+           % (n_valid, n_valid,
+              int(round(100. * n_valid_kept / n_valid))))
+    print ('test examples kept: %d / %d (%i%%)'
+           % (n_test_kept, n_test,
+              int(round(100. * n_test_kept / n_test))))
 
   sizes = numpy.maximum(*[s.max(axis=0) for s in sets]) + 1
 
@@ -437,6 +519,9 @@ def train_model(save=False,
           'countries': [((), 0),        # constant (average)
                         ((0, 4), -1)],  # (country1, country2)
           }
+  ## To many ip pairs in IC2012
+  if data == 'IC2012':
+      del model_to_terms['full'][-1]
   terms = model_to_terms[model]
 
   residuals = [s[:, TARGET].astype(float) for s in sets]
@@ -453,7 +538,16 @@ def train_model(save=False,
   #bottom = sets[0][:, TARGET].min()  # never allow predictions lower than this
   saved_params = []
 
+  # Base name of plot files
+  if plot_dir:
+    plot_name = '%(data)s_%(model)s_%(objective)s' % dict(
+        data=data,
+        model=model,
+        objective=objective)
+    plot_abs_name = os.path.join(plot_dir, plot_name)
+
   for feature_indices, regularization in terms:
+    t0 = time.time()
     feature_indices = list(feature_indices)
     # strides of an array with ndim=len(feature_indices), that would contain
     # all combinations of features
@@ -658,6 +752,7 @@ def train_model(save=False,
         print errs, numpy.array(names)[feature_indices], regularization
     else:
         raise NotImplementedError
+    print '  feature took %is to run' % int(round(time.time() - t0))
     sys.stdout.flush()
 
 
@@ -667,56 +762,87 @@ def train_model(save=False,
 
   a = numpy.array([sets[2][:, TARGET], sets[2][:, TARGET] - residuals[2]])
   numpy.random.shuffle(a.T)
-  num_examples = a.shape[1]
-  correct_order = lambda i, j : (a[0, i] > a[0, j]) == (a[1, i] > a[1, j])
+  def correct_order(ex_i, ex_j):
+    try:
+        t_i, y_i = ex_i
+        t_j, y_j = ex_j
+        if t_i == t_j:
+            # Both answers are OK, it does not matter which IP
+            # is selected. This case will not appear when there
+            # is a minimal delay.
+            return 1
+        if y_i == y_j:
+            # If we reverse i and j, we should have the same result,
+            # so 0.5
+            return 0.5
+        return cmp(t_i, t_j) == cmp(y_i, y_j)
+    except:
+        import ipdb; ipdb.set_trace()
 
-  examples = a[:, :200].T
-  #examples = sorted(examples, key=lambda x: x[0])
-  pylab.figure()
-  pylab.plot(examples)
-  pylab.legend(('target', 'prediction'))
-  pylab.xlabel('test example')
-  pylab.ylabel('latency (ms)')
+  if 0:
+    examples = a[:, :200].T
+    #examples = sorted(examples, key=lambda x: x[0])
+    pylab.figure()
+    pylab.plot(examples)
+    pylab.legend(('target', 'prediction'))
+    pylab.xlabel('test example')
+    pylab.ylabel('latency (ms)')
+    if plot_dir:
+        pylab.savefig('_'.join((plot_abs_name, 'samples.pdf')))
 
   examples = a[:, :500]
-  pylab.figure()
-  pylab.scatter(*examples, s=5, c='black')
-  limit = 0, examples.max()*1.1
-  pylab.xlim(limit)
-  pylab.ylim(limit)
-  pylab.xlabel('target (ms)')
-  pylab.ylabel('prediction (ms)')
 
-  # plot prediction/target heat map on test data
-  x = numpy.arange(30, 680, 10)
-  y = numpy.arange(30, 680, 10)
-  x_grid = numpy.resize(x, (len(y), len(x))).flatten()
-  y_grid = numpy.resize(y, (len(x), len(y))).T.flatten()
-  sigma = 18
-  distribution = sum(numpy.exp(-0.5*((x_grid - v)**2 + (y_grid - w)**2)/sigma**2) for v, w in a.T)
-  pylab.figure()
-  pylab.imshow(distribution.reshape((len(y), len(x))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
-  pylab.xlabel('target (ms)')
-  pylab.ylabel('prediction (ms)')
-
-  # plot prediction/target heat map on train data
-  distribution = sum(numpy.exp(-0.5*((x_grid - v)**2 + (y_grid - w)**2)/sigma**2) for v, w in zip(sets[0][:, TARGET], sets[0][:, TARGET] - residuals[0]))
-  pylab.figure()
-  pylab.imshow(distribution.reshape((len(y), len(x))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
-  pylab.xlabel('TRAIN target (ms)')
-  pylab.ylabel('TRAIN prediction (ms)')
-
-  def plot_distribution(domain, sigma, values, xlabel):
-    distribution = sum(numpy.exp(-0.5*(domain - v)**2/sigma**2) for v in values)
-    distribution /= distribution.sum() * (domain[1] - domain[0])
+  if plot_dir or show_plots:
     pylab.figure()
-    pylab.plot(domain, distribution)
-    pylab.xlabel(xlabel)
-    pylab.ylabel('P(error)')
+    pylab.scatter(*examples, s=5, c='black')
+    limit = 0, examples.max()*1.1
+    pylab.xlim(limit)
+    pylab.ylim(limit)
+    pylab.xlabel('target (ms)')
+    pylab.ylabel('prediction (ms)')
+    if plot_dir:
+        pylab.savefig('_'.join((plot_abs_name, 'scatter.pdf')))
 
-  plot_distribution(numpy.arange(-800, 800, 0.5), 20.0, residuals[2], 'error (ms)')
+
+  if plot_dir or show_plots:
+    # plot prediction/target heat map on test data
+    x = numpy.arange(30, 680, 10)
+    y = numpy.arange(30, 680, 10)
+    x_grid = numpy.resize(x, (len(y), len(x))).flatten()
+    y_grid = numpy.resize(y, (len(x), len(y))).T.flatten()
+    sigma = 18
+    distribution = sum(numpy.exp(-0.5*((x_grid - v)**2 + (y_grid - w)**2)/sigma**2) for v, w in a.T)
+    pylab.figure()
+    pylab.imshow(distribution.reshape((len(y), len(x))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
+    pylab.xlabel('target (ms)')
+    pylab.ylabel('prediction (ms)')
+    if plot_dir:
+        pylab.savefig('_'.join((plot_abs_name, '2d.pdf')))
+
+  if 0:
+    # plot prediction/target heat map on train data
+    distribution = sum(numpy.exp(-0.5*((x_grid - v)**2 + (y_grid - w)**2)/sigma**2) for v, w in zip(sets[0][:, TARGET], sets[0][:, TARGET] - residuals[0]))
+    pylab.figure()
+    pylab.imshow(distribution.reshape((len(y), len(x))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
+    pylab.xlabel('TRAIN target (ms)')
+    pylab.ylabel('TRAIN prediction (ms)')
+    if plot_dir:
+        pylab.savefig('_'.join((plot_abs_name, '2d', 'train.pdf')))
+
   relative = 100.0 * abs(residuals[2]) / a[0, :]
-  plot_distribution(numpy.arange(0, 350, 0.5), 10.0, relative, 'relative error (%)')
+  if plot_dir or show_plots:
+    def plot_distribution(domain, sigma, values, xlabel, plot_name):
+        distribution = sum(numpy.exp(-0.5*(domain - v)**2/sigma**2) for v in values)
+        distribution /= distribution.sum() * (domain[1] - domain[0])
+        pylab.figure()
+        pylab.plot(domain, distribution)
+        pylab.xlabel(xlabel)
+        pylab.ylabel('P(error)')
+        if plot_dir:
+            pylab.savefig('_'.join((plot_abs_name, '%s.pdf' % plot_name)))
+
+    plot_distribution(numpy.arange(-800, 800, 0.5), 20.0, residuals[2], 'error (ms)', plot_name='dist')
+    plot_distribution(numpy.arange(0, 350, 0.5), 10.0, relative, 'relative error (%)', plot_name='rdist')
 
   # more stats
   ranges = [0, 100, 200, 300, 500, 1000, 5001]
@@ -729,12 +855,16 @@ def train_model(save=False,
   print 'classification accuracy', (classes[0, :] == classes[1, :]).mean()
   confusion = numpy.array([[((classes[0, :]==c1) & (classes[1, :]==c2)).sum() for c2 in xrange(num_classes)] for c1 in xrange(num_classes)])
   print 'confusion matrix:\n', confusion  # row = target, column = prediction
-  pylab.figure()
-  pylab.imshow((confusion.astype(float).T/confusion.sum(axis=1)).T, aspect='auto', interpolation='nearest', cmap=pylab.cm.gray, extent=(0.5, num_classes + 0.5, 0.5 + num_classes, 0.5))
-  pylab.xlabel('predicted class')
-  pylab.ylabel('target class')
 
-  if PLOT_GEOIP:
+  if plot_dir or show_plots:
+    pylab.figure()
+    pylab.imshow((confusion.astype(float).T/confusion.sum(axis=1)).T, aspect='auto', interpolation='nearest', cmap=pylab.cm.gray, extent=(0.5, num_classes + 0.5, 0.5 + num_classes, 0.5))
+    pylab.xlabel('predicted class')
+    pylab.ylabel('target class')
+    if plot_dir:
+        pylab.savefig('_'.join((plot_abs_name, 'confusion.pdf')))
+
+  if PLOT_GEOIP and (plot_dir or show_plots):
       # plot distance (col. 8) vs target
       ex_target = sets[2][:500, TARGET]
       ex_dist = sets[2][:500, 8]
@@ -744,6 +874,8 @@ def train_model(save=False,
       pylab.ylim((0, ex_dist.max()*1.1))
       pylab.xlabel('target (ms)')
       pylab.ylabel('GeoIP distance (m)')
+      if plot_dir:
+        pylab.savefig('_'.join((plot_abs_name, 'dist_vs_ping_500.pdf')))
 
       # plot distance (col. 8) vs target (all samples)
       ex_target = sets[2][:, TARGET]
@@ -754,6 +886,8 @@ def train_model(save=False,
       pylab.ylim((0, ex_dist.max()*1.1))
       pylab.xlabel('target (ms)')
       pylab.ylabel('GeoIP distance (m)')
+      if plot_dir:
+        pylab.savefig('_'.join((plot_abs_name, 'dist_vs_ping_all.pdf')))
 
       # Same, as heat map, with more data
       # Try to get around 100 grid divisions
@@ -777,6 +911,8 @@ def train_model(save=False,
       pylab.imshow(distribution.reshape((len(y), len(x))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
       pylab.xlabel('target (ms)')
       pylab.ylabel('GeoIP distance (m)')
+      if plot_dir:
+        pylab.savefig('_'.join((plot_abs_name, 'dist_vs_ping_heatmap_zoomout.pdf')))
 
       # Closer zoom on the interesting part
       # Reuse the same parameters for target as the first heat map

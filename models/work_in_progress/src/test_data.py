@@ -11,12 +11,15 @@ _ filter them (basic_sieve, clean_set)
 _ save/load them using pickle (load_data_from_pkl,)
 
 '''
+import os
+import sys
+from collections import defaultdict
 
 from numpy import random
 import cPickle as pickle
 
 from utils import get_geoip_data, geoip_distance, is_geoip_accurate,\
-    get_data_from_file, init_utils, get_sandbox_path
+    get_data_from_file, init_utils, get_sandbox_path, get_int_from_ip
 
 
 """The global variables used by default when loading the database or creating 
@@ -911,7 +914,7 @@ data_sets = [
         [ORIGIN_IP,ORIGIN_TYPE,DESTINATION_IP,DESTINATION_TYPE,PEER_LATENCY,PM_TIME],
         1
     ),(
-        "iplatency_2013_04_11.csv",
+        "iplatency_2013_04_12.csv",
         [ORIGIN_IP,ORIGIN_TYPE,DESTINATION_IP,DESTINATION_TYPE,PEER_LATENCY,PM_TIME],
         1
     ),(
@@ -1382,6 +1385,75 @@ def create_learning_sets(extracting_function, dataset=None):
     training_set =  [extracting_function(elem) for elem in dataset[validation_bound:len(dataset)]]
     random.shuffle(training_set)
 
+
+def create_ic2012_pkl(set_id, skip_if_exists=False):
+    file_name = '../data/ubi-data2/ic2012/%03i.csv' % set_id
+    pkl_name = '../data/ubi-data2/ic2012/%03i.pkl' % set_id
+    if skip_if_exists:
+        if os.path.exists(pkl_name):
+            return pkl_name
+
+    if not os.path.exists(file_name):
+        print 'skipping %s' % os.path.basename(file_name)
+        return
+
+    tmp_rows = []
+    tmp_seen = set()
+    tmp_ndup = 0
+    tmp_ninvalid = 0
+    tmp_nrows = 0
+    for l in file(file_name).readlines():
+        print '\r%i' % tmp_nrows,
+        sys.stdout.flush()
+
+        fields = l.rstrip().split(',')
+        t_stamp, ip1, ip2, ping12 = fields
+        t_stamp = int(t_stamp)
+        ping12 = float(ping12)
+
+        geo1 = get_geoip_data(ip1)
+        geo2 = get_geoip_data(ip2)
+        try:
+            distance = geoip_distance(geo1, geo2)
+        except:
+            distance = 8927011  # average distance
+        if not geo1:
+            geo1 = defaultdict(unicode)
+        if not geo2:
+            geo2 = defaultdict(unicode)
+        try:
+            int_ip1, int_ip2 = map(get_int_from_ip, (ip1, ip2))
+        except:
+            tmp_ninvalid += 1
+            continue
+        type1, type2 = 3, 3  # different from mobile data
+
+        _id = (t_stamp, int_ip1, int_ip2, ping12)
+        if _id not in tmp_seen:
+            tmp_seen.add(_id)
+            try:
+                row = [geo1['country_code'], geo1['region_name'],
+                   geo1['city'], type1,
+                   geo2['country_code'], geo2['region_name'],
+                   geo2['city'], type2,
+                   distance, ping12, 0, 0, 0, int_ip1, int_ip2, t_stamp]
+            except:
+                import pdb; pdb.set_trace()
+
+            tmp_rows.append(row)
+            tmp_nrows += 1
+        else:
+            tmp_ndup += 1
+
+    print ' in %s, n_duplicates: %d, n_invalid: %d, total: %d' % (
+        os.path.basename(file_name),
+        tmp_ndup,
+        tmp_ninvalid,
+        tmp_ndup + tmp_ninvalid + tmp_nrows)
+    print 'pickling to %s' % os.path.basename(pkl_name)
+    pickle.dump(tmp_rows, open(pkl_name, 'wb'), -1)
+    print '  done'
+    return pkl_name
 
 #If you directly load this file in python it rebuilds the data set.
 if __name__ == '__main__':

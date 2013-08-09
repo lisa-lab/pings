@@ -33,7 +33,7 @@ def get_geoip_data(ip_address):
     global geoip_data
     try:
         geoip_result = geoip_data.record_by_addr(ip_address)
-        
+
         if geoip_result is not None:
             # The pygeoip library doesn't use Unicode for string values
             # and returns raw Latin-1 instead (at least for the free
@@ -47,12 +47,12 @@ def get_geoip_data(ip_address):
             for key, value in geoip_result.iteritems():
                 if isinstance(value, str):
                     geoip_result[key] = value.decode('latin-1')
-        
+
     except Exception, e:
         print "Exception", e
         geoip_result = None
-    
-    return(geoip_result)
+
+    return geoip_result
 
 def geoip_distance(geoip_1, geoip_2):
     """Returns a rather accurate distance in meters between the two given geoip."""
@@ -130,7 +130,7 @@ def get_data_from_file((filename, columns, skip_first), add_data, sieve):
     file_path = get_data_path(filename)
     sieved = []
     others = []
-    
+
     with open(file_path,'r') as csv_file:
         try:
             for _ in range(skip_first):
@@ -141,12 +141,17 @@ def get_data_from_file((filename, columns, skip_first), add_data, sieve):
         for line in csv_file:
             line_n += 1
             entry = {}
-            for j,column_content in enumerate(line.split(',')):
+            for j, column_content in enumerate(line.split(',')):
                 entry[columns[j]] = column_content
-            
+
+            if j == 0:
+                # Skip empty line
+                continue
+
             add_data(entry)
-            
             if sieve(entry):
                 sieved.append(entry)
-            else : others.append(entry)
-    return sieved,others
+            else:
+                others.append(entry)
+
+    return sieved, others

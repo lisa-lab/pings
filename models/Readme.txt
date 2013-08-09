@@ -12,7 +12,7 @@ cp SOME_PATH/{train,valid,test,names,params} work_in_progress/data/sandbox2
 
 To generate the training data, you need to:
 - extract the .csv.bz2 and .rar files from /data/lisa_ubi/ping/ios (or the appropriate location) into data/ubi-data2
-- run "python test_data.py" from src/ to generate data/sandbox2/set_0.pkl to set_??.pkl
+- run "python test_data.py" from src/ to generate data/sandbox2/set_0.pkl to set_???.pkl
 - edit src/graph.py to set "LOAD = False"
 - from src/, run "python -c 'import graph; graph.export_datasets()'"
 - change back "LOAD = True" in src/graph.py

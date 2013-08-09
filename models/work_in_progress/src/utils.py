@@ -33,7 +33,7 @@ def get_geoip_data(ip_address):
     global geoip_data
     try:
         geoip_result = geoip_data.record_by_addr(ip_address)
-        
+
         if geoip_result is not None:
             # The pygeoip library doesn't use Unicode for string values
             # and returns raw Latin-1 instead (at least for the free
@@ -47,12 +47,12 @@ def get_geoip_data(ip_address):
             for key, value in geoip_result.iteritems():
                 if isinstance(value, str):
                     geoip_result[key] = value.decode('latin-1')
-        
+
     except Exception, e:
         print "Exception", e
         geoip_result = None
-    
-    return(geoip_result)
+
+    return geoip_result
 
 def geoip_distance(geoip_1, geoip_2):
     """Returns a rather accurate distance in meters between the two given geoip."""

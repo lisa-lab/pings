@@ -789,190 +789,422 @@ def train_model(save=False,
       pylab.imshow(distribution.reshape((len(y), len(x))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
       pylab.xlabel('target (ms)')
       pylab.ylabel('GeoIP distance (m)')
+      if plot_dir:
+        pylab.savefig('_'.join((plot_abs_name, 'dist_vs_ping_heatmap.pdf')))
 
-  print 'ordering accuracy', numpy.mean([correct_order(*numpy.random.randint(num_examples, size=2)) for k in xrange(500000)])
   choices = [(classes[0, :]==c).nonzero()[0] for c in xrange(num_classes)]
   choice = lambda x: x[numpy.random.randint(len(x))]
   symmetrize = lambda A: (A + A.T) * 0.5
-  print 'class-wise:\n', symmetrize(numpy.array([[numpy.mean([correct_order(choice(choices[c1]), choice(choices[c2])) for k in xrange(100000)]) for c2 in xrange(num_classes)] for c1 in xrange(num_classes)]))
+  print 'class-wise:\n', symmetrize(numpy.array(
+      [[numpy.mean([correct_order(a.T[choice(choices[c1])],
+                                  a.T[choice(choices[c2])])
+                    for k in xrange(100000)])
+        for c2 in xrange(num_classes)]
+       for c1 in xrange(num_classes)]))
 
   if 1:
-    oa_means = []
-    n_considered = 0
-    n_ignored = 0
+    def sample_pair_from(data, min_delay_diff=0., max_delay=5000.):
+        ex1 = choice(data)
+        ex2 = choice(data)
+        if abs(ex1[0] - ex2[0]) < min_delay_diff:
+            return (None, None)
+        elif ex1[0] > max_delay and ex2[0] > max_delay:
+            return (None, None)
+        else:
+            return ex1, ex2
+
+    for max_delay in oa_max_delay:
+        accuracies = [
+            correct_order(ex_1, ex_2)
+            for ex_1, ex_2 in [sample_pair_from(a.T, max_delay=max_delay)
+                               for k in xrange(500000)]
+            if ex_1 is not None and ex_2 is not None]
+        print ('ordering accuracy (max_delay=%s, %i%% kept)'
+               % (max_delay, int(round(len(accuracies) * 100. / 500000))),
+               numpy.mean(accuracies))
+
     # Records all ips contacted by ip1
     ip1_to_idx = {}
     ip1_idx = names.index('ip1')
     ip2_idx = names.index('ip2')
+    print 'recording all ips contacted by ip1'
     for i, ex in enumerate(sets[2]):
         cur_ip1 = ex[ip1_idx]
         if cur_ip1 not in ip1_to_idx:
             ip1_to_idx[cur_ip1] = []
         ip1_to_idx[cur_ip1].append(i)
 
-    for cur_ip1 in sorted(ip1_to_idx.keys()):
-        idx_list = ip1_to_idx[cur_ip1]
-        if len(set(idx_list)) == 1:
-            continue
+    print '  sorting'
+    ip1_list = sorted(ip1_to_idx.keys())
+    print '  done: %i source IPs' % len(ip1_list)
 
-        ip1_oa = []
-        for i in range(len(idx_list)):
-            ip2_i = sets[2][idx_list[i], ip2_idx]
-            tgt_i = sets[2][idx_list[i], TARGET]
-            # round to make sure there is no information from tgt_i
-            # still in pred_i, because of the way its computed.
-            pred_i = (tgt_i - residuals[2][idx_list[i]]).round()
-            for j in range(i + 1, len(idx_list)):
-                ip2_j = sets[2][idx_list[j], ip2_idx]
+    def oa_by_source_ip(min_delay_diff=0., max_delay=5000., ignored='skip',
+            verbose=1):
+        """
+        Returns the mean ordering accuracy for each of the test source IPs
+
+        Source IPs that do not have at least 2 destinations will be skipped.
+
+        Pairs of (source, dest1), (source, dest2) will be skipped if:
+        - the absolute value of the difference  between their measured delay is
+          smaller than min_delay_diff; or
+        - both delays are greater than max_delay.
+
+        "ignored" selects what happens to these pairs:
+        - 'skip' means they are not part of the computation of the mean
+        - 'one' means they are treated as correct answers
+        """
+        many = 100
+        #many = 10
+        oa_means = []
+        oa_weights = []
+        n_considered = 0
+        n_ignored = 0
+        t0 = time.time()
+
+        n_ip1 = len(ip1_list)
+        n_ip1_with_many_ip2 = 0
+        for i1, cur_ip1 in enumerate(ip1_list):
+            idx_list = ip1_to_idx[cur_ip1]
+            n_ip2 = len(idx_list)
+            if n_ip2 == 1:
+                continue
+
+            if verbose:
+                print '\r%i / %i' % (i1 + 1, n_ip1),
+                #print '%i / %i' % (i1 + 1, n_ip1)
+                sys.stdout.flush()
+            ip1_oa = []
+
+            # Will contain (ip2_i, tgt_i, pred_i, idx_j)
+            ip2_list = []
+            if n_ip2 < many:
+                # Try all combinations
+                for i in range(n_ip2):
+                    ip2_i = sets[2][idx_list[i], ip2_idx]
+                    tgt_i = int(sets[2][idx_list[i], TARGET])
+                    # round to make sure there is no information from tgt_i
+                    # still in pred_i, because of the way its computed.
+                    pred_i = (tgt_i - residuals[2][idx_list[i]]).round()
+                    for j in range(i + 1, len(idx_list)):
+                        idx_j = idx_list[j]
+                        ip2_list.append((ip2_i, tgt_i, pred_i, idx_j))
+
+            else:
+                # Try 5000 random pairs
+                n_ip1_with_many_ip2 += 1
+                for k in range(many ** 2 / 2):
+                    idx_i = choice(idx_list)
+                    ip2_i = sets[2][idx_i, ip2_idx]
+                    tgt_i = int(sets[2][idx_i, TARGET])
+                    pred_i = (tgt_i - residuals[2][idx_i]).round()
+                    idx_j = choice(idx_list)
+                    while idx_j == idx_i:
+                        # never choose the same idx twice
+                        idx_j = choice(idx_list)
+                    ip2_list.append((ip2_i, tgt_i, pred_i, idx_j))
+
+            for (ip2_i, tgt_i, pred_i, idx_j) in ip2_list:
+                ip2_j = sets[2][idx_j, ip2_idx]
+                ignore = False
                 if ip2_i == ip2_j:
                     # This case does not matter, because the same IP
                     # will always be chosen, whatever the algorithm.
+                    ignore = True
+                else:
+                    tgt_j = int(sets[2][idx_j, TARGET])
+                    if abs(tgt_i - tgt_j) < min_delay_diff:
+                        # The difference is too small to matter, ignore
+                        ignore = True
+
+                    if (tgt_i > max_delay) and (tgt_j > max_delay):
+                        # Both delays are too big, ignore
+                        ignore = True
+
+                if ignore:
                     n_ignored += 1
+                    if ignored == 'one':
+                        ip1_oa.append(1)
+                    elif ignored == 'skip':
+                        pass
+                    else:
+                        raise TypeError
                     continue
 
                 n_considered += 1
-                tgt_j = sets[2][idx_list[j], TARGET]
-                pred_j = (tgt_j - residuals[2][idx_list[j]]).round()
+                pred_j = (tgt_j - residuals[2][idx_j]).round()
 
-                if tgt_i == tgt_j:
-                    # Both answers are OK, it does not matter which IP
-                    # is selected. This case will not appear when there
-                    # is a minimal delay.
-                    ip1_oa.append(1)
-                elif pred_i == pred_j:
-                    # If we reverse i and j, we should have the same result,
-                    # so 0.5
-                    ip1_oa.append(0.5)
-                else:
-                    ip1_oa.append(cmp(pred_i, pred_j) == cmp(tgt_i, tgt_j))
+                ip1_oa.append(correct_order((tgt_i, pred_i),
+                                            (tgt_j, pred_j)))
+
             if ip1_oa:
                 oa_means.append(numpy.mean(ip1_oa))
-    #print '%d samples, %d sources, %d sources with > 1 dest, %d pairs of samples considered' % (len(sets[2]), len(ip1_to_idx), len(oa_means), n_considered)
-    #print '(%d pairs of samples ignored because same source and dest IP)' % n_ignored
-    print 'ordering accuracy normalized by source IP: %f' % numpy.mean(oa_means)
+                oa_weights.append(n_ip2)
+
+        if verbose:
+            #print '\r%d IP1 with 100 IP2 or more' % n_ip1_with_many_ip2,
+            print '%d IP1 with %i IP2 or more' % (n_ip1_with_many_ip2, many)
+            print '- took %is' % int(round(time.time() - t0))
+        #print '%d samples, %d sources, %d sources with > 1 dest, %d pairs of samples considered' % (len(sets[2]), len(ip1_to_idx), len(oa_means), n_considered)
+        #print '(%d pairs of samples ignored because same source and dest IP)' % n_ignored
+        frac_considered = float(n_considered) / (n_considered + n_ignored)
+        return oa_means, frac_considered, oa_weights
+
+    for max_delay in oa_max_delay:
+        oa_means, frac_considered, oa_weights = oa_by_source_ip(max_delay=max_delay)
+        percent_kept = int(round(frac_considered * 100))
+        print ('ordering accuracy normalized by source IP (max delay=%s ms, %i%% kept): '
+               '%s' % (max_delay,
+                       percent_kept,
+                       numpy.mean(oa_means)))
+        print ('ordering accuracy normalized and weighted by source IP (max delay=%s ms, %i%% kept): '
+               '%s' % (max_delay,
+                       percent_kept,
+                       numpy.average(oa_means, weights=oa_weights)))
 
     #import ipdb; ipdb.set_trace()
 
-  ## Ordering accuracy limited to data pairs where abs(a[0, i] - a[0, j]) <= x
-  if PLOT_ACCURACY:
-    def sample_pair_from(data, min_delay=0.):
-        ex1 = choice(data)
-        ex2 = choice(data)
-        if abs(ex1[0] - ex2[0]) <= min_delay:
-            return (None, None)
+  ## Ordering accuracy limited to data pairs where abs(a[0, i] - a[0, j]) > x
+  ## and where a[0, i] < max_delay and a[1, i] < max_delay too.
+  if plot_accuracy and (plot_dir or show_plots):
+    start = 0
+    stop = 1000
+    step = 20
+    for max_delay in oa_max_delay:
+        # OA estimated by randomly sampling pairs
+        plot_data = []
+        plot_frac_kept = []
+        for min_delay in xrange(start, stop, step):
+            accuracies = [correct_order(ex1, ex2)
+                          for ex1, ex2 in [
+                              sample_pair_from(a.T, min_delay_diff=min_delay,
+                                               max_delay=max_delay)
+                              for i in xrange(500000)]
+                          if ex1 is not None]
+            plot_data.append(numpy.mean(accuracies))
+            plot_frac_kept.append(len(accuracies) / 500000.)
+        fig = pylab.figure()
+        if len(oa_max_delay) > 1:
+            max_delay_str = ', max_delay=%s ms' % max_delay
         else:
-            return ex1, ex2
+            max_delay_str = ''
+        pylab.title('Sampled ordering accuracy%s' % max_delay_str)
+        ax1 = fig.add_subplot(111)
+        ax1.plot(numpy.arange(start, stop, step), plot_data, 'b')
+        ax1.set_xlabel('min delay considered (ms)')
+        ax1.set_ylabel('ordering accuracy')
+        ax2 = ax1.twinx()
+        ax2.plot(numpy.arange(start, stop, step), plot_frac_kept, '0.5')
+        ax2.set_ylabel('fraction of the data kept', color='0.5')
+        ax2.set_ylim(0, 1)
+        if plot_dir:
+            pylab.savefig('_'.join((plot_abs_name, 'oa', '%ims.pdf' % max_delay)))
 
-    plot_data = []
-    for min_delay in xrange(0, 1000, 10):
-        accuracies = [cmp(ex1[0], ex2[0]) == cmp(ex1[1], ex2[1])
-                      for ex1, ex2 in [sample_pair_from(a.T, min_delay=min_delay)
-                                       for i in xrange(500000)]
-                      if ex1 is not None]
-        plot_data.append(numpy.mean(accuracies))
-    pylab.figure()
-    pylab.plot(numpy.arange(0, 1000, 10), plot_data)
-    pylab.xlabel('min delay considered (ms)')
-    pylab.ylabel('ordering accuracy')
+        # OA normalized by source IP
+        for ignored in ('skip',):
+            ignored_str = ''
+            # ignored_str = ', ignored=%s' % ignored
+            plot_data = []
+            plot_frac_kept = []
+            print 'Generating OA/IP graph',
+            for min_delay in xrange(start, stop, step):
+                accuracies, frac_kept = oa_by_source_ip(min_delay_diff=min_delay,
+                                                        max_delay=max_delay,
+                                                        ignored=ignored,
+                                                        verbose=0)
+                plot_data.append(numpy.mean(accuracies))
+                plot_frac_kept.append(frac_kept)
+                sys.stdout.write('.')
+            fig = pylab.figure()
+            pylab.title('Ordering accuracy averaged over source IP%s%s'
+                        % (max_delay_str, ignored_str))
+            ax1 = fig.add_subplot(111)
+            ax1.plot(numpy.arange(start, stop, step), plot_data, 'b')
+            ax1.set_xlabel('min delay considered (ms)')
+            ax1.set_ylabel('ordering accuracy', color='b')
+            ax2 = ax1.twinx()
+            ax2.plot(numpy.arange(start, stop, step), plot_frac_kept, '0.5')
+            ax2.set_ylabel('fraction of the data kept', color='0.5')
+            ax2.set_ylim(0, 1)
+            if plot_dir:
+                pylab.savefig('_'.join((plot_abs_name, 'oaip', '%ims' % max_delay, '%s.pdf' % ignored)))
 
-  try:
-    pylab.show()
-  except:
-    pass
+  if show_plots:
+    try:
+        pylab.show()
+    except:
+        pass
 
 
-def export_datasets(extra_proportion=0):
-  rows = []
+def load_ios(already_seen):
+    rows = []
+    n_duplicates = 0
+    for i, s in enumerate(test_data.data_sets):
+        print '\r%i/%i' % (i + 1, len(test_data.data_sets)),
+        sys.stdout.flush()
+        for d in test_data.load_data_from_pkl(i):
+            origin = d['origin_geoip']
+            destination = d['destination_geoip']
+            _id = (d['origin_ip'], d['destination_ip'], d['peer_latency'])
+            if _id in already_seen:
+                n_duplicates += 1
+                continue
+
+            already_seen.add(_id)
+            row = [origin['country_code'], origin['region_name'],
+                   origin['city'], d['origin_type'],
+                   destination['country_code'], destination['region_name'],
+                   destination['city'], d['destination_type'],
+                   d['distance'], d['peer_latency'], 0, 0, 0,
+                   utils.get_int_from_ip(d['origin_ip']),
+                   utils.get_int_from_ip(d['destination_ip'])]
+            rows.append(row)
+
+    print 'n_duplicates: %d / %d' % (n_duplicates, n_duplicates + len(rows))
+    return rows, n_duplicates
+
+
+def load_ac(already_seen):
+    rows = []
+    n_extra_duplicates = 0
+    for i in 'AC3', 'ACR':
+        extra_rows = []
+        for l in file('../data/ubi-data2/%s.csv' % i).readlines():
+            print '\r%i' % len(extra_rows),
+            sys.stdout.flush()
+            fields = l.rstrip().split(',')
+            ip1, ip2, ping12, ping21 = (fields[4], fields[14],
+                                        float(fields[24]), float(fields[25]))
+            geo1 = utils.get_geoip_data(ip1)
+            geo2 = utils.get_geoip_data(ip2)
+            try:
+                distance = utils.geoip_distance(geo1, geo2)
+            except:
+                distance = 8927011  # average distance
+            if not geo1:
+                geo1 = defaultdict(unicode)
+            if not geo2:
+                geo2 = defaultdict(unicode)
+            try:
+                int_ip1, int_ip2 = map(utils.get_int_from_ip, (ip1, ip2))
+            except:
+                continue
+            type1, type2 = 3, 3  # different from mobile data
+
+            _id = (ip1, ip2, ping12)
+            if _id not in already_seen:
+                already_seen.add(_id)
+                try:
+                    row = [
+                        geo1['country_code'], geo1['region_name'],
+                        geo1['city'], type1,
+                        geo2['country_code'], geo2['region_name'],
+                        geo2['city'], type2,
+                        distance, ping12, 0, 0, 0, int_ip1, int_ip2]
+                except:
+                    import pdb; pdb.set_trace()
+                extra_rows.append(row)  # connection 1->2
+            else:
+                n_extra_duplicates += 1
+
+            _id = (ip2, ip1, ping21)
+            if _id not in already_seen:
+                already_seen.add(_id)
+                row = [geo2['country_code'], geo2['region_name'],
+                       geo2['city'], type2,
+                       geo1['country_code'], geo1['region_name'],
+                       geo1['city'], type1,
+                       distance, ping21, 0, 0, 0, int_ip2, int_ip1]
+                extra_rows.append(row)  # connection 2->1
+            else:
+                n_extra_duplicates += 1
+        rows.append(extra_rows)
+    print 'in extra (%s), n_duplicates: %d / %d' % (
+            i,
+            n_extra_duplicates,
+            n_extra_duplicates + len(rows[0]) + len(rows[1]))
+    print 'ok'
+    return rows[0], rows[1], n_extra_duplicates
+
+
+def load_ic2012icmp(already_seen):
+    pkl_files = []
+    for i in range(1, 224):
+        tmp = test_data.create_ic2012_pkl(i, skip_if_exists=True)
+        if not tmp:
+            continue
+        pkl_files.append(tmp)
+
+    return pkl_files, 0
+
+
+def export_datasets(data_set='iOS', extra_proportion=0):
   # Keep (ip1, ip2, latency) triplets already seen in a set,
   # to remove duplicates
   already_seen = set()
   n_duplicates = 0
 
-  for i, s in enumerate(test_data.data_sets):
-    print '\r%i/%i' % (i+1, len(test_data.data_sets)),
-    sys.stdout.flush()
-    for d in test_data.load_data_from_pkl(i):
-      origin = d['origin_geoip']
-      destination = d['destination_geoip']
-      _id = (d['origin_ip'], d['destination_ip'], d['peer_latency'])
-      if _id in already_seen:
-          n_duplicates += 1
-          continue
+  # "extra" data are used for training, but not validation nor testing
+  extra_sets = []
+  n_extra_duplicates = 0
 
-      already_seen.add(_id)
-      row = [origin['country_code'], origin['region_name'], origin['city'], d['origin_type'],
-             destination['country_code'], destination['region_name'], destination['city'], d['destination_type'],
-             d['distance'], d['peer_latency'], 0, 0, 0,
-             utils.get_int_from_ip(d['origin_ip']), utils.get_int_from_ip(d['destination_ip'])]
-      rows.append(row)
+  if data_set == 'iOS':
+    rows, n_duplicates = load_ios(already_seen)
+    sets = [rows]
 
-  print 'n_duplicates: %d / %d' % (n_duplicates, n_duplicates + len(rows))
+    if extra_proportion > 0:
+        extra1, extra2, n_extra_duplicates = load_ac(already_seen)
+        extra_sets.extend([extra1, extra2])
 
-  extra_rows = []
-  if extra_proportion > 0:
-    for i in 'AC3', 'ACR':
-      n_extra_duplicates = 0
-      for l in file('../data/ubi-data2/%s.csv' % i).readlines():
-        print '\r%i' % len(extra_rows),
-        sys.stdout.flush()
-        fields = l.rstrip().split(',')
-        ip1, ip2, ping12, ping21 = fields[4], fields[14], float(fields[24]), float(fields[25])
-        geo1 = utils.get_geoip_data(ip1)
-        geo2 = utils.get_geoip_data(ip2)
-        try:
-          distance = utils.geoip_distance(geo1, geo2)
-        except:
-          distance = 8927011  # average distance
-        if geo1 is None: geo1 = defaultdict(unicode)
-        if geo2 is None: geo2 = defaultdict(unicode)
-        try:
-          int_ip1, int_ip2 = map(utils.get_int_from_ip, (ip1, ip2))
-        except:
-          continue
-        type1, type2 = 3, 3  # different from mobile data
+  if data_set == 'AC':
+    rows1, rows2, n_duplicates = load_ac(already_seen)
+    sets = [rows1, rows2]
 
-        _id = (ip1, ip2, ping12)
-        if _id not in already_seen:
-            already_seen.add(_id)
-            row = [geo1['country_code'], geo1['region_name'], geo1['city'], type1,
-                   geo2['country_code'], geo2['region_name'], geo2['city'], type2,
-                   distance, ping12, 0, 0, 0, int_ip1, int_ip2]
-            extra_rows.append(row)  # connection 1->2
-        else:
-            n_extra_duplicates += 1
-
-        _id = (ip2, ip1, ping21)
-        if _id not in already_seen:
-            already_seen.add(_id)
-            row = [geo2['country_code'], geo2['region_name'], geo2['city'], type2,
-                   geo1['country_code'], geo1['region_name'], geo1['city'], type1,
-                   distance, ping21, 0, 0, 0, int_ip2, int_ip1]
-            extra_rows.append(row)  # connection 2->1
-        else:
-            n_extra_duplicates += 1
-      print 'in extra (%s), n_duplicates: %d / %d' % (
-              i,
-              n_extra_duplicates,
-              n_extra_duplicates + len(extra_rows))
-    print 'ok'
+  if data_set == 'IC2012':
+    rows, n_duplicates = load_ic2012icmp(already_seen)
+    sets = rows
 
   countries, regions, cities = set(), set(), set()
+  total_nb_rows = 0
+  nb_rows = []
+  for rows_ in sets + extra_sets:
+    if isinstance(rows_, basestring):
+        # rows_ is actually the name of a pkl file to load
+        print 'loading %s' % rows_
+        rows_ = cPickle.load(open(rows_, 'rb'))
+        print '  %i rows' % len(rows_)
 
-  for rows_ in rows, extra_rows:
     for r in rows_:
-      t = tuple(r)
-      countries.add(t[0])
-      regions.add(t[0:2])
-      cities.add(t[0:3])
-      countries.add(t[4])
-      regions.add(t[4:6])
-      cities.add(t[4:7])
+        t = tuple(r)
+        countries.add(t[0])
+        regions.add(t[0:2])
+        cities.add(t[0:3])
+        countries.add(t[4])
+        regions.add(t[4:6])
+        cities.add(t[4:7])
 
+    total_nb_rows += len(rows_)
+    nb_rows.append(len(rows_))
+    del rows_
+
+  print 'total_nb_rows: %i' % total_nb_rows
+  print 'n_countries: %i, n_regions: %i, n_cities: %i' % (len(countries), len(regions), len(cities))
   countries, regions, cities = map(sorted, (countries, regions, cities))
-  filename = os.path.join(os.path.dirname(__file__), '..', 'data', 'sandbox2', 'names')
-  cPickle.dump((countries, regions, cities), file(filename, 'w'), cPickle.HIGHEST_PROTOCOL)
+  filename = os.path.join(os.path.dirname(__file__), '..', 'data', 'sandbox2',
+                          data_set, 'names')
+  cPickle.dump((countries, regions, cities), file(filename, 'wb'),
+               cPickle.HIGHEST_PROTOCOL)
 
-  for rows_ in rows, extra_rows:
+  print 'allocating data array'
+  data = numpy.zeros((total_nb_rows, len(t)), dtype='uint32')
+  print '  done'
+  data_idx = 0
+  for rows_ in sets + extra_sets:
+    if isinstance(rows_, basestring):
+        # rows_ is actually the name of a pkl file to load
+        print 'loading %s' % rows_
+        rows_ = cPickle.load(open(rows_, 'rb'))
+
     for i, r in enumerate(rows_):
       print '\r%i/%i' % (i+1, len(rows_)),
       sys.stdout.flush()
@@ -992,27 +1224,98 @@ def export_datasets(extra_proportion=0):
       r[12] = int(r[2]==r[6])  # same city
       # r[13]: ip1
       # r[14]: ip2
+      # r[15] (optional): time stamp
+      data[data_idx] = r
+      data_idx += 1
+
+    del rows_
     print 'ok'
 
-  # Split data when the data is still ordered form older to newer
-  data = numpy.array(rows, dtype='uint32')
-  bounds = 0, 0.8*len(data), 0.9*len(data), len(data)
-  train, valid, test = [data[bounds[i]:bounds[i+1]] for i in 0, 1, 2]
+  # For IC2012, we need to sort the data first, and consider it one set only
+  # We also want to filter examples with delays > 5000ms
+  if data_set == 'IC2012':
+    print 'getting new order'
+    new_order = data[:, -1].argsort()
+    print 'getting rid of larger delays'
+    new_indices = [i for i in new_order if data[i, 9] <= 5000]
+    print 'sorting'
+    import pdb; pdb.set_trace()
+    data = data[new_indices, :-1]
+    print '  done'
+    sets = [data]
+    nb_rows = [len(new_indices)]
+    del new_order
+    del new_indices
+    import pdb; pdb.set_trace()
+
+  # Split data when the data is still ordered form older to newer,
+  # for each component of the data sets independently.
+  train_sets = []
+  valid_sets = []
+  test_sets = []
+  data_idx = 0
+  for set_idx in range(len(sets)):
+    print 'set_idx:', set_idx
+    print 'nb_rows[set_idx]', nb_rows[set_idx]
+    rows_data = data[data_idx:nb_rows[set_idx]]
+    data_idx += nb_rows[set_idx]
+
+    bounds = 0, 0.8*len(rows_data), 0.9*len(rows_data), len(rows_data)
+    print 'bounds:', bounds
+    train, valid, test = [rows_data[bounds[i]:bounds[i+1]] for i in 0, 1, 2]
+    print 'sets assigned'
+    train_sets.append(train)
+    valid_sets.append(valid)
+    test_sets.append(test)
+
+  # Concatenate all components
+  print 'before concat'
+  train = numpy.concatenate(train_sets)
+  print '  train done'
+  valid = numpy.concatenate(valid_sets)
+  print '  valid done'
+  test = numpy.concatenate(test_sets)
+  print '  test done'
+
+  del train_sets, valid_sets, test_sets, data
+
   # Then, shuffle valid and test
+  print 'before shuffle'
   numpy.random.seed([2013, 05, 27, 1])
   numpy.random.shuffle(valid)
+  print '  valid done'
   numpy.random.shuffle(test)
+  print '  test done'
 
-  if extra_proportion > 0:
-    extra_data = numpy.array(extra_rows, dtype='uint32')
-    numpy.random.shuffle(extra_data)
-    number = int(len(train) * extra_proportion)
-    train = numpy.concatenate((train, extra_data[:number]))
+  if extra_sets:
+    extra_train = []
+    for extra_rows in extra_sets:
+        extra_data = numpy.array(extra_rows, dtype='uint32')
+        numpy.random.shuffle(extra_data)
+        number = int(len(train) * extra_proportion)
+        extra_train.append(extra_data[:number])
+
+    train = numpy.concatenate([train] + extra_train)
 
   # Then, shuffle train
   numpy.random.shuffle(train)
+  print '  train done'
 
+  print 'before pickling'
+  datatype = 'pkl'
+  if any([tdata.nbytes >= 2 ** 31 for tdata in train, valid, test]):
+    datatype = 'npy'
   for t in 'train', 'valid', 'test':
     #numpy.random.shuffle(locals()[t])
-    filename = os.path.join(os.path.dirname(__file__), '..', 'data', 'sandbox2', t)
-    cPickle.dump(locals()[t], file(filename, 'w'), cPickle.HIGHEST_PROTOCOL)
+    filename = os.path.join(os.path.dirname(__file__), '..', 'data',
+                            'sandbox2', data_set, t)
+    tdata = locals()[t]
+    if datatype == 'npy':
+        # A bug in pickle and cPickle prevents from pickling an array
+        # with a number of bytes that does not fit in a signed int32.
+        numpy.save(filename + '.npy', tdata)
+    elif datatype == 'pkl':
+        cPickle.dump(tdata, file(filename, 'w'), cPickle.HIGHEST_PROTOCOL)
+    else:
+        import pdb; pdb.set_trace()
+    print '  %s done' % t

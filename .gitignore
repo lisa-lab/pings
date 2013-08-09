@@ -1,5 +1,6 @@
 # Backup files
 *~
+*.swp
 
 # Python files
 *.pyc
@@ -33,3 +34,9 @@ server/fabconfig.py
 # Ignore stdout/stderr and stats from from the server
 server/ip_server_stats.*.txt
 server/serve??.*.errout
+
+# Ignore LaTeX-generated files
+models/report*/*.aux
+models/report*/*.bbl
+models/report*/*.blg
+models/report*/*.log

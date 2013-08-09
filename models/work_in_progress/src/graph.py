@@ -7,14 +7,21 @@ import cPickle
 import json
 import os
 import sys
+import time
 from wsgiref.simple_server import make_server
 
 import numpy
 from scipy.special import erf
 try:
     #The following import are needed only for training
+    import matplotlib
+    # to make figures in a headless environment
+    matplotlib.use('Agg')
     import pylab
     import scipy.optimize
+
+    # needed for training with KT
+    import scipy.stats
 except ImportError:
     pass
 
@@ -340,7 +347,7 @@ def application(environment, start_response):
   if environment['PATH_INFO'] != '/feedback.py':
     start_response('404 Not Found', [])
     return []
-  
+
   parameters = parse_qs(environment['QUERY_STRING'])
   ip = environment['REMOTE_ADDR']
   ip = parameters.get('ip', [ip])[0]  # override real IP for testing
@@ -361,111 +368,391 @@ def application(environment, start_response):
 
 
 if __name__ == '__main__':
-  server = make_server('', 6660, application)
-  print 'Server running ...'
-  sys.stdout.flush()
-  try:
-    server.serve_forever()
-  except KeyboardInterrupt:
-    print 'Server shutdown'
-
+    server = make_server('', 6660, application)
+    print 'Server running ...'
+    sys.stdout.flush()
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print 'Server shutdown'
 
 
 ###########################
-def train_model(save=False):
-  sets = [cPickle.load(file('../data/sandbox2/' + t)) for t in 'train', 'valid', 'test']
+###########################
+def train_model(save=False,
+                train_outlier_threshold=5000,  # keep everything
+                objective='LAD',  # least absolute deviation
+                model='full',
+                oa_max_delay=[5000.],
+                plot_accuracy=PLOT_ACCURACY,
+                data='iOS',
+                plot_dir='',
+                show_plots=False,
+                ):
+  # train_outlier_threshold: Ignore outlier data with delay bigger than
+  # this threshold in the train and valid data
 
-  sizes = numpy.maximum(*[s.max(axis=0) for s in sets]) + 1
+  # Possible value for objective:
+  # - 'LS': least squares, minimize the L2-norm of the difference between
+  #         objective and prediction
+  # - 'LAD': least absolute deviation, minimize the L1-norm of that difference
+  # - 'KT': Kendall's tau coefficient, minimized by Theil's estimator
+
+  # Possible value for model:
+  # - 'full': full graphical model
+  # - 'constant': constant (average) only
+  # - 'distance': GeoIP distance only (IP/Location)
+  # - 'countries': country-country only
+
+  # oa_max_delay: For each value in that list, report ordering
+  # accuracies ignoring pairs where both delays are above that value.
+  if data.startswith('iOS'):
+    datadir = '../data/sandbox2/iOS/'
+    datatype = 'pkl'
+  elif data.startswith('AC'):
+    datadir = '../data/sandbox2/AC/'
+    datatype = 'pkl'
+  elif data.startswith('IC2012'):
+    datadir = '../data/sandbox2/IC2012/'
+    datatype = 'npy'
+  else:
+    raise ValueError('Dataset not recognized: %s' % data)
+
+  if datatype == 'pkl':
+    sets = [cPickle.load(file(datadir + t, 'rb')) for t in 'train', 'valid', 'test']
+  elif datatype == 'npy':
+    sets = [numpy.load(datadir + t + '.npy') for t in 'train', 'valid', 'test']
+  else:
+    raise ValueError('Dataset type not recognized: %s' % datatype)
+
+  def filter_outliers(dataset, threshold, column):
+    """
+    Remove lines in dataset where the value of column is above threshold.
+    """
+    if dataset[:, column].max() > threshold:
+        return numpy.asarray([row for row in dataset if row[column] <= threshold])
+    else:
+        return dataset
+
   names = 'country1', 'region1', 'city1', 'type1', 'country2', 'region2', 'city2', 'type2', 'distance', 'latency', 'same_country', 'same_region', 'same_city', 'ip1', 'ip2'
   TARGET = names.index('latency')
 
-  terms = [((), 0), ((8,), 0), ((3,), -1), ((7,), -1), ((3, 7), -1), ((0,), -1), ((4,), -1), ((10,), -1), ((0, 4), -1), ((0, 4, 3, 7), -1), ((1,), -1), ((5,), -1), ((11,), -1), ((1, 5), -1), ((2,), -1), ((6,), -1), ((12,), -1), ((2, 6), -1), ((13,), -1), ((14,), -1), ((13, 14), -1)]
-  #terms = [((), 0)]  # constant (average) only
-  #terms = [((), 0), ((8,), 0)]  # distance only (IP/Location)
-  #terms = [((), 0), ((0, 4), -1)]  # country-country only
+  # Remove outliers on train and valid, but keep them in the test set
+  sets[0] = filter_outliers(sets[0], train_outlier_threshold, TARGET)
+  sets[1] = filter_outliers(sets[1], train_outlier_threshold, TARGET)
+
+  if data == 'iOS-wifi':
+    # Keep only wifi data
+    type1_idx = names.index('type1')
+    type2_idx = names.index('type2')
+    type_to_str = {0: '-1', 1: '0', 2: 'wifi', 3: 'cell'}
+
+    def print_stats(dataset):
+        print 'total:', len(dataset)
+        for t1 in range(4):
+            for t2 in range(4):
+                nb_rows = len([1 for row in dataset
+                               if row[type1_idx] == t1
+                               and row[type2_idx] == t2])
+                if nb_rows:
+                    print '%s/%s: %i' % (
+                        type_to_str[t1],
+                        type_to_str[t2],
+                        nb_rows)
+    if 0:
+        print 'train examples:'
+        print_stats(sets[0])
+        print 'valid examples:'
+        print_stats(sets[1])
+        print 'test examples:'
+        print_stats(sets[2])
+
+    n_train, n_valid, n_test = len(sets[0]), len(sets[1]), len(sets[2])
+    sets[0] = numpy.asarray([row for row in sets[0]
+                             if (row[type1_idx] == 2 and
+                                 row[type2_idx] == 2)])
+    sets[1] = numpy.asarray([row for row in sets[1]
+                             if (row[type1_idx] == 2 and
+                                 row[type2_idx] == 2)])
+    sets[2] = numpy.asarray([row for row in sets[2]
+                             if (row[type1_idx] == 2 and
+                                 row[type2_idx] == 2)])
+    n_train_kept, n_valid_kept, n_test_kept = \
+        len(sets[0]), len(sets[1]), len(sets[2])
+    print ('train examples kept: %d / %d (%i%%)'
+           % (n_train_kept, n_train,
+              int(round(100. * n_train_kept / n_train))))
+    print ('valid examples kept: %d / %d (%i%%)'
+           % (n_valid, n_valid,
+              int(round(100. * n_valid_kept / n_valid))))
+    print ('test examples kept: %d / %d (%i%%)'
+           % (n_test_kept, n_test,
+              int(round(100. * n_test_kept / n_test))))
+
+  sizes = numpy.maximum(*[s.max(axis=0) for s in sets]) + 1
+
+  model_to_terms = {
+          'full': [((), 0),             # constant (average)
+                   ((8,), 0),           # distance
+                   ((3,), -1),          # type1
+                   ((7,), -1),          # type2
+                   ((3, 7), -1),        # type1, type2
+                   ((0,), -1),          # country1
+                   ((4,), -1),          # country2
+                   ((10,), -1),         # same_country
+                   ((0, 4), -1),        # country1, country2
+                   ((0, 4, 3, 7), -1),  # country1, country2, type1, type2
+                   ((1,), -1),          # region1
+                   ((5,), -1),          # region2
+                   ((11,), -1),         # same_region
+                   ((1, 5), -1),        # region1, region2
+                   ((2,), -1),          # city1
+                   ((6,), -1),          # city2
+                   ((12,), -1),         # same_city
+                   ((2, 6), -1),        # city1, city2
+                   ((13,), -1),         # ip1
+                   ((14,), -1),         # ip2
+                   ((13, 14), -1)],     # ip1, ip2
+          'constant': [((), 0)],  # constant (average)
+          'distance': [((), 0),     # constant (average)
+                       ((8,), 0)],  # distance
+          'countries': [((), 0),        # constant (average)
+                        ((0, 4), -1)],  # (country1, country2)
+          }
+  ## To many ip pairs in IC2012
+  if data == 'IC2012':
+      del model_to_terms['full'][-1]
+  terms = model_to_terms[model]
 
   residuals = [s[:, TARGET].astype(float) for s in sets]
-  print [numpy.mean(r**2)**0.5 for r in residuals]
+  if objective == 'LS':
+      print [numpy.mean(r**2)**0.5 for r in residuals]
+  elif objective == 'LAD':
+      print [numpy.abs(r).mean() for r in residuals]
+  elif objective == 'KT':
+      print [1.0 for r in residuals]
+  else:
+      raise NotImplementedError
   sys.stdout.flush()
 
   #bottom = sets[0][:, TARGET].min()  # never allow predictions lower than this
   saved_params = []
 
+  # Base name of plot files
+  if plot_dir:
+    plot_name = '%(data)s_%(model)s_%(objective)s' % dict(
+        data=data,
+        model=model,
+        objective=objective)
+    plot_abs_name = os.path.join(plot_dir, plot_name)
+
   for feature_indices, regularization in terms:
+    t0 = time.time()
     feature_indices = list(feature_indices)
+    # strides of an array with ndim=len(feature_indices), that would contain
+    # all combinations of features
     strides = numpy.array([numpy.prod(sizes[feature_indices[:i]]) for i in xrange(len(feature_indices) + 1)], dtype='uint64')
+    # Represent the features of each example by a single integer,
+    # by multiplying the values of features by the corresponding
+    # stride, so that a different combination will give a different
+    # total.
     features = [numpy.sum(s[:, feature_indices] * strides[:-1], axis=1) for s in sets]
     regression = 8 in feature_indices  # hardcoded (only on distance)
-    
-    if regression:  # ridge regression
-      floats = features[0].astype(float)
-      
-      ATA = numpy.empty((2, 2))
-      ATA[0, 0] = (floats**2).sum()
-      ATA[1, 1] = len(floats)
-      ATA[0, 1] = ATA[1, 0] = floats.sum()
-      ATb = numpy.empty((2, 1))
-      ATb[0, 0] = (floats*residuals[0]).sum()
-      ATb[1, 0] = residuals[0].sum()
 
-      def regularize(coefficient, update=False):
-        m, b = numpy.linalg.solve(ATA + numpy.diag([float(coefficient)]*2), ATb)
-        result = residuals[1] - m * features[1] - b
-        if update:
-          saved_params.append((m, b, coefficient))
-          for i, f in enumerate(features):
-            residuals[i] -= m * f + b
-        return result
-    
+    if regression:  # ridge regression
+      assert len(feature_indices) == 1, "cannot combine regression with something else"
+      # Features from the training set
+      floats = features[0].astype(float)
+
+      if objective == 'LS':
+        ATA = numpy.empty((2, 2))
+        ATA[0, 0] = (floats**2).sum()
+        ATA[1, 1] = len(floats)
+        ATA[0, 1] = ATA[1, 0] = floats.sum()
+        ATb = numpy.empty((2, 1))
+        ATb[0, 0] = (floats*residuals[0]).sum()
+        ATb[1, 0] = residuals[0].sum()
+
+        def regularize(coefficient, update=False):
+          m, b = numpy.linalg.solve(ATA + numpy.diag([float(coefficient)]*2), ATb)
+          #print 'm=%f, b=%f' % (m, b)
+          result = residuals[1] - m * features[1] - b
+          if update:
+            saved_params.append((m, b, coefficient))
+            for i, f in enumerate(features):
+              residuals[i] -= m * f + b
+          return result
+      elif objective == 'LAD':
+        def train_err(m_b):
+            m, b = m_b
+            err = numpy.abs(floats * m + b - residuals[0]).mean()
+            #print 'm=%f, b=%f, err=%f' % (m, b, err)
+            return err
+
+        m, b = scipy.optimize.fmin(train_err, [3e-5, 0], xtol=1e-5, ftol=1e-5, disp=False)
+
+        def regularize(coefficient, update=False):
+            reg_m = m / (1 + coefficient)
+            result = residuals[1] - reg_m * features[1] - b
+
+            if update:
+                saved_params.append((m, b, coefficient))
+                for i, f in enumerate(features):
+                    residuals[i] -= reg_m * f + b
+
+            return result
+      elif objective == 'KT':
+        # Try to use Theil-Sen to compute it
+        m, b, lo_slope, up_slope = scipy.stats.mstats.theilslopes(
+                y=residuals[0][:10000], x=floats[:10000])
+
+        #print 'm:', m, 'b:', b
+        #print 'train error:', scipy.stats.kendalltau(
+        #        residuals[0][:10000] - (m * floats[:10000] + b),
+        #        floats[:10000])
+
+        def regularize(coefficient, update=False):
+            reg_m = m / (1 + coefficient)
+            result = residuals[1] - reg_m * features[1] - b
+            if update:
+                saved_params.append((m, b, coefficient))
+                for i, f in enumerate(features):
+                    residuals[i] -= reg_m * f + b
+            return result
+      else:
+        raise NotImplementedError
+
     elif strides[-1] < 2000:  # dense
       params = numpy.zeros(strides[-1], dtype='float32')
       number = numpy.zeros(strides[-1], dtype='int32')
-      for i, f in enumerate(features[0]):  # training set
-        params[f] += residuals[0][i]
-        number[f] += 1
-      def regularize(coefficient, update=False):
-        params_adjusted = params / (number + coefficient)
-        result = residuals[1] - params_adjusted[features[1]]
-        if update:
-          saved_params.append((params_adjusted, number, coefficient))
-          for i, f in enumerate(features):
-            residuals[i] -= params_adjusted[f]
-        return result
+
+      if objective == 'LS':
+        for i, f in enumerate(features[0]):  # training set
+          params[f] += residuals[0][i]
+          number[f] += 1
+        def regularize(coefficient, update=False):
+          params_adjusted = params / (number + coefficient)
+          result = residuals[1] - params_adjusted[features[1]]
+          if update:
+            saved_params.append((params_adjusted, number, coefficient))
+            for i, f in enumerate(features):
+              residuals[i] -= params_adjusted[f]
+          return result
+      elif objective in  ('LAD', 'KT'):
+        # list of residuals corresponding to each value of features
+        values = [[] for f in range(strides[-1])]
+        for i, f in enumerate(features[0]):  # training set
+            values[f].append(residuals[0][i])
+            number[f] += 1
+        for f in range(strides[-1]):
+            if values[f]:
+                params[f] = numpy.median(values[f])
+
+        def regularize(coefficient, update=False):
+            # TODO: make sure that's what we want
+            params_adjusted = (params * number) / (number + coefficient)
+            result = residuals[1] - params_adjusted[features[1]]
+            if update:
+                saved_params.append((params_adjusted, number, coefficient))
+                for i, f in enumerate(features):
+                    residuals[i] -= params_adjusted[f]
+            return result
+      else:
+          raise NotImplementedError
 
     else:  # sparse
       params = defaultdict(float)
       number = defaultdict(int)
-      for i, f in enumerate(features[0]):
-        params[f] += residuals[0][i]
-        number[f] += 1
-      def regularize(coefficient, update=False):
-        params_adjusted = params.copy()
-        for f, n in number.iteritems():
-          params_adjusted[f] /= n + coefficient
-        residual_valid = residuals[1].copy()
-        for j, ff in enumerate(features[1]):
-          if params_adjusted.has_key(ff):
-            residual_valid[j] -= params_adjusted[ff]
-        if update:
-          saved_params.append((params_adjusted, number, coefficient))
-          for i, f in enumerate(features):
-            for j, ff in enumerate(f):
-              if params_adjusted.has_key(ff):
-                residuals[i][j] -= params_adjusted[ff]
-        return residual_valid
+
+      if objective == 'LS':
+        for i, f in enumerate(features[0]):
+          params[f] += residuals[0][i]
+          number[f] += 1
+        def regularize(coefficient, update=False):
+          params_adjusted = params.copy()
+          for f, n in number.iteritems():
+            params_adjusted[f] /= n + coefficient
+          residual_valid = residuals[1].copy()
+          for j, ff in enumerate(features[1]):
+            if params_adjusted.has_key(ff):
+              residual_valid[j] -= params_adjusted[ff]
+          if update:
+            saved_params.append((params_adjusted, number, coefficient))
+            for i, f in enumerate(features):
+              for j, ff in enumerate(f):
+                if params_adjusted.has_key(ff):
+                  residuals[i][j] -= params_adjusted[ff]
+          return residual_valid
+      elif objective in ('LAD', 'KT'):
+        # contains the residuals corresponding ot each value of features
+        values = defaultdict(list)  # default is an empty list
+        for i, f in enumerate(features[0]):
+            values[f].append(residuals[0][i])
+            number[f] += 1
+        for f in values.keys():
+            params[f] = numpy.median(values[f])
+
+        def regularize(coefficient, update=False):
+            params_adjusted = params.copy()
+            for f, n in number.iteritems():
+                params_adjusted[f] = (params[f] * n) / (n + coefficient)
+            result = residuals[1].copy()
+            for j, ff in enumerate(features[1]):
+                if ff in params_adjusted:
+                    result[j] -= params_adjusted[ff]
+            if update:
+                saved_params.append((params_adjusted, number, coefficient))
+                for i, f in enumerate(features):
+                    for j, ff in enumerate(f):
+                        if ff in params_adjusted:
+                            residuals[i][j] -= params_adjusted[ff]
+            return result
+      else:
+          raise NotImplementedError
 
     if regularization == -1:
-      def minimize(coefficient):
-        if coefficient <= 1e-5: return 1e100
-        residual = regularize(coefficient)
-        error = numpy.mean(residual**2)**0.5
-        #print coefficient, error
-        #sys.stdout.flush()
-        return error      
+      if objective == 'LS':
+        def minimize(coefficient):
+            if coefficient <= 1e-5: return 1e100
+            residual = regularize(coefficient)
+            error = numpy.mean(residual**2)**0.5
+            #print coefficient, error
+            #sys.stdout.flush()
+            return error
+
+      elif objective in ('LAD', 'KT'):
+        def minimize(coefficient):
+            if coefficient <= 1e-5:
+                return 1e100
+            residual = regularize(coefficient)
+            error = numpy.abs(residual).mean()
+            return error
+      else:
+          raise NotImplementedError
+
       regularization = scipy.optimize.fmin(minimize, 10.0, xtol=1e-1, ftol=1e-3, disp=False)[0]
     regularize(regularization, update=True)
 
-    print [numpy.mean(r**2)**0.5 for r in residuals], numpy.array(names)[feature_indices], regularization
+    if objective == 'LS':
+        print [numpy.mean(r**2)**0.5 for r in residuals], numpy.array(names)[feature_indices], regularization
+    elif objective in ('LAD', 'KT'):
+        print [numpy.abs(r).mean() for r in residuals], numpy.array(names)[feature_indices], regularization
+    elif objective == 'KT':
+        errs = []
+        rng = numpy.random.RandomState(('2013', '05', '29'))
+        for s, r in zip(sets, residuals):
+            # Select only 50k samples, otherwise it takes too long,
+            # and integers overflow into long int, which confuses numpy
+            idx = rng.permutation(s.shape[0])[:50000]
+            target = s[idx, TARGET]
+            res = r[idx]
+            pred = target - res
+            err, pval = scipy.stats.kendalltau(pred, target)
+            errs.append(err)
+        print errs, numpy.array(names)[feature_indices], regularization
+    else:
+        raise NotImplementedError
+    print '  feature took %is to run' % int(round(time.time() - t0))
     sys.stdout.flush()
 
 
@@ -475,66 +762,109 @@ def train_model(save=False):
 
   a = numpy.array([sets[2][:, TARGET], sets[2][:, TARGET] - residuals[2]])
   numpy.random.shuffle(a.T)
-  num_examples = a.shape[1]
-  correct_order = lambda i, j : (a[0, i] > a[0, j]) == (a[1, i] > a[1, j])
+  def correct_order(ex_i, ex_j):
+    try:
+        t_i, y_i = ex_i
+        t_j, y_j = ex_j
+        if t_i == t_j:
+            # Both answers are OK, it does not matter which IP
+            # is selected. This case will not appear when there
+            # is a minimal delay.
+            return 1
+        if y_i == y_j:
+            # If we reverse i and j, we should have the same result,
+            # so 0.5
+            return 0.5
+        return cmp(t_i, t_j) == cmp(y_i, y_j)
+    except:
+        import ipdb; ipdb.set_trace()
 
-  examples = a[:, :200].T
-  #examples = sorted(examples, key=lambda x: x[0])
-  pylab.figure()
-  pylab.plot(examples)
-  pylab.legend(('target', 'prediction'))
-  pylab.xlabel('test example')
-  pylab.ylabel('latency (ms)')
+  if 0:
+    examples = a[:, :200].T
+    #examples = sorted(examples, key=lambda x: x[0])
+    pylab.figure()
+    pylab.plot(examples)
+    pylab.legend(('target', 'prediction'))
+    pylab.xlabel('test example')
+    pylab.ylabel('latency (ms)')
+    if plot_dir:
+        pylab.savefig('_'.join((plot_abs_name, 'samples.pdf')))
 
   examples = a[:, :500]
-  pylab.figure()
-  pylab.scatter(*examples, s=5, c='black')
-  limit = 0, examples.max()*1.1
-  pylab.xlim(limit)
-  pylab.ylim(limit)
-  pylab.xlabel('target (ms)')
-  pylab.ylabel('prediction (ms)')
 
-  x = numpy.arange(30, 680, 10)
-  y = numpy.arange(30, 680, 10)
-  x_grid = numpy.resize(x, (len(y), len(x))).flatten()
-  y_grid = numpy.resize(y, (len(x), len(y))).T.flatten()
-  sigma = 18
-  distribution = sum(numpy.exp(-0.5*((x_grid - v)**2 + (y_grid - w)**2)/sigma**2) for v, w in a.T)
-  pylab.figure()
-  pylab.imshow(distribution.reshape((len(y), len(x))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
-  pylab.xlabel('target (ms)')
-  pylab.ylabel('prediction (ms)')
-  
-  def plot_distribution(domain, sigma, values, xlabel):
-    distribution = sum(numpy.exp(-0.5*(domain - v)**2/sigma**2) for v in values)
-    distribution /= distribution.sum() * (domain[1] - domain[0])
+  if plot_dir or show_plots:
     pylab.figure()
-    pylab.plot(domain, distribution)
-    pylab.xlabel(xlabel)
-    pylab.ylabel('P(error)')
+    pylab.scatter(*examples, s=5, c='black')
+    limit = 0, examples.max()*1.1
+    pylab.xlim(limit)
+    pylab.ylim(limit)
+    pylab.xlabel('target (ms)')
+    pylab.ylabel('prediction (ms)')
+    if plot_dir:
+        pylab.savefig('_'.join((plot_abs_name, 'scatter.pdf')))
 
-  plot_distribution(numpy.arange(-800, 800, 0.5), 20.0, residuals[2], 'error (ms)')
+
+  if plot_dir or show_plots:
+    # plot prediction/target heat map on test data
+    x = numpy.arange(30, 680, 10)
+    y = numpy.arange(30, 680, 10)
+    x_grid = numpy.resize(x, (len(y), len(x))).flatten()
+    y_grid = numpy.resize(y, (len(x), len(y))).T.flatten()
+    sigma = 18
+    distribution = sum(numpy.exp(-0.5*((x_grid - v)**2 + (y_grid - w)**2)/sigma**2) for v, w in a.T)
+    pylab.figure()
+    pylab.imshow(distribution.reshape((len(y), len(x))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
+    pylab.xlabel('target (ms)')
+    pylab.ylabel('prediction (ms)')
+    if plot_dir:
+        pylab.savefig('_'.join((plot_abs_name, '2d.pdf')))
+
+  if 0:
+    # plot prediction/target heat map on train data
+    distribution = sum(numpy.exp(-0.5*((x_grid - v)**2 + (y_grid - w)**2)/sigma**2) for v, w in zip(sets[0][:, TARGET], sets[0][:, TARGET] - residuals[0]))
+    pylab.figure()
+    pylab.imshow(distribution.reshape((len(y), len(x))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
+    pylab.xlabel('TRAIN target (ms)')
+    pylab.ylabel('TRAIN prediction (ms)')
+    if plot_dir:
+        pylab.savefig('_'.join((plot_abs_name, '2d', 'train.pdf')))
+
   relative = 100.0 * abs(residuals[2]) / a[0, :]
-  plot_distribution(numpy.arange(0, 350, 0.5), 10.0, relative, 'relative error (%)')
+  if plot_dir or show_plots:
+    def plot_distribution(domain, sigma, values, xlabel, plot_name):
+        distribution = sum(numpy.exp(-0.5*(domain - v)**2/sigma**2) for v in values)
+        distribution /= distribution.sum() * (domain[1] - domain[0])
+        pylab.figure()
+        pylab.plot(domain, distribution)
+        pylab.xlabel(xlabel)
+        pylab.ylabel('P(error)')
+        if plot_dir:
+            pylab.savefig('_'.join((plot_abs_name, '%s.pdf' % plot_name)))
+
+    plot_distribution(numpy.arange(-800, 800, 0.5), 20.0, residuals[2], 'error (ms)', plot_name='dist')
+    plot_distribution(numpy.arange(0, 350, 0.5), 10.0, relative, 'relative error (%)', plot_name='rdist')
 
   # more stats
   ranges = [0, 100, 200, 300, 500, 1000, 5001]
   classes = numpy.array([[bisect.bisect_right(ranges, j) - 1 for j in i] for i in a])
   num_classes = len(ranges) - 1
-
-  print 'L1, L2, relative errors', numpy.mean(abs(residuals[2])), numpy.mean(residuals[2]**2)**0.5, numpy.mean(relative)
+  print 'L1, L2, relative errors (train)', numpy.mean(abs(residuals[0])), numpy.mean(residuals[0]**2)**0.5, 100 * numpy.mean(abs(residuals[0] / sets[0][:, TARGET]))
+  print 'L1, L2, relative errors (test)', numpy.mean(abs(residuals[2])), numpy.mean(residuals[2]**2)**0.5, numpy.mean(relative)
   print 'class-wise:\n', numpy.array([numpy.mean([[abs(r), r**2] for r, c in zip(residuals[2], classes[0, :]) if c==k], axis=0)**[1, 0.5] for k in xrange(num_classes)])
 
   print 'classification accuracy', (classes[0, :] == classes[1, :]).mean()
   confusion = numpy.array([[((classes[0, :]==c1) & (classes[1, :]==c2)).sum() for c2 in xrange(num_classes)] for c1 in xrange(num_classes)])
   print 'confusion matrix:\n', confusion  # row = target, column = prediction
-  pylab.figure()
-  pylab.imshow((confusion.astype(float).T/confusion.sum(axis=1)).T, aspect='auto', interpolation='nearest', cmap=pylab.cm.gray, extent=(0.5, num_classes + 0.5)*2)
-  pylab.xlabel('predicted class')
-  pylab.ylabel('target class')
 
-  if PLOT_GEOIP:
+  if plot_dir or show_plots:
+    pylab.figure()
+    pylab.imshow((confusion.astype(float).T/confusion.sum(axis=1)).T, aspect='auto', interpolation='nearest', cmap=pylab.cm.gray, extent=(0.5, num_classes + 0.5, 0.5 + num_classes, 0.5))
+    pylab.xlabel('predicted class')
+    pylab.ylabel('target class')
+    if plot_dir:
+        pylab.savefig('_'.join((plot_abs_name, 'confusion.pdf')))
+
+  if PLOT_GEOIP and (plot_dir or show_plots):
       # plot distance (col. 8) vs target
       ex_target = sets[2][:500, TARGET]
       ex_dist = sets[2][:500, 8]
@@ -544,6 +874,8 @@ def train_model(save=False):
       pylab.ylim((0, ex_dist.max()*1.1))
       pylab.xlabel('target (ms)')
       pylab.ylabel('GeoIP distance (m)')
+      if plot_dir:
+        pylab.savefig('_'.join((plot_abs_name, 'dist_vs_ping_500.pdf')))
 
       # plot distance (col. 8) vs target (all samples)
       ex_target = sets[2][:, TARGET]
@@ -554,6 +886,8 @@ def train_model(save=False):
       pylab.ylim((0, ex_dist.max()*1.1))
       pylab.xlabel('target (ms)')
       pylab.ylabel('GeoIP distance (m)')
+      if plot_dir:
+        pylab.savefig('_'.join((plot_abs_name, 'dist_vs_ping_all.pdf')))
 
       # Same, as heat map, with more data
       # Try to get around 100 grid divisions
@@ -564,11 +898,11 @@ def train_model(save=False):
       x = numpy.arange(0, tgt_max, tgt_max / 100)
       y = numpy.arange(0, dist_max, dist_max / 100)
       x_grid = numpy.resize(x, (len(y), len(x))).flatten()
-      print 'len(x):', len(x)
-      print 'x_grid.shape:', x_grid.shape
+      #print 'len(x):', len(x)
+      #print 'x_grid.shape:', x_grid.shape
       y_grid = numpy.resize(y, (len(x), len(y))).T.flatten()
-      print 'len(y):', len(y)
-      print 'y_grid.shape:', y_grid.shape
+      #print 'len(y):', len(y)
+      #print 'y_grid.shape:', y_grid.shape
       sigma_x = 1.8 * tgt_max / 100
       sigma_y = 1.8 * dist_max / 100
       distribution = sum(numpy.exp(-0.5*((x_grid - x_)**2/sigma_x**2 + (y_grid - y_)**2/sigma_y**2)) for x_, y_ in zip(tgt, dist))
@@ -577,6 +911,8 @@ def train_model(save=False):
       pylab.imshow(distribution.reshape((len(y), len(x))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
       pylab.xlabel('target (ms)')
       pylab.ylabel('GeoIP distance (m)')
+      if plot_dir:
+        pylab.savefig('_'.join((plot_abs_name, 'dist_vs_ping_heatmap_zoomout.pdf')))
 
       # Closer zoom on the interesting part
       # Reuse the same parameters for target as the first heat map
@@ -589,138 +925,533 @@ def train_model(save=False):
       pylab.imshow(distribution.reshape((len(y), len(x))), origin='lower', aspect='auto', extent=(x[0], x[-1], y[0], y[-1]))
       pylab.xlabel('target (ms)')
       pylab.ylabel('GeoIP distance (m)')
+      if plot_dir:
+        pylab.savefig('_'.join((plot_abs_name, 'dist_vs_ping_heatmap.pdf')))
 
-  print 'ordering accuracy', numpy.mean([correct_order(*numpy.random.randint(num_examples, size=2)) for k in xrange(500000)])
   choices = [(classes[0, :]==c).nonzero()[0] for c in xrange(num_classes)]
   choice = lambda x: x[numpy.random.randint(len(x))]
   symmetrize = lambda A: (A + A.T) * 0.5
-  print 'class-wise:\n', symmetrize(numpy.array([[numpy.mean([correct_order(choice(choices[c1]), choice(choices[c2])) for k in xrange(100000)]) for c2 in xrange(num_classes)] for c1 in xrange(num_classes)]))
+  print 'class-wise:\n', symmetrize(numpy.array(
+      [[numpy.mean([correct_order(a.T[choice(choices[c1])],
+                                  a.T[choice(choices[c2])])
+                    for k in xrange(100000)])
+        for c2 in xrange(num_classes)]
+       for c1 in xrange(num_classes)]))
 
-  ## Ordering accuracy limited to data pairs where abs(a[0, i] - a[0, j]) <= x
-  if PLOT_ACCURACY:
-    def sample_pair_from(data, min_delay=0.):
+  if 1:
+    def sample_pair_from(data, min_delay_diff=0., max_delay=5000.):
         ex1 = choice(data)
         ex2 = choice(data)
-        if abs(ex1[0] - ex2[0]) <= min_delay:
+        if abs(ex1[0] - ex2[0]) < min_delay_diff:
+            return (None, None)
+        elif ex1[0] > max_delay and ex2[0] > max_delay:
             return (None, None)
         else:
             return ex1, ex2
 
-    plot_data = []
-    for min_delay in xrange(0, 1000, 10):
-        accuracies = [cmp(ex1[0], ex2[0]) == cmp(ex1[1], ex2[1])
-                      for ex1, ex2 in [sample_pair_from(a.T, min_delay=min_delay)
-                                       for i in xrange(500000)]
-                      if ex1 is not None]
-        plot_data.append(numpy.mean(accuracies))
-    pylab.figure()
-    pylab.plot(numpy.arange(0, 1000, 10), plot_data)
-    pylab.xlabel('min delay considered (ms)')
-    pylab.ylabel('ordering accuracy')
+    for max_delay in oa_max_delay:
+        accuracies = [
+            correct_order(ex_1, ex_2)
+            for ex_1, ex_2 in [sample_pair_from(a.T, max_delay=max_delay)
+                               for k in xrange(500000)]
+            if ex_1 is not None and ex_2 is not None]
+        print ('ordering accuracy (max_delay=%s, %i%% kept)'
+               % (max_delay, int(round(len(accuracies) * 100. / 500000))),
+               numpy.mean(accuracies))
 
-  try:
-    pylab.show()
-  except:
-    pass
+    # Records all ips contacted by ip1
+    ip1_to_idx = {}
+    ip1_idx = names.index('ip1')
+    ip2_idx = names.index('ip2')
+    print 'recording all ips contacted by ip1'
+    for i, ex in enumerate(sets[2]):
+        cur_ip1 = ex[ip1_idx]
+        if cur_ip1 not in ip1_to_idx:
+            ip1_to_idx[cur_ip1] = []
+        ip1_to_idx[cur_ip1].append(i)
+
+    print '  sorting'
+    ip1_list = sorted(ip1_to_idx.keys())
+    print '  done: %i source IPs' % len(ip1_list)
+
+    def oa_by_source_ip(min_delay_diff=0., max_delay=5000., ignored='skip',
+            verbose=1):
+        """
+        Returns the mean ordering accuracy for each of the test source IPs
+
+        Source IPs that do not have at least 2 destinations will be skipped.
+
+        Pairs of (source, dest1), (source, dest2) will be skipped if:
+        - the absolute value of the difference  between their measured delay is
+          smaller than min_delay_diff; or
+        - both delays are greater than max_delay.
+
+        "ignored" selects what happens to these pairs:
+        - 'skip' means they are not part of the computation of the mean
+        - 'one' means they are treated as correct answers
+        """
+        many = 100
+        #many = 10
+        oa_means = []
+        oa_weights = []
+        n_considered = 0
+        n_ignored = 0
+        t0 = time.time()
+
+        n_ip1 = len(ip1_list)
+        n_ip1_with_many_ip2 = 0
+        for i1, cur_ip1 in enumerate(ip1_list):
+            idx_list = ip1_to_idx[cur_ip1]
+            n_ip2 = len(idx_list)
+            if n_ip2 == 1:
+                continue
+
+            if verbose:
+                print '\r%i / %i' % (i1 + 1, n_ip1),
+                #print '%i / %i' % (i1 + 1, n_ip1)
+                sys.stdout.flush()
+            ip1_oa = []
+
+            # Will contain (ip2_i, tgt_i, pred_i, idx_j)
+            ip2_list = []
+            if n_ip2 < many:
+                # Try all combinations
+                for i in range(n_ip2):
+                    ip2_i = sets[2][idx_list[i], ip2_idx]
+                    tgt_i = int(sets[2][idx_list[i], TARGET])
+                    # round to make sure there is no information from tgt_i
+                    # still in pred_i, because of the way its computed.
+                    pred_i = (tgt_i - residuals[2][idx_list[i]]).round()
+                    for j in range(i + 1, len(idx_list)):
+                        idx_j = idx_list[j]
+                        ip2_list.append((ip2_i, tgt_i, pred_i, idx_j))
+
+            else:
+                # Try 5000 random pairs
+                n_ip1_with_many_ip2 += 1
+                for k in range(many ** 2 / 2):
+                    idx_i = choice(idx_list)
+                    ip2_i = sets[2][idx_i, ip2_idx]
+                    tgt_i = int(sets[2][idx_i, TARGET])
+                    pred_i = (tgt_i - residuals[2][idx_i]).round()
+                    idx_j = choice(idx_list)
+                    while idx_j == idx_i:
+                        # never choose the same idx twice
+                        idx_j = choice(idx_list)
+                    ip2_list.append((ip2_i, tgt_i, pred_i, idx_j))
+
+            for (ip2_i, tgt_i, pred_i, idx_j) in ip2_list:
+                ip2_j = sets[2][idx_j, ip2_idx]
+                ignore = False
+                if ip2_i == ip2_j:
+                    # This case does not matter, because the same IP
+                    # will always be chosen, whatever the algorithm.
+                    ignore = True
+                else:
+                    tgt_j = int(sets[2][idx_j, TARGET])
+                    if abs(tgt_i - tgt_j) < min_delay_diff:
+                        # The difference is too small to matter, ignore
+                        ignore = True
+
+                    if (tgt_i > max_delay) and (tgt_j > max_delay):
+                        # Both delays are too big, ignore
+                        ignore = True
+
+                if ignore:
+                    n_ignored += 1
+                    if ignored == 'one':
+                        ip1_oa.append(1)
+                    elif ignored == 'skip':
+                        pass
+                    else:
+                        raise TypeError
+                    continue
+
+                n_considered += 1
+                pred_j = (tgt_j - residuals[2][idx_j]).round()
+
+                ip1_oa.append(correct_order((tgt_i, pred_i),
+                                            (tgt_j, pred_j)))
+
+            if ip1_oa:
+                oa_means.append(numpy.mean(ip1_oa))
+                oa_weights.append(n_ip2)
+
+        if verbose:
+            #print '\r%d IP1 with 100 IP2 or more' % n_ip1_with_many_ip2,
+            print '%d IP1 with %i IP2 or more' % (n_ip1_with_many_ip2, many)
+            print '- took %is' % int(round(time.time() - t0))
+        #print '%d samples, %d sources, %d sources with > 1 dest, %d pairs of samples considered' % (len(sets[2]), len(ip1_to_idx), len(oa_means), n_considered)
+        #print '(%d pairs of samples ignored because same source and dest IP)' % n_ignored
+        frac_considered = float(n_considered) / (n_considered + n_ignored)
+        return oa_means, frac_considered, oa_weights
+
+    for max_delay in oa_max_delay:
+        oa_means, frac_considered, oa_weights = oa_by_source_ip(max_delay=max_delay)
+        percent_kept = int(round(frac_considered * 100))
+        print ('ordering accuracy normalized by source IP (max delay=%s ms, %i%% kept): '
+               '%s' % (max_delay,
+                       percent_kept,
+                       numpy.mean(oa_means)))
+        print ('ordering accuracy normalized and weighted by source IP (max delay=%s ms, %i%% kept): '
+               '%s' % (max_delay,
+                       percent_kept,
+                       numpy.average(oa_means, weights=oa_weights)))
+
+    #import ipdb; ipdb.set_trace()
+
+  ## Ordering accuracy limited to data pairs where abs(a[0, i] - a[0, j]) > x
+  ## and where a[0, i] < max_delay and a[1, i] < max_delay too.
+  if plot_accuracy and (plot_dir or show_plots):
+    start = 0
+    stop = 1000
+    step = 20
+    for max_delay in oa_max_delay:
+        # OA estimated by randomly sampling pairs
+        plot_data = []
+        plot_frac_kept = []
+        for min_delay in xrange(start, stop, step):
+            accuracies = [correct_order(ex1, ex2)
+                          for ex1, ex2 in [
+                              sample_pair_from(a.T, min_delay_diff=min_delay,
+                                               max_delay=max_delay)
+                              for i in xrange(500000)]
+                          if ex1 is not None]
+            plot_data.append(numpy.mean(accuracies))
+            plot_frac_kept.append(len(accuracies) / 500000.)
+        fig = pylab.figure()
+        if len(oa_max_delay) > 1:
+            max_delay_str = ', max_delay=%s ms' % max_delay
+        else:
+            max_delay_str = ''
+        pylab.title('Sampled ordering accuracy%s' % max_delay_str)
+        ax1 = fig.add_subplot(111)
+        ax1.plot(numpy.arange(start, stop, step), plot_data, 'b')
+        ax1.set_xlabel('min delay considered (ms)')
+        ax1.set_ylabel('ordering accuracy')
+        ax2 = ax1.twinx()
+        ax2.plot(numpy.arange(start, stop, step), plot_frac_kept, '0.5')
+        ax2.set_ylabel('fraction of the data kept', color='0.5')
+        ax2.set_ylim(0, 1)
+        if plot_dir:
+            pylab.savefig('_'.join((plot_abs_name, 'oa', '%ims.pdf' % max_delay)))
+
+        # OA normalized by source IP
+        for ignored in ('skip',):
+            ignored_str = ''
+            # ignored_str = ', ignored=%s' % ignored
+            plot_data = []
+            plot_frac_kept = []
+            print 'Generating OA/IP graph',
+            for min_delay in xrange(start, stop, step):
+                accuracies, frac_kept = oa_by_source_ip(min_delay_diff=min_delay,
+                                                        max_delay=max_delay,
+                                                        ignored=ignored,
+                                                        verbose=0)
+                plot_data.append(numpy.mean(accuracies))
+                plot_frac_kept.append(frac_kept)
+                sys.stdout.write('.')
+            fig = pylab.figure()
+            pylab.title('Ordering accuracy averaged over source IP%s%s'
+                        % (max_delay_str, ignored_str))
+            ax1 = fig.add_subplot(111)
+            ax1.plot(numpy.arange(start, stop, step), plot_data, 'b')
+            ax1.set_xlabel('min delay considered (ms)')
+            ax1.set_ylabel('ordering accuracy', color='b')
+            ax2 = ax1.twinx()
+            ax2.plot(numpy.arange(start, stop, step), plot_frac_kept, '0.5')
+            ax2.set_ylabel('fraction of the data kept', color='0.5')
+            ax2.set_ylim(0, 1)
+            if plot_dir:
+                pylab.savefig('_'.join((plot_abs_name, 'oaip', '%ims' % max_delay, '%s.pdf' % ignored)))
+
+  if show_plots:
+    try:
+        pylab.show()
+    except:
+        pass
 
 
-def export_datasets(extra_proportion=0):
-  rows = []
-  for i, s in enumerate(test_data.data_sets):
-    print '\r%i/%i' % (i+1, len(test_data.data_sets)),
-    sys.stdout.flush()
-    for d in test_data.load_data_from_pkl(i):
-      origin = d['origin_geoip']
-      destination = d['destination_geoip']
-      row = [origin['country_code'], origin['region_name'], origin['city'], d['origin_type'],
-             destination['country_code'], destination['region_name'], destination['city'], d['destination_type'],
-             d['distance'], d['peer_latency'], 0, 0, 0,
-             utils.get_int_from_ip(d['origin_ip']), utils.get_int_from_ip(d['destination_ip'])]
-      rows.append(row)
-
-  extra_rows = []
-  if extra_proportion > 0:
-    for i in 'AC3', 'ACR':
-      for l in file('../data/ubi-data2/%s.csv' % i).readlines():
-        print '\r%i' % len(extra_rows),
+def load_ios(already_seen):
+    rows = []
+    n_duplicates = 0
+    for i, s in enumerate(test_data.data_sets):
+        print '\r%i/%i' % (i + 1, len(test_data.data_sets)),
         sys.stdout.flush()
-        fields = l.rstrip().split(',')
-        ip1, ip2, ping12, ping21 = fields[4], fields[14], float(fields[24]), float(fields[25])
-        geo1 = utils.get_geoip_data(ip1)
-        geo2 = utils.get_geoip_data(ip2)
-        try:
-          distance = utils.geoip_distance(geo1, geo2)
-        except:
-          distance = 8927011  # average distance
-        if geo1 is None: geo1 = defaultdict(unicode)
-        if geo2 is None: geo2 = defaultdict(unicode)
-        try:
-          int_ip1, int_ip2 = map(utils.get_int_from_ip, (ip1, ip2))
-        except:
-          continue
-        type1, type2 = 3, 3  # different from mobile data
-        row = [geo1['country_code'], geo1['region_name'], geo1['city'], type1,
-               geo2['country_code'], geo2['region_name'], geo2['city'], type2,
-               distance, ping12, 0, 0, 0, int_ip1, int_ip2]
-        extra_rows.append(row)  # connection 1->2
-        row = [geo2['country_code'], geo2['region_name'], geo2['city'], type2,
-               geo1['country_code'], geo1['region_name'], geo1['city'], type1,
-               distance, ping21, 0, 0, 0, int_ip2, int_ip1]
-        extra_rows.append(row)  # connection 2->1
+        for d in test_data.load_data_from_pkl(i):
+            origin = d['origin_geoip']
+            destination = d['destination_geoip']
+            _id = (d['origin_ip'], d['destination_ip'], d['peer_latency'])
+            if _id in already_seen:
+                n_duplicates += 1
+                continue
+
+            already_seen.add(_id)
+            row = [origin['country_code'], origin['region_name'],
+                   origin['city'], d['origin_type'],
+                   destination['country_code'], destination['region_name'],
+                   destination['city'], d['destination_type'],
+                   d['distance'], d['peer_latency'], 0, 0, 0,
+                   utils.get_int_from_ip(d['origin_ip']),
+                   utils.get_int_from_ip(d['destination_ip'])]
+            rows.append(row)
+
+    print 'n_duplicates: %d / %d' % (n_duplicates, n_duplicates + len(rows))
+    return rows, n_duplicates
+
+
+def load_ac(already_seen):
+    rows = []
+    n_extra_duplicates = 0
+    for i in 'AC3', 'ACR':
+        extra_rows = []
+        for l in file('../data/ubi-data2/%s.csv' % i).readlines():
+            print '\r%i' % len(extra_rows),
+            sys.stdout.flush()
+            fields = l.rstrip().split(',')
+            ip1, ip2, ping12, ping21 = (fields[4], fields[14],
+                                        float(fields[24]), float(fields[25]))
+            geo1 = utils.get_geoip_data(ip1)
+            geo2 = utils.get_geoip_data(ip2)
+            try:
+                distance = utils.geoip_distance(geo1, geo2)
+            except:
+                distance = 8927011  # average distance
+            if not geo1:
+                geo1 = defaultdict(unicode)
+            if not geo2:
+                geo2 = defaultdict(unicode)
+            try:
+                int_ip1, int_ip2 = map(utils.get_int_from_ip, (ip1, ip2))
+            except:
+                continue
+            type1, type2 = 3, 3  # different from mobile data
+
+            _id = (ip1, ip2, ping12)
+            if _id not in already_seen:
+                already_seen.add(_id)
+                try:
+                    row = [
+                        geo1['country_code'], geo1['region_name'],
+                        geo1['city'], type1,
+                        geo2['country_code'], geo2['region_name'],
+                        geo2['city'], type2,
+                        distance, ping12, 0, 0, 0, int_ip1, int_ip2]
+                except:
+                    import pdb; pdb.set_trace()
+                extra_rows.append(row)  # connection 1->2
+            else:
+                n_extra_duplicates += 1
+
+            _id = (ip2, ip1, ping21)
+            if _id not in already_seen:
+                already_seen.add(_id)
+                row = [geo2['country_code'], geo2['region_name'],
+                       geo2['city'], type2,
+                       geo1['country_code'], geo1['region_name'],
+                       geo1['city'], type1,
+                       distance, ping21, 0, 0, 0, int_ip2, int_ip1]
+                extra_rows.append(row)  # connection 2->1
+            else:
+                n_extra_duplicates += 1
+        rows.append(extra_rows)
+    print 'in extra (%s), n_duplicates: %d / %d' % (
+            i,
+            n_extra_duplicates,
+            n_extra_duplicates + len(rows[0]) + len(rows[1]))
     print 'ok'
+    return rows[0], rows[1], n_extra_duplicates
+
+
+def load_ic2012icmp(already_seen):
+    pkl_files = []
+    for i in range(1, 224):
+        tmp = test_data.create_ic2012_pkl(i, skip_if_exists=True)
+        if not tmp:
+            continue
+        pkl_files.append(tmp)
+
+    return pkl_files, 0
+
+
+def export_datasets(data_set='iOS', extra_proportion=0):
+  # Keep (ip1, ip2, latency) triplets already seen in a set,
+  # to remove duplicates
+  already_seen = set()
+  n_duplicates = 0
+
+  # "extra" data are used for training, but not validation nor testing
+  extra_sets = []
+  n_extra_duplicates = 0
+
+  if data_set == 'iOS':
+    rows, n_duplicates = load_ios(already_seen)
+    sets = [rows]
+
+    if extra_proportion > 0:
+        extra1, extra2, n_extra_duplicates = load_ac(already_seen)
+        extra_sets.extend([extra1, extra2])
+
+  if data_set == 'AC':
+    rows1, rows2, n_duplicates = load_ac(already_seen)
+    sets = [rows1, rows2]
+
+  if data_set == 'IC2012':
+    rows, n_duplicates = load_ic2012icmp(already_seen)
+    sets = rows
 
   countries, regions, cities = set(), set(), set()
+  total_nb_rows = 0
+  nb_rows = []
+  for rows_ in sets + extra_sets:
+    if isinstance(rows_, basestring):
+        # rows_ is actually the name of a pkl file to load
+        print 'loading %s' % rows_
+        rows_ = cPickle.load(open(rows_, 'rb'))
+        print '  %i rows' % len(rows_)
 
-  for rows_ in rows, extra_rows:
     for r in rows_:
-      t = tuple(r)
-      countries.add(t[0])
-      regions.add(t[0:2])
-      cities.add(t[0:3])
-      countries.add(t[4])
-      regions.add(t[4:6])
-      cities.add(t[4:7])
+        t = tuple(r)
+        countries.add(t[0])
+        regions.add(t[0:2])
+        cities.add(t[0:3])
+        countries.add(t[4])
+        regions.add(t[4:6])
+        cities.add(t[4:7])
 
+    total_nb_rows += len(rows_)
+    nb_rows.append(len(rows_))
+    del rows_
+
+  print 'total_nb_rows: %i' % total_nb_rows
+  print 'n_countries: %i, n_regions: %i, n_cities: %i' % (len(countries), len(regions), len(cities))
   countries, regions, cities = map(sorted, (countries, regions, cities))
-  filename = os.path.join(os.path.dirname(__file__), '..', 'data', 'sandbox2', 'names')
-  cPickle.dump((countries, regions, cities), file(filename, 'w'), cPickle.HIGHEST_PROTOCOL)
+  filename = os.path.join(os.path.dirname(__file__), '..', 'data', 'sandbox2',
+                          data_set, 'names')
+  cPickle.dump((countries, regions, cities), file(filename, 'wb'),
+               cPickle.HIGHEST_PROTOCOL)
 
-  for rows_ in rows, extra_rows:
+  print 'allocating data array'
+  data = numpy.zeros((total_nb_rows, len(t)), dtype='uint32')
+  print '  done'
+  data_idx = 0
+  for rows_ in sets + extra_sets:
+    if isinstance(rows_, basestring):
+        # rows_ is actually the name of a pkl file to load
+        print 'loading %s' % rows_
+        rows_ = cPickle.load(open(rows_, 'rb'))
+
     for i, r in enumerate(rows_):
       print '\r%i/%i' % (i+1, len(rows_)),
       sys.stdout.flush()
       t = tuple(r)
-      r[0] = bisect.bisect_left(countries, t[0])
-      r[1] = bisect.bisect_left(regions, t[0:2])
-      r[2] = bisect.bisect_left(cities, t[0:3])
-      r[3] += 1  # avoid -1
-      r[4] = bisect.bisect_left(countries, t[4])
-      r[5] = bisect.bisect_left(regions, t[4:6])
-      r[6] = bisect.bisect_left(cities, t[4:7])
-      r[7] += 1  # avoid -1
-      r[8] = int(numpy.round(t[8]))
-      r[9] = int(numpy.round(t[9]))
+      r[0] = bisect.bisect_left(countries, t[0])    # country1
+      r[1] = bisect.bisect_left(regions, t[0:2])    # region1
+      r[2] = bisect.bisect_left(cities, t[0:3])     # city1
+      r[3] += 1                                     # type1 (avoid -1)
+      r[4] = bisect.bisect_left(countries, t[4])    # country2
+      r[5] = bisect.bisect_left(regions, t[4:6])    # region2
+      r[6] = bisect.bisect_left(cities, t[4:7])     # city2
+      r[7] += 1                                     # type2 (avoid -1)
+      r[8] = int(numpy.round(t[8]))                 # distance
+      r[9] = int(numpy.round(t[9]))                 # latency
       r[10] = int(r[0]==r[4])  # same country
       r[11] = int(r[1]==r[5])  # same region
       r[12] = int(r[2]==r[6])  # same city
+      # r[13]: ip1
+      # r[14]: ip2
+      # r[15] (optional): time stamp
+      data[data_idx] = r
+      data_idx += 1
+
+    del rows_
     print 'ok'
 
-  data = numpy.array(rows, dtype='uint32')
-  numpy.random.shuffle(data)
-  bounds = 0, 0.8*len(data), 0.9*len(data), len(data)
-  train, valid, test = [data[bounds[i]:bounds[i+1]] for i in 0, 1, 2]
+  # For IC2012, we need to sort the data first, and consider it one set only
+  # We also want to filter examples with delays > 5000ms
+  if data_set == 'IC2012':
+    print 'getting new order'
+    new_order = data[:, -1].argsort()
+    print 'getting rid of larger delays'
+    new_indices = [i for i in new_order if data[i, 9] <= 5000]
+    print 'sorting'
+    import pdb; pdb.set_trace()
+    data = data[new_indices, :-1]
+    print '  done'
+    sets = [data]
+    nb_rows = [len(new_indices)]
+    del new_order
+    del new_indices
+    import pdb; pdb.set_trace()
 
-  if extra_proportion > 0:
-    extra_data = numpy.array(extra_rows, dtype='uint32')
-    numpy.random.shuffle(extra_data)
-    number = int(len(train) * extra_proportion)
-    train = numpy.concatenate((train, extra_data[:number]))
-    numpy.random.shuffle(train)
+  # Split data when the data is still ordered form older to newer,
+  # for each component of the data sets independently.
+  train_sets = []
+  valid_sets = []
+  test_sets = []
+  data_idx = 0
+  for set_idx in range(len(sets)):
+    print 'set_idx:', set_idx
+    print 'nb_rows[set_idx]', nb_rows[set_idx]
+    rows_data = data[data_idx:nb_rows[set_idx]]
+    data_idx += nb_rows[set_idx]
 
+    bounds = 0, 0.8*len(rows_data), 0.9*len(rows_data), len(rows_data)
+    print 'bounds:', bounds
+    train, valid, test = [rows_data[bounds[i]:bounds[i+1]] for i in 0, 1, 2]
+    print 'sets assigned'
+    train_sets.append(train)
+    valid_sets.append(valid)
+    test_sets.append(test)
+
+  # Concatenate all components
+  print 'before concat'
+  train = numpy.concatenate(train_sets)
+  print '  train done'
+  valid = numpy.concatenate(valid_sets)
+  print '  valid done'
+  test = numpy.concatenate(test_sets)
+  print '  test done'
+
+  del train_sets, valid_sets, test_sets, data
+
+  # Then, shuffle valid and test
+  print 'before shuffle'
+  numpy.random.seed([2013, 05, 27, 1])
+  numpy.random.shuffle(valid)
+  print '  valid done'
+  numpy.random.shuffle(test)
+  print '  test done'
+
+  if extra_sets:
+    extra_train = []
+    for extra_rows in extra_sets:
+        extra_data = numpy.array(extra_rows, dtype='uint32')
+        numpy.random.shuffle(extra_data)
+        number = int(len(train) * extra_proportion)
+        extra_train.append(extra_data[:number])
+
+    train = numpy.concatenate([train] + extra_train)
+
+  # Then, shuffle train
+  numpy.random.shuffle(train)
+  print '  train done'
+
+  print 'before pickling'
+  datatype = 'pkl'
+  if any([tdata.nbytes >= 2 ** 31 for tdata in train, valid, test]):
+    datatype = 'npy'
   for t in 'train', 'valid', 'test':
     #numpy.random.shuffle(locals()[t])
-    filename = os.path.join(os.path.dirname(__file__), '..', 'data', 'sandbox2', t)
-    cPickle.dump(locals()[t], file(filename, 'w'), cPickle.HIGHEST_PROTOCOL)
-
-
-
+    filename = os.path.join(os.path.dirname(__file__), '..', 'data',
+                            'sandbox2', data_set, t)
+    tdata = locals()[t]
+    if datatype == 'npy':
+        # A bug in pickle and cPickle prevents from pickling an array
+        # with a number of bytes that does not fit in a signed int32.
+        numpy.save(filename + '.npy', tdata)
+    elif datatype == 'pkl':
+        cPickle.dump(tdata, file(filename, 'w'), cPickle.HIGHEST_PROTOCOL)
+    else:
+        import pdb; pdb.set_trace()
+    print '  %s done' % t

@@ -1,3 +1,4 @@
+#!/bin/sh
 #TODO once to make a virtual env in the pings project directory
 BASE_DIR=/Tmp/$USER/
 BASE_DIR=/opt/ping/
@@ -7,7 +8,7 @@ mkdir -p $WORKON_HOME $PROJECT_HOME
 
 source virtualenvwrapper.sh;
 workon pings
-cd server
+cd ${BASE_DIR}/Devel/pings/server
 
 ${BASE_DIR}/nginx/sbin/nginx & sleep 5;
 redis-server redis.conf & sleep 5;

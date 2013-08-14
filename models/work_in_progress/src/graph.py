@@ -30,6 +30,10 @@ import test_data
 import utils
 
 
+# For the http prediction server
+model_loaded = False
+
+
 # prettier names
 def prettify(record):
   for k, l in zip(['city', 'region_name', 'country_name'], ['City', 'Region', 'Country']):
@@ -42,6 +46,7 @@ def load_model(data='iOS'):
     """
     Loads the model, data, and precompute stats.
     """
+    global model_loaded
     global names
     global sizes
     global params
@@ -116,6 +121,8 @@ def load_model(data='iOS'):
             order[i][j][last_index + l] = k+1, len(indices)
           last_index = index
 
+    model_loaded = True
+
 
 # utility functions
 def rank(i, n):
@@ -146,6 +153,7 @@ def bisect_find(array, what):  # search what in array assuming array is sorted, 
 
 
 def display_stats(ip, measurements, html=True, full_page=True):
+  global model_loaded
   global names
   global sizes
   global terms
@@ -153,6 +161,9 @@ def display_stats(ip, measurements, html=True, full_page=True):
   global world_stats
   global stats
   global order
+
+  if not model_loaded:
+    load_model()
 
   # fake input for testing
   if ip is None:
@@ -402,7 +413,6 @@ def application(environment, start_response):
 
 
 if __name__ == '__main__':
-    load_model(data='iOS')
     server = make_server('', 6660, application)
     print 'Server running ...'
     sys.stdout.flush()

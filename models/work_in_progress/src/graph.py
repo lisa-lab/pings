@@ -37,19 +37,46 @@ def prettify(record):
     if record[k] == '':
       record[k] = '<i>Unknown %s</i>' % l
 
-LOAD = True
-PLOT_GEOIP = False
-PLOT_ACCURACY = False
 
+def load_model(data='iOS'):
+    """
+    Loads the model, data, and precompute stats.
+    """
+    global names
+    global sizes
+    global params
+    global terms
+    global TARGET
+    global world_stats
+    global stats
+    global order
 
-if LOAD:
     # load data
-    dataf = os.path.join(os.path.dirname(__file__), '../data/sandbox2/')
-    data = numpy.concatenate([cPickle.load(file(os.path.join(dataf, t))) for t in 'train', 'valid', 'test'])
+    if data.startswith('iOS'):
+        datadir = '../data/sandbox2/iOS/'
+        datatype = 'pkl'
+    elif data.startswith('AC'):
+        datadir = '../data/sandbox2/AC/'
+        datatype = 'pkl'
+    elif data.startswith('IC2012'):
+        datadir = '../data/sandbox2/IC2012/'
+        datatype = 'npy'
+    else:
+        raise ValueError('Dataset not recognized: %s' % data)
+
+    dataf = os.path.join(os.path.dirname(__file__), datadir)
+    if datatype == 'pkl':
+        sets = [cPickle.load(file(os.path.join(dataf, t))) for t in 'train', 'valid', 'test']
+    elif datatype == 'npy':
+        sets = [numpy.load(os.path.join(dataf, t + '.npy')) for t in 'train', 'valid', 'test']
+    else:
+        raise ValueError('Dataset type not recognized: %s' % datatype)
+
+    data = numpy.concatenate(sets)
     sizes = data.max(axis=0) + 1
-    namesf = os.path.join(os.path.dirname(__file__), '../data/sandbox2/names')
+    namesf = os.path.join(os.path.dirname(__file__), datadir, 'names')
     names = cPickle.load(file(namesf))
-    paramsf = os.path.join(os.path.dirname(__file__), '../data/sandbox2/params')
+    paramsf = os.path.join(os.path.dirname(__file__), datadir, 'params')
     params, terms = cPickle.load(file(paramsf))
     TARGET = 9
 
@@ -119,6 +146,14 @@ def bisect_find(array, what):  # search what in array assuming array is sorted, 
 
 
 def display_stats(ip, measurements, html=True, full_page=True):
+  global names
+  global sizes
+  global terms
+  global TARGET
+  global world_stats
+  global stats
+  global order
+
   # fake input for testing
   if ip is None:
     ip = '132.204.22.30'  # tikuanyin
@@ -155,7 +190,7 @@ def display_stats(ip, measurements, html=True, full_page=True):
       break  # may be due to truncated URLs, stop here
     d2 = utils.get_geoip_data(ip2)
     saved_geo_data.append(d2)
-    if d2 is not None:
+    if d2:
       t2 = d2['country_code'], d2['region_name'], d2['city']
       r2 = [bisect_find(names[i], t2[:i+1] if i else t2[0]) for i in xrange(3)]
       distance = utils.geoip_distance(d, d2)
@@ -183,7 +218,6 @@ def display_stats(ip, measurements, html=True, full_page=True):
       for j, f in enumerate(features):
         if known[j] and p.has_key(f):
           predictions[j] -= p[f]
-
 
   # online learning (adjust predictions)
   targets = formatted[:, TARGET]
@@ -368,6 +402,7 @@ def application(environment, start_response):
 
 
 if __name__ == '__main__':
+    load_model(data='iOS')
     server = make_server('', 6660, application)
     print 'Server running ...'
     sys.stdout.flush()
@@ -384,7 +419,8 @@ def train_model(save=False,
                 objective='LAD',  # least absolute deviation
                 model='full',
                 oa_max_delay=[5000.],
-                plot_accuracy=PLOT_ACCURACY,
+                plot_geoip=False,
+                plot_accuracy=False,
                 data='iOS',
                 plot_dir='',
                 show_plots=False,
@@ -757,7 +793,7 @@ def train_model(save=False,
 
 
   if save:
-    filename = os.path.join(os.path.dirname(__file__), '..', 'data', 'sandbox2', 'params')
+    filename = os.path.join(os.path.dirname(__file__), datadir, 'params')
     cPickle.dump((saved_params, terms), file(filename, 'w'), cPickle.HIGHEST_PROTOCOL)
 
   a = numpy.array([sets[2][:, TARGET], sets[2][:, TARGET] - residuals[2]])
@@ -864,7 +900,7 @@ def train_model(save=False,
     if plot_dir:
         pylab.savefig('_'.join((plot_abs_name, 'confusion.pdf')))
 
-  if PLOT_GEOIP and (plot_dir or show_plots):
+  if plot_geoip and (plot_dir or show_plots):
       # plot distance (col. 8) vs target
       ex_target = sets[2][:500, TARGET]
       ex_dist = sets[2][:500, 8]

@@ -14,7 +14,7 @@ from pings.web_server import resources
 try:
     sys.path[0:0] = [os.path.join(os.path.dirname(__file__),
                                   '../../../models/work_in_progress/src')]
-    from graph import display_stats
+    from graph import display_stats, load_model
 except Exception, e:
     print "Exception was caught during the import of the graph module."
     print "This will make the feedback part of the system not work"
@@ -50,6 +50,10 @@ min_round_time = time_table[0]
 hostname = socket.gethostname()
 server_ip = socket.gethostbyname(socket.gethostname())
 stats = open("ip_server_stats.%s.%d.txt" % (hostname, os.getpid()), "a")
+
+# Load the predictor and data set to be able to display statistics
+# in feedback
+load_model()
 
 
 def get_client_ip(request):

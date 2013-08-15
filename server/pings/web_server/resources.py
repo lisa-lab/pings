@@ -378,8 +378,11 @@ if __name__ == "__main__":
         import sys
         sys.path[0:0] = [os.path.join(os.path.dirname(__file__),
                                       '../../../models/work_in_progress/src')]
-        from graph import display_stats
+        from graph import display_stats, load_model
         import numpy
+
+        # Load the model used by display_stats
+        load_model()
         ip = "132.204.25.12"
         measurements = ip
         one = lambda : '.'.join(map(str, numpy.random.randint(256, size=4))) + ',' + str(max(51.0, numpy.random.normal(loc=400.0, scale=200.0)))

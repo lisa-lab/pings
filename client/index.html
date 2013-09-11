@@ -414,14 +414,28 @@ function get_cookie(cookie_name, default_value) {
   }
   return default_value;
 }
-uuid = get_cookie('udem_ping_uuid', '');
-nick = get_cookie('udem_ping_nickname', '');
-nb_pings = get_cookie('udem_ping_nb_pings', '0');
-var attributes = {code:'PingsApplet.class', archive:'http://s3.amazonaws.com/udem_iconnect/pings.jar', width:700, height:500};
-var parameters = {ping_hostname:'iconnect2.iro.umontreal.ca', ping_nb_pings:nb_pings, ping_port:'80', ping_uuid:uuid, ping_nickname:nick};
-var version = '1.6';
-deployJava.runApplet(attributes, parameters, version);
+function mystart(){
+  uuid = get_cookie('udem_ping_uuid', '');
+  nick = get_cookie('udem_ping_nickname', '');
+  nb_pings = get_cookie('udem_ping_nb_pings', '0');
+  var attributes = {code:'PingsApplet.class', archive:'http://s3.amazonaws.com/udem_iconnect/pings.jar', width:700, height:500};
+  var parameters = {ping_hostname:'iconnect2.iro.umontreal.ca', ping_nb_pings:nb_pings, ping_port:'80', ping_uuid:uuid, ping_nickname:nick};
+  var version = '1.6';
+  deployJava.runApplet(attributes, parameters, version);
+}
+function myinstall(){
+  deployJava.installJRE('1.6+');
+  deployJava.refresh()
+}
+var jres = deployJava.getJREs()
 
+if (jres.length > 0) {
+  mystart()
+}
+else{
+  document.write('<p><b>Java is not found.</b> We absolutly need Java as this is the only web framework that allow us to do ICMP pings on all platforms.<br> Our applet is signed, so you can trust it. Can you install Java and run our applet to help us?</p>')
+  document.write('<input id="clickMe" type="button" value="Install Java" onclick="myinstall();" />')
+}
       </script>
     </center>
     <!--FIN DU CODE EARTH -->

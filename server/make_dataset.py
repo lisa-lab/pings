@@ -44,9 +44,6 @@ for filename in sys.argv[1:]:
         else:
             not_test_lines += 1
             sp = line.split()
-            ping = ""
-            dest_ip = None
-            icmp_line_success = False
             if "GET_PINGS" in sp[1]:
                 total_get_pings += 1
                 continue
@@ -65,6 +62,9 @@ for filename in sys.argv[1:]:
                 nb_private_client_lines += 1
                 continue
 
+            ping = ""
+            dest_ip = None
+            icmp_line_success = False
             for i, part in enumerate(sp):
                 part = part.replace('"', '').replace('[', '').replace(',', '')
                 if "ICMP" == part:
@@ -113,7 +113,7 @@ for filename in sys.argv[1:]:
                             raise Exception("!!!")
                         print ping, str(client_ip), dest_ip, ms
                         if not str(dest_ip).startswith("132.204") and not dest_ip.is_private:
-                            good_dest_ips.add(dest_ip)
+                            good_dest_ips.add(dest_ip)1
                     else:
                         total_long_ping += 1
                 if "TROUTE" in part:

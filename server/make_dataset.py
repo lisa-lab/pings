@@ -13,8 +13,10 @@ total_not_test_lines = 0
 total_nb_test_lines = 0
 total_long_ping = 0  # per ping
 total_bad_time = 0
+total_bad_line = 0
 total_good_icmp = 0  # per ping
 total_good_tcp = 0  # per ping
+total_tcp_failed = 0
 nb_private_client_lines = 0
 nb_private_dest = 0
 nb_udem_client_line = 0
@@ -65,6 +67,29 @@ for filename in sys.argv[1:]:
             ping = ""
             dest_ip = None
             icmp_line_success = False
+            time_server_received = sp[0]
+            # This is a python list build from the string
+            # That way, we don't have problem with space in the middle of string
+            try:
+                sp2 = eval(' '.join(sp[1:]))
+            except SyntaxError:
+                # This mean the line is bad!
+                if line is lines[-1]:
+                    print >> sys.stderr, "BAD LAST LINE in filename", filename
+                else:
+                    # There is one line like this. It seam 2 output line was mixed
+                    print >> sys.stderr, "BAD LINE in filename", filename
+                print >> sys.stderr, line
+                print >> sys.stderr, ""
+                total_bad_line += 1
+                continue
+
+            os = sp2[3].strip('"')
+            nick = sp2[-2]
+            uuid = sp2[-1]
+            assert os.startswith("OS="), os
+            assert nick.startswith("NICK="), nick
+            assert uuid.startswith("UUID="), uuid
             for i, part in enumerate(sp):
                 part = part.replace('"', '').replace('[', '').replace(',', '')
                 if "ICMP" == part:
@@ -84,11 +109,16 @@ for filename in sys.argv[1:]:
                 if dest_ip and not str(dest_ip).startswith("132.204") and not dest_ip.is_private:
                     all_dest_ips.add(dest_ip)
                 if part.endswith("ms") and part != "?ms":
-                    if part.startswith("!"):
-                        part = part[1:]
-                    elif part.startswith("?"):
-                        part = part[1:]
-                    elif part == '<1ms':  # Too short time, we round to 1ms
+                    if ping == "TCP":
+                        if part.startswith("!"):
+                            part = part[1:]
+                            total_tcp_failed =+ 1
+                            continue
+                        elif part.startswith("?"):
+                            part = part[1:]
+                            total_tcp_failed =+ 1
+                            continue
+                    if part == '<1ms':  # Too short time, we round to 1ms
                         part = '1ms'
                     if ',' in part:
                         part = part.replace(',', '.')
@@ -111,9 +141,9 @@ for filename in sys.argv[1:]:
                             good_tcp_lines.add(line)
                         else:
                             raise Exception("!!!")
-                        print ping, str(client_ip), dest_ip, ms
+                        print ping, time_server_received, '"%s" "%s"' % (os, nick), uuid, str(client_ip), dest_ip, ms
                         if not str(dest_ip).startswith("132.204") and not dest_ip.is_private:
-                            good_dest_ips.add(dest_ip)1
+                            good_dest_ips.add(dest_ip)
                     else:
                         total_long_ping += 1
                 if "TROUTE" in part:
@@ -148,6 +178,8 @@ print "total_nb_test_lines", total_nb_test_lines
 print "total_long_ping (per ping try)", total_long_ping
 print "total_bad_time (per ping try)", total_bad_time
 print "total_nb_lines", total_nb_lines
+print "total_bad_line", total_bad_line
+print "total_tcp_failed", total_tcp_failed
 print "total_get_pings (lines)", total_get_pings
 print "nb_udem_client_line", nb_udem_client_line
 print "uniq dest ip", len(all_dest_ips)

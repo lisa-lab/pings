@@ -1,5 +1,22 @@
-This is source code for the internet connectome project, which has the goal of
+## Introduction
+
+This is source code for the Internet Connectome Project, which has the goal of
 mapping the networks delays throughout the Internet via crowdsourcing.
+
+The goal of the survey was to map the topology of the Internet as well as measure,
+as accurately as possible, the latency between any two end points of the Internet
+where users could be. The topology is surveyed using the traceroute tool.
+The latency is estimated using two types of pings.
+The first ping method is the classical ping that uses the ICMP protocol to estimate
+the round-trip time between two computers. The second ping method
+is the non-traditional TCP ping that uses the TCP protocol to estimate the time
+it takes to establish a TCP connection between the local host and the remote destination.
+
+Volunteers could participate to the survey by going to our Internet survey web page
+and launching a Java applet. The applet probes the topology of the Internet and
+estimates the latency to a number of remote destinations as determined by our survey server.
+The survey server determines which remote hosts will be probed by the volunteers
+in order to ensure a good coverage of the Internet as well as reliable latency measures.
 
 ## Data
 

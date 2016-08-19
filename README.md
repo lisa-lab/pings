@@ -49,4 +49,4 @@ helped collect the data.
 ## License
 
 The code and data are available under a BSD 3-clause style
-[license](/blob/master/LICENSE.txt).
+[license](LICENSE.txt).

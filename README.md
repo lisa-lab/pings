@@ -45,3 +45,8 @@ Template for leaderboard.
 The project was performed under the Ubisoft / NSERC industrial chair on Artificial
 Intelligence at the DIRO, Université de Montréal. We thank all the participants who
 helped collect the data.
+
+## License
+
+The code and data are available under a BSD 3-clause style
+[license](/blob/master/LICENSE.txt).

@@ -21,7 +21,7 @@ ipaddr==2.1.10
 mock==0.8.0
 pastegevent==0.1
 py==1.4.7
-pycrypto==2.6
+pycryptodome>=3.4.11
 pygeoip==0.2.5
 pyramid==1.2
 pyramid-debugtoolbar==0.9.9.1
